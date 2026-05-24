@@ -1,0 +1,10 @@
+{
+  "ko": {
+    "lite": "rules/ko/lite.md",
+    "full": "rules/ko/full.md"
+  },
+  "en": {
+    "lite": "rules/en/lite.md",
+    "full": "rules/en/full.md"
+  }
+}
