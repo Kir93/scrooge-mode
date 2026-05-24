@@ -1,0 +1,18 @@
+{
+  // Scrooge markdownlint config.
+  // Rules relaxed because they produce noise on this repo's prose + bilingual (KO/EN) content.
+  // Add more here when a new rule actually surfaces — don't pre-disable speculatively.
+
+  // MD013 (line-length): prose and bilingual docs use natural, unwrapped lines;
+  // hard 80-column wrapping hurts readability and makes diffs noisy. Disable repo-wide.
+  "MD013": false,
+
+  // MD060 (table-column-style "aligned"): markdownlint measures source columns,
+  // but CJK glyphs are 1 source column / 2 display columns, so KO/EN tables can
+  // never satisfy "aligned" and visual alignment is independent of the check.
+  "MD060": false,
+
+  // MD025 (single-h1): spec/task docs use YAML frontmatter with a `title:` field
+  // plus a `# Heading`. Don't count the frontmatter title as a second h1.
+  "MD025": { "front_matter_title": "" }
+}
