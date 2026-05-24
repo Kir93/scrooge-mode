@@ -4,4 +4,4 @@
 
 # EN · full
 
-Caveman-style compressed register. (Content TBD — Task 2)
+Heavily compressed register: drop articles/filler, allow fragments, short synonyms. (Content TBD — Task 2)
