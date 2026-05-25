@@ -1,0 +1,17 @@
+# scrooge-stats — manual token-savings readout.
+#
+# Functional mechanism: the UserPromptSubmit hook (hooks/scrooge-activate.js)
+# intercepts a "/scrooge-stats" prompt, runs hooks/scrooge-stats.js with the
+# active --session-file, and blocks the turn — returning the stats block as the
+# hook reason. So in Claude Code this command works WITHOUT a registered slash
+# command; this descriptor exists for agents that require an explicit command
+# entry. Per-agent registration (Claude plugin manifest, Codex prompts) is
+# finalized in Task 4 (distribution).
+
+name = "scrooge-stats"
+description = "현재 세션의 실측 출력 토큰과 (벤치마크 존재 시) 추정 절감량을 표시"
+flags = ["--share"]
+
+# Reference invocation (what the hook runs under the hood):
+#   node hooks/scrooge-stats.js [--session-file <transcript>] [--share]
+run = "node hooks/scrooge-stats.js"

@@ -2,18 +2,19 @@
 //
 // Single source of truth for:
 //   - the set of valid languages / dials
-//   - the {lang, dial} session-state file location
-//   - symlink-safe, size-capped, whitelist-validated read/write of that state
+//   - the {lang, dial} session-state file location + the statusline suffix file
+//   - symlink-safe, size-capped, whitelist/sanitized read/write of both
 //
-// Both the activation hook (writer) and the stats/statusline hook (reader)
-// import this module so they share one schema and one hardened I/O path.
+// The activation hook (writer), the stats hook (reader + suffix writer), and
+// the statusline both go through this module so they share one schema and one
+// hardened I/O path.
 //
-// Security note: the state file path is predictable (~/.claude/.scrooge-active).
-// A local attacker could replace it with a symlink pointing at a secret
+// Security note: these file paths are predictable (~/.claude/.scrooge-*).
+// A local attacker could replace one with a symlink pointing at a secret
 // (e.g. ~/.ssh/id_rsa) so that every reader slurps that content and injects it
-// into the model context or prints it on the statusline. We defend with
-// O_NOFOLLOW, a hard size cap, and a strict value whitelist — anything
-// anomalous yields null and nothing is injected.
+// into the model context or renders it on the statusline. We defend with
+// O_NOFOLLOW, a hard size cap, and value validation/sanitization — anything
+// anomalous yields null (or empty) and nothing is injected.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,17 +24,24 @@ export const VALID_LANGS = ['ko', 'en'];
 export const VALID_DIALS = ['lite', 'full'];
 export const DEFAULT_STATE = { lang: 'en', dial: 'full' };
 
-// Longest legitimate payload is ~30 bytes ({"lang":"ko","dial":"full"}).
-// 256 leaves slack without enabling meaningful exfiltration.
+// Longest legitimate state payload is ~30 bytes ({"lang":"ko","dial":"full"}).
+// The suffix is a short pre-rendered badge string ("⛏ ~12.3k saved (est)").
 const MAX_STATE_BYTES = 256;
+const MAX_SUFFIX_BYTES = 128;
 
 const O_NOFOLLOW =
   typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
 
+function claudeDir() {
+  return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+}
+
 export function getStatePath() {
-  const claudeDir =
-    process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-  return path.join(claudeDir, '.scrooge-active');
+  return path.join(claudeDir(), '.scrooge-active');
+}
+
+export function getSuffixPath() {
+  return path.join(claudeDir(), '.scrooge-statusline-suffix');
 }
 
 export function isValidState(state) {
@@ -45,107 +53,130 @@ export function isValidState(state) {
   );
 }
 
-// Symlink-safe, size-capped, whitelist-validated read.
-// Returns { lang, dial } or null on any anomaly. Never throws.
-export function readState(statePath = getStatePath()) {
+// Resolve a directory to its real path, refusing attacker-planted symlinks.
+// When the dir is itself a symlink (legitimate: ~/.claude symlinked to shared
+// storage), resolve through and verify ownership; refuse if the resolved dir is
+// owned by another user (Unix) or lives outside the home tree (Windows).
+// Returns the safe real dir, or null if it must be refused.
+function resolveSafeDir(dir) {
   try {
-    let st;
-    try {
-      st = fs.lstatSync(statePath);
-    } catch (e) {
-      return null;
+    fs.mkdirSync(dir, { recursive: true });
+    const lst = fs.lstatSync(dir);
+    if (!lst.isSymbolicLink()) return dir;
+    const real = fs.realpathSync(dir);
+    const realStat = fs.statSync(real);
+    if (!realStat.isDirectory()) return null;
+    if (typeof process.getuid === 'function') {
+      return realStat.uid === process.getuid() ? real : null;
     }
-    if (st.isSymbolicLink() || !st.isFile()) return null;
-    if (st.size > MAX_STATE_BYTES) return null;
-
-    let fd;
-    let raw;
-    try {
-      fd = fs.openSync(statePath, fs.constants.O_RDONLY | O_NOFOLLOW);
-      const buf = Buffer.alloc(MAX_STATE_BYTES);
-      const n = fs.readSync(fd, buf, 0, MAX_STATE_BYTES, 0);
-      raw = buf.subarray(0, n).toString('utf8');
-    } finally {
-      if (fd !== undefined) fs.closeSync(fd);
-    }
-
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch (e) {
-      return null;
-    }
-    const state = { lang: parsed.lang, dial: parsed.dial };
-    return isValidState(state) ? state : null;
+    const home = path.resolve(os.homedir()).toLowerCase();
+    const rp = path.resolve(real).toLowerCase();
+    return rp === home || rp.startsWith(home + path.sep) ? real : null;
   } catch (e) {
     return null;
   }
 }
 
 // Symlink-safe atomic write (temp + rename, 0600, O_NOFOLLOW|O_EXCL).
-// Validates the value before touching disk. Returns true on success.
-// When the parent dir is itself a symlink (legitimate: ~/.claude symlinked to
-// shared storage), resolves through and verifies ownership; refuses if the
-// resolved dir is owned by another user. The state file itself must never be a
-// symlink — that is the actual clobber vector.
-export function writeState(state, statePath = getStatePath()) {
-  if (!isValidState(state)) return false;
+// The target file must never be a symlink — that is the clobber vector.
+function safeWriteFile(targetPath, content) {
   const debug = process.env.SCROOGE_DEBUG === '1';
   try {
-    const dir = path.dirname(statePath);
-    fs.mkdirSync(dir, { recursive: true });
+    const realDir = resolveSafeDir(path.dirname(targetPath));
+    if (!realDir) return false;
+    const realPath = path.join(realDir, path.basename(targetPath));
 
-    let realDir;
-    try {
-      const lst = fs.lstatSync(dir);
-      if (lst.isSymbolicLink()) {
-        realDir = fs.realpathSync(dir);
-        const realStat = fs.statSync(realDir);
-        if (!realStat.isDirectory()) return false;
-        if (typeof process.getuid === 'function') {
-          if (realStat.uid !== process.getuid()) return false;
-        } else {
-          const home = path.resolve(os.homedir()).toLowerCase();
-          const rp = path.resolve(realDir).toLowerCase();
-          if (rp !== home && !rp.startsWith(home + path.sep)) return false;
-        }
-      } else {
-        realDir = dir;
-      }
-    } catch (e) {
-      return false;
-    }
-
-    const realPath = path.join(realDir, path.basename(statePath));
     try {
       if (fs.lstatSync(realPath).isSymbolicLink()) return false;
     } catch (e) {
       if (e.code !== 'ENOENT') return false;
     }
 
-    const tmp = path.join(realDir, `.scrooge-active.${process.pid}.${Date.now()}`);
+    const tmp = path.join(realDir, `.scrooge.tmp.${process.pid}.${Date.now()}`);
+    let created = false;
+    try {
+      let fd;
+      try {
+        // O_EXCL: fail rather than open a pre-existing file. created flips only
+        // after we own the temp, so the cleanup below never unlinks another
+        // process's file.
+        fd = fs.openSync(
+          tmp,
+          fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | O_NOFOLLOW,
+          0o600
+        );
+        created = true;
+        fs.writeSync(fd, String(content));
+        try {
+          fs.fchmodSync(fd, 0o600);
+        } catch (e) {
+          /* best-effort on Windows */
+        }
+      } finally {
+        if (fd !== undefined) fs.closeSync(fd);
+      }
+      fs.renameSync(tmp, realPath);
+      return true;
+    } catch (e) {
+      // Clean up our temp file on any write/rename failure so we don't leak
+      // .scrooge.tmp.* in the config dir. Only unlink what we created.
+      if (created) {
+        try {
+          fs.unlinkSync(tmp);
+        } catch (_) {
+          /* best-effort */
+        }
+      }
+      throw e;
+    }
+  } catch (e) {
+    if (debug) process.stderr.write(`[scrooge] safeWriteFile failed: ${e.message}\n`);
+    return false;
+  }
+}
+
+// Symlink-safe, size-capped read. Returns the raw string or null on any anomaly.
+function safeReadFile(targetPath, maxBytes) {
+  try {
+    let st;
+    try {
+      st = fs.lstatSync(targetPath);
+    } catch (e) {
+      return null;
+    }
+    if (st.isSymbolicLink() || !st.isFile()) return null;
+    if (st.size > maxBytes) return null;
+
     let fd;
     try {
-      fd = fs.openSync(
-        tmp,
-        fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | O_NOFOLLOW,
-        0o600
-      );
-      fs.writeSync(fd, JSON.stringify({ lang: state.lang, dial: state.dial }));
-      try {
-        fs.fchmodSync(fd, 0o600);
-      } catch (e) {
-        /* best-effort on Windows */
-      }
+      fd = fs.openSync(targetPath, fs.constants.O_RDONLY | O_NOFOLLOW);
+      const buf = Buffer.alloc(maxBytes);
+      const n = fs.readSync(fd, buf, 0, maxBytes, 0);
+      return buf.subarray(0, n).toString('utf8');
     } finally {
       if (fd !== undefined) fs.closeSync(fd);
     }
-    fs.renameSync(tmp, realPath);
-    return true;
   } catch (e) {
-    if (debug) process.stderr.write(`[scrooge] writeState failed: ${e.message}\n`);
-    return false;
+    return null;
   }
+}
+
+export function readState(statePath = getStatePath()) {
+  const raw = safeReadFile(statePath, MAX_STATE_BYTES);
+  if (raw === null) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+  const state = { lang: parsed.lang, dial: parsed.dial };
+  return isValidState(state) ? state : null;
+}
+
+export function writeState(state, statePath = getStatePath()) {
+  if (!isValidState(state)) return false;
+  return safeWriteFile(statePath, JSON.stringify({ lang: state.lang, dial: state.dial }));
 }
 
 // Remove the state file (deactivate). unlinkSync does not follow symlinks — it
@@ -158,4 +189,23 @@ export function clearState(statePath = getStatePath()) {
   } catch (e) {
     return e.code === 'ENOENT';
   }
+}
+
+// Strip control bytes (terminal-escape / OSC injection) and cap the byte length.
+// Keeps printable UTF-8 (including the miser glyph) intact.
+function sanitizeSuffix(text) {
+  // eslint-disable-next-line no-control-regex
+  const stripped = String(text).replace(/[\x00-\x1f\x7f]/g, '');
+  return Buffer.from(stripped, 'utf8').subarray(0, MAX_SUFFIX_BYTES).toString('utf8').trim();
+}
+
+// Pre-rendered statusline suffix written by the stats hook and read by the
+// statusline. Same clobber surface as the state file, so same hardening.
+export function writeSuffix(text, suffixPath = getSuffixPath()) {
+  return safeWriteFile(suffixPath, sanitizeSuffix(text));
+}
+
+export function readSuffix(suffixPath = getSuffixPath()) {
+  const raw = safeReadFile(suffixPath, MAX_SUFFIX_BYTES);
+  return raw === null ? '' : sanitizeSuffix(raw);
 }

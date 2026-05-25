@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import {
   VALID_LANGS,
   VALID_DIALS,
@@ -143,6 +144,28 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input || '{}');
     const prompt = data.prompt || '';
     const statePath = getStatePath();
+
+    // /scrooge-stats — intercept, run the stats script, and block the prompt,
+    // returning its output as the reason. transcript_path is passed so stats
+    // reads the active session, not whichever JSONL changed most recently.
+    if (/^\/scrooge(?::scrooge)?-stats(?:\s|$)/i.test(prompt.trim())) {
+      try {
+        const argv = [path.join(HERE, 'scrooge-stats.js')];
+        if (data.transcript_path) argv.push('--session-file', data.transcript_path);
+        if (/\s--share(?:\s|$)/.test(prompt)) argv.push('--share');
+        const out = execFileSync(process.execPath, argv, { encoding: 'utf8', timeout: 5000 });
+        process.stdout.write(JSON.stringify({ decision: 'block', reason: out.trim() }));
+      } catch (e) {
+        process.stdout.write(
+          JSON.stringify({
+            decision: 'block',
+            reason: 'scrooge-stats: 실행 실패 — node hooks/scrooge-stats.js 수동 실행.',
+          })
+        );
+      }
+      return;
+    }
+
     const cmd = parseCommand(prompt);
 
     if (cmd && cmd.action === 'off') {
