@@ -4,7 +4,7 @@ English | [한국어](README.ko.md)
 
 > Tokens are money. So spend them like a miser.
 
-🚧 **Early development.** Only the foundation — the i18n registry and repo scaffold — has landed. Compression registers, the installer, activation, and token-savings stats are not built yet.
+🚧 **Early development.** Landed: the i18n registry, the compression registers, the multi-agent installer, the activation hook, and token-savings stats. Still in progress: publishing to npm / the Claude Code marketplace (so `claude plugin install` is not live yet — use `--dry-run` to preview) and the benchmark.
 
 **Scrooge** aims to make AI coding agents reply in a **compressed register while keeping full technical accuracy**, cutting **output tokens** — with **Korean as a first-class language** alongside English.
 
