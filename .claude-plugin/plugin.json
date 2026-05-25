@@ -1,0 +1,22 @@
+{
+  "name": "scrooge",
+  "description": "KO-first bilingual (KO/EN) LLM output-compression mode. Cuts output tokens while keeping full technical accuracy. Token miser persona.",
+  "author": {
+    "name": "Kir93",
+    "url": "https://github.com/Kir93"
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/scrooge-activate.js\"",
+            "timeout": 5,
+            "statusMessage": "Tracking scrooge mode..."
+          }
+        ]
+      }
+    ]
+  }
+}

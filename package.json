@@ -3,10 +3,17 @@
   "version": "0.1.0",
   "description": "한국어 우선 이중언어(KO/EN) AI 코딩 에이전트용 LLM 출력 압축 skill. 토큰을 아끼는 스크루지.",
   "type": "module",
+  "bin": {
+    "scrooge": "bin/install.js"
+  },
   "files": [
     "bin/",
+    "hooks/",
+    "lib/",
     "rules/",
-    "docs/",
+    "skills/",
+    "commands/",
+    ".claude-plugin/",
     "registry.json"
   ],
   "keywords": [
