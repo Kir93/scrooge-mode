@@ -3,6 +3,8 @@
 # (symlinks into private ai-config), local settings. The shipped product lives
 # at the repo root (skills/, hooks/, bin/, rules/) and in .claude-plugin/.
 .claude/
+CLAUDE.local.md
+AGENTS.local.md
 
 # Codex effort wrapper / local codex config injected by ai-config (dev-only)
 .codex/config.toml.lock.d/
