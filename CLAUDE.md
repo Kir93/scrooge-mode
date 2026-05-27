@@ -8,7 +8,7 @@ KO-first bilingual (KO/EN) **LLM output-compression skill**. npm `scrooge-mode` 
 
 - **Product = docs, not runtime code.** Shipped artifacts: register rule files `rules/{lang}/{lite,full}.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
 - **Early development.** Installer, activation hook, token-savings stats, benchmark — future Tasks, intentionally unbuilt. Don't fill them in speculatively.
-- **No tests, no build scripts.** `package.json` has no `scripts`. Don't invent a test command — verify per §4.
+- **Test harness landed (Task 7).** `npm test` runs `node --test` over `tests/` (zero-dep, Node built-in). No other build scripts — don't invent new ones; verify per §4.
 
 ## Conventions
 
@@ -35,7 +35,7 @@ Touch only what you must; clean up only your own orphans. Don't "improve" adjace
 
 ### 4. Goal-driven execution
 
-No test suite, so verify with:
+Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape) plus:
 
 - **markdownlint clean**: `npx markdownlint-cli2 "**/*.md"` (honors `.markdownlint.jsonc`).
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
