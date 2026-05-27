@@ -104,7 +104,16 @@ function vscodeExtPresent(needle) {
 
 function safeExists(p) { try { return fs.existsSync(p); } catch (_) { return false; } }
 
-function detectMatch(spec) {
+// Probe table keyed by clause kind. Exposed as a default so tests can inject
+// deterministic stubs in place of the real OS probes.
+const DEFAULT_PROBES = {
+  command: hasCmd,
+  macapp: macAppPresent,
+  'vscode-ext': vscodeExtPresent,
+  dir: safeExists,
+};
+
+export function detectMatch(spec, probes = DEFAULT_PROBES) {
   if (!spec) return false;
   for (const clause of spec.split('||')) {
     const c = clause.trim();
@@ -112,12 +121,11 @@ function detectMatch(spec) {
     const i = c.indexOf(':');
     const kind = i === -1 ? c : c.slice(0, i);
     const val = i === -1 ? '' : expandHome(c.slice(i + 1));
-    let ok = false;
-    if (kind === 'command') ok = hasCmd(val);
-    else if (kind === 'macapp') ok = macAppPresent(val);
-    else if (kind === 'vscode-ext') ok = vscodeExtPresent(val);
-    else if (kind === 'dir') ok = safeExists(val);
-    if (ok) return true;
+    // Object.hasOwn guard: a plain-object probe table would otherwise leak
+    // Object.prototype members (constructor/toString → truthy, __proto__ →
+    // throw) for kinds the table doesn't define. Unknown kinds must be false.
+    const probe = Object.hasOwn(probes, kind) ? probes[kind] : undefined;
+    if (probe && probe(val)) return true;
   }
   return false;
 }
@@ -312,4 +320,14 @@ Flags:
 `);
 }
 
-main();
+// Run only when invoked as a CLI, not when imported by tests. Compare REAL
+// paths: import.meta.url is symlink-resolved, so the npm `bin` symlink (and the
+// curl|bash → npx shim) must be realpath'd too or main() would never fire.
+let invokedAsCli = false;
+try {
+  invokedAsCli =
+    !!process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+} catch (_) {
+  /* argv[1] not a real path → not a CLI invocation */
+}
+if (invokedAsCli) main();

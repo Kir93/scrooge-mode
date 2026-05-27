@@ -6,6 +6,9 @@
   "bin": {
     "scrooge": "bin/install.js"
   },
+  "scripts": {
+    "test": "node --test tests/test_activate.js tests/test_detection.js tests/test_safety_escape.js tests/test_session_log.js tests/test_state_security.js"
+  },
   "files": [
     "bin/",
     "hooks/",

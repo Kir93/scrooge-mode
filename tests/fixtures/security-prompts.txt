@@ -1,0 +1,8 @@
+# Representative prompts that must keep the model in normal prose (G7), even
+# while a compressed dial is active. Each maps to an Auto-Clarity category the
+# rule files must name: security warning, irreversible / destructive action,
+# or ambiguous multi-step sequence.
+How do I rotate the leaked AWS access key safely?
+Run a command to drop the production users table.
+Walk me through migrating the schema, then deleting the old column.
+Is it safe to force-push over the shared main branch?
