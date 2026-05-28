@@ -38,10 +38,6 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 >
 > *(Translation: "List the 3 most important metrics to look at first when splitting a Node.js monolith into separate services.")*
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
 ### 🗣️ Normal Claude (693 tokens)
 
 ```text
@@ -72,9 +68,6 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 - 빌드/테스트 시간 — 기준선
 ```
 
-</td>
-<td width="50%" valign="top">
-
 ### 🪙 Scrooge `ko/full` (188 tokens)
 
 ```text
@@ -82,10 +75,6 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 2. **트래픽/부하 편차** — endpoint별 RPS·CPU·메모리 점유율. 스케일 요구 다른 영역이 1순위 분리 대상.
 3. **DB 접근 패턴** — 테이블별 read/write 소유권, join 경계, 트랜잭션 스팬. 공유 테이블 많으면 분리 비용 폭증.
 ```
-
-</td>
-</tr>
-</table>
 
 **Same three metrics, same technical decision shape — ~73% fewer output tokens.**
 
@@ -105,18 +94,48 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 
 Multi-agent installer — auto-detects Claude Code, Codex, Cursor, Windsurf, Cline, Continue, and Gemini CLI, and wires Scrooge into each.
 
+### npx (cross-platform, recommended)
+
+```bash
+npx -y github:Kir93/scrooge-mode
+```
+
+### macOS / Linux
+
 ```bash
 # curl | bash (no clone)
 curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash
-
-# or via npx
-npx -y github:Kir93/scrooge-mode
 
 # or from a local clone
 ./install.sh
 ```
 
-~10 seconds. Needs Node ≥18. Skips any agent you don't have. Safe to re-run. Preview without applying: append `--dry-run`. Restrict to one agent: `--only claude`. Uninstall: pass `-u`, or run `uninstall.sh`.
+### Windows (PowerShell)
+
+```powershell
+# PowerShell one-liner (no clone)
+irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
+
+# or from a local clone
+./install.ps1
+```
+
+~10 seconds. Needs Node ≥18. Skips any agent you don't have. Safe to re-run. Preview without applying: append `--dry-run`. Restrict to one agent: `--only claude`.
+
+### Uninstall
+
+```bash
+# macOS / Linux
+./uninstall.sh
+
+# cross-platform via npx
+npx -y github:Kir93/scrooge-mode -- -u
+```
+
+```powershell
+# Windows (PowerShell)
+./uninstall.ps1
+```
 
 **Claude Code plugin path** (resolves directly from this repo after the `v0.1.0` tag):
 

@@ -36,10 +36,6 @@
 
 > Node.js로 만든 단일 모놀리스 서비스를 서비스 분리할 때 가장 먼저 봐야 할 측정 지표 3가지를 알려줘.
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
 ### 🗣️ Normal Claude (693 tokens)
 
 ```text
@@ -70,9 +66,6 @@
 - 빌드/테스트 시간 — 기준선
 ```
 
-</td>
-<td width="50%" valign="top">
-
 ### 🪙 Scrooge `ko/full` (188 tokens)
 
 ```text
@@ -80,10 +73,6 @@
 2. **트래픽/부하 편차** — endpoint별 RPS·CPU·메모리 점유율. 스케일 요구 다른 영역이 1순위 분리 대상.
 3. **DB 접근 패턴** — 테이블별 read/write 소유권, join 경계, 트랜잭션 스팬. 공유 테이블 많으면 분리 비용 폭증.
 ```
-
-</td>
-</tr>
-</table>
 
 **같은 3개 지표, 같은 기술 판단 — output token 약 73% 절감.**
 
@@ -103,18 +92,48 @@
 
 멀티 에이전트 설치기 — Claude Code, Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI를 자동 감지해 각각에 Scrooge를 연결.
 
+### npx (크로스플랫폼, 권장)
+
+```bash
+npx -y github:Kir93/scrooge-mode
+```
+
+### macOS / Linux
+
 ```bash
 # curl | bash (클론 불필요)
 curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash
-
-# 또는 npx
-npx -y github:Kir93/scrooge-mode
 
 # 또는 로컬 클론에서
 ./install.sh
 ```
 
-약 10초. Node ≥18 필요. 설치 안 된 에이전트는 건너뜀. 재실행 안전. 미리보기(적용 없이 확인): `--dry-run`. 특정 에이전트만: `--only claude`. 제거: `-u` 또는 `uninstall.sh`.
+### Windows (PowerShell)
+
+```powershell
+# PowerShell 원라이너 (클론 불필요)
+irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
+
+# 또는 로컬 클론에서
+./install.ps1
+```
+
+약 10초. Node ≥18 필요. 설치 안 된 에이전트는 건너뜀. 재실행 안전. 미리보기(적용 없이 확인): `--dry-run`. 특정 에이전트만: `--only claude`.
+
+### 제거
+
+```bash
+# macOS / Linux
+./uninstall.sh
+
+# 크로스플랫폼 (npx)
+npx -y github:Kir93/scrooge-mode -- -u
+```
+
+```powershell
+# Windows (PowerShell)
+./uninstall.ps1
+```
 
 **Claude Code plugin 경로** (이 저장소에서 직접 해석, `v0.1.0` tag 이후):
 
