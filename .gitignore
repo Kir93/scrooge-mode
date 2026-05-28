@@ -20,3 +20,7 @@ node_modules/
 
 # OS
 .DS_Store
+
+# Benchmark results (per-machine, not part of the repo)
+benchmarks/results-*.jsonl
+benchmarks/results-*.md

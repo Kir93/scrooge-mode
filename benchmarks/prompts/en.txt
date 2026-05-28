@@ -1,0 +1,35 @@
+# Scrooge benchmark — EN prompts
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+
+# --- debug ---
+Explain why a React component's child re-renders on every parent click, and how to fix it.
+In an Express middleware, `req.user` is sometimes `undefined`. List common causes.
+Why does TypeScript throw `Cannot find name 'process'` and how do I fix it?
+List three common reasons a PostgreSQL query slows down only in production.
+Describe a scenario where a `useEffect` cleanup function does not run.
+In Next.js App Router, why does `cookies()` cause "Dynamic API" build errors?
+Walk me through the diagnostic order when a `fetch` call is blocked by a CORS preflight.
+
+# --- explain ---
+Describe a scenario where a JavaScript closure causes a memory leak.
+Summarize the difference between React Server Components and Client Components.
+Why is HTTP/2 multiplexing faster than HTTP/1.1?
+Compare TCP and UDP and where each is appropriate.
+Compare the trade-offs between JWT stateless auth and session auth.
+Explain why a database index speeds up reads and slows down writes.
+
+# --- review ---
+Identify the bug and suggest a fix: ```js\nfunction sum(arr) { let s = 0; for (let i = 0; i <= arr.length; i++) s += arr[i]; return s; }\n```
+What is wrong with calling `setState({...state, foo: bar})` inside a React onChange handler on every keystroke?
+Explain the performance impact of awaiting promises in a `for...of` loop instead of `await Promise.all`.
+Should `WHERE date >= '2024-01-01' AND date < '2024-02-01'` be rewritten to `BETWEEN`? Evaluate.
+What is the risk of calling `setState` inside `useEffect(() => { fetchData() }, [])` without a cleanup?
+
+# --- plan ---
+List the top three metrics to evaluate before splitting a Node.js monolith into services.
+Outline a zero-downtime procedure to add a new column to a 100 GB PostgreSQL table.
+Describe the order in which a Next.js 13 Pages Router project should be migrated to App Router.
+Recommend the first three components to build when introducing a design system to a React project.
+Provide a decision checklist for a REST API team considering migrating to GraphQL.
+Describe a backpressure strategy when designing a WebSocket-based real-time notification system.

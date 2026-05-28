@@ -1,0 +1,35 @@
+# Scrooge benchmark — KO prompts
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+
+# --- debug ---
+React 컴포넌트가 매 클릭마다 자식 컴포넌트도 함께 리렌더되는 문제 원인과 해결책을 설명해줘.
+Express 미들웨어에서 `req.user`가 가끔 `undefined`로 나오는데 흔한 원인들을 알려줘.
+TypeScript에서 `Cannot find name 'process'` 에러가 나는 이유와 해결법은?
+PostgreSQL 쿼리가 운영에서만 느려지는 일반적 원인 3가지를 설명해줘.
+useEffect cleanup 함수가 실행되지 않는 상황을 설명해줘.
+Next.js App Router에서 `cookies()`가 "Dynamic API"라며 빌드를 깨뜨릴 때 원인은?
+fetch 호출이 CORS preflight에서 막힐 때 점검 순서를 알려줘.
+
+# --- explain ---
+JavaScript closure가 메모리 누수를 일으키는 시나리오를 설명해줘.
+React Server Components와 Client Components의 차이를 핵심만 알려줘.
+HTTP/2 multiplexing이 HTTP/1.1 대비 어떤 점에서 빠른지 설명해줘.
+TCP와 UDP의 핵심 차이와 각각이 적합한 사용처를 알려줘.
+JWT의 stateless 인증과 session 인증의 trade-off를 비교해줘.
+database index가 read 성능을 올리는 원리와 write에서 손해보는 이유를 설명해줘.
+
+# --- review ---
+다음 함수의 문제점과 개선안을 알려줘: ```js\nfunction sum(arr) { let s = 0; for (let i = 0; i <= arr.length; i++) s += arr[i]; return s; }\n```
+React useState 안에 객체를 넣고 `setState({...state, foo: bar})`를 매 input 변경마다 호출하는 코드의 문제점은?
+async 함수에서 `await Promise.all` 대신 `for...of`로 await을 직렬 호출하는 코드의 성능 영향을 설명해줘.
+SQL `WHERE date >= '2024-01-01' AND date < '2024-02-01'`을 `BETWEEN`으로 바꾸는 게 좋은지 평가해줘.
+React에서 `useEffect(() => { fetchData() }, [])` 안에 cleanup 없이 setState하는 패턴의 위험을 알려줘.
+
+# --- plan ---
+Node.js로 만든 단일 모놀리스 서비스를 서비스 분리할 때 가장 먼저 봐야 할 측정 지표 3가지를 알려줘.
+PostgreSQL에서 100GB 테이블에 새 컬럼을 추가하면서 다운타임 0으로 가는 절차를 단계별로 설명해줘.
+Next.js 13 Pages Router 프로젝트를 App Router로 점진 마이그레이션하는 순서를 알려줘.
+React 프로젝트에 design system을 도입할 때 첫 3개 컴포넌트로 무엇을 만들지 추천해줘.
+GraphQL 도입을 검토 중인 REST API 팀에 대해 결정 체크리스트를 만들어줘.
+WebSocket 기반 실시간 알림 시스템을 설계할 때 backpressure 전략을 알려줘.
