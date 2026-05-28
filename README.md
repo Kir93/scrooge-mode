@@ -1,36 +1,22 @@
-<p align="center">
-  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1fa99/emoji.svg" width="120" alt="coin" />
-</p>
+# 🪙 scrooge
 
-<h1 align="center">scrooge</h1>
+`tokens are money — spend them like a miser`
 
-<p align="center">
-  <strong>tokens are money — spend them like a miser</strong>
-</p>
+[![Stars](https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow)](https://github.com/Kir93/scrooge-mode/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat)](https://github.com/Kir93/scrooge-mode/commits/main)
+[![License](https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat)](LICENSE)
 
-<p align="center">
-  <a href="https://github.com/Kir93/scrooge-mode/stargazers"><img src="https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow" alt="Stars"></a>
-  <a href="https://github.com/Kir93/scrooge-mode/commits/main"><img src="https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat" alt="Last Commit"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat" alt="License"></a>
-</p>
+English · [한국어](README.ko.md)
 
-<p align="center">
-  English • <a href="README.ko.md">한국어</a>
-</p>
+KO-first bilingual (KO/EN) output-compression skill for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI. The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-<p align="center">
-  <a href="#install">Install</a> •
-  <a href="#before--after">Before/After</a> •
-  <a href="#benchmarks">Benchmarks</a> •
-  <a href="#how-it-works">How It Works</a> •
-  <a href="#compared-to-caveman">vs caveman</a>
-</p>
+**`~67% KO · ~65% EN · 100% accuracy · honorifics stripped`** — `claude-opus-4-7`, N=24 paired median.
+
+Jump to: [Demo](#demo) · [Install](#install) · [Surface](#surface) · [Benchmarks](#benchmarks) · [Mechanics](#mechanics)
 
 ---
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill / plugin (also Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI) that makes AI coding agents reply in a compressed register — **~67% fewer output tokens on Korean, ~65% on English** — with full technical accuracy preserved. **Korean is a first-class language**, not a translation of English compression rules.
-
-## Before / After
+## Demo
 
 Same prompt, same Claude model, actual benchmark output. The prompt is Korean and the responses are Korean — this is a deliberate demo of the `ko/full` register, Scrooge's first-class target. See [`benchmarks/prompts/en.txt`](./benchmarks/prompts/en.txt) for the English-prompt corpus.
 
@@ -38,7 +24,7 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 >
 > *(Translation: "List the 3 most important metrics to look at first when splitting a Node.js monolith into separate services.")*
 
-### 🗣️ Normal Claude (693 tokens)
+### Normal Claude (693 tokens)
 
 ```text
 모놀리스 분리 전 측정 지표 3가지:
@@ -68,7 +54,7 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 - 빌드/테스트 시간 — 기준선
 ```
 
-### 🪙 Scrooge `ko/full` (188 tokens)
+### Scrooge `ko/full` (188 tokens)
 
 ```text
 1. **모듈 간 결합도** — import 그래프, 순환 의존, cross-module 호출 빈도. 분리 경계 후보 식별.
@@ -76,19 +62,10 @@ Same prompt, same Claude model, actual benchmark output. The prompt is Korean an
 3. **DB 접근 패턴** — 테이블별 read/write 소유권, join 경계, 트랜잭션 스팬. 공유 테이블 많으면 분리 비용 폭증.
 ```
 
-**Same three metrics, same technical decision shape — ~73% fewer output tokens.**
-
-```text
-┌─────────────────────────────────────────┐
-│  KOREAN OUTPUT SAVED   ██████░░  ~67%   │
-│  ENGLISH OUTPUT SAVED  ██████░░  ~65%   │
-│  TECHNICAL ACCURACY    ████████  100%   │
-│  HONORIFICS            ░░░░░░░░  STRIP  │
-└─────────────────────────────────────────┘
-```
+Same three metrics, same technical decision shape — **~73% fewer output tokens** on this prompt.
 
 > [!IMPORTANT]
-> Scrooge cuts **output** tokens only — thinking and reasoning tokens are untouched, accuracy is preserved. The miser cuts spending, not thinking.
+> Output only. Reasoning, thinking, accuracy — untouched. A miser ledgers the spend, not the thought.
 
 ## Install
 
@@ -122,6 +99,8 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 
 ~10 seconds. Needs Node ≥18. Skips any agent you don't have. Safe to re-run. Preview without applying: append `--dry-run`. Restrict to one agent: `--only claude`.
 
+Codex gets an additional user-level hook: the installer copies Scrooge's hook payload to `~/.codex/scrooge/` and merges a `UserPromptSubmit` entry into `~/.codex/config.toml`. It does **not** create per-project `.codex/hooks.json`.
+
 > **Where you run the one-liner matters.** For non-Claude targets (Codex, Cursor, etc.) the installer calls `npx skills add`, which the upstream `skills` CLI installs at **project scope** when it detects a `package.json` in the cwd or an ancestor. If you pipe `curl | bash` from inside one of your own projects, you'll find a fresh `.agents/`, `skills/<name>` symlink, and `skills-lock.json` in that project's root. Two ways to avoid that:
 >
 > - **Run from your home directory** (`cd ~`) before the curl one-liner — no `package.json` ancestor → installs at user scope.
@@ -132,6 +111,7 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 >   ```
 >
 > Running from inside a clone of *this* repo is auto-detected and skipped — the source already is the canonical layout.
+> This warning is about `skills` CLI files only; the Codex activation hook is always user-level.
 
 ### Uninstall
 
@@ -157,7 +137,7 @@ claude plugin install scrooge@scrooge
 
 **Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag.
 
-## What You Get
+## Surface
 
 | Component | What |
 | --- | --- |
@@ -169,50 +149,47 @@ claude plugin install scrooge@scrooge
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates. |
 | CLI benchmark harness | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/). |
 
-**Why Korean matters.** Existing compression tools assume fluency in English or Classical Chinese. Scrooge treats Korean as a first-class language — register designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English.
+**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so adding a language is one rule file + one `registry.json` entry — no rule-engine surgery.
 
 ## Benchmarks
 
-Measured on **claude-opus-4-7**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
+Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
 
 **Measurement conditions** (read before quoting the numbers):
 
 - **N=24 prompts × 1 run, paired median.** Single-run results; no variance estimate. Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~67%`, not "67.4% exactly").
 - **Register-only isolation.** The harness runs each arm under `claude --print --system-prompt <rule>`, which *replaces* Claude Code's default system prompt. This isolates the register effect cleanly, but real `/scrooge` sessions keep Claude Code's full system prompt alongside the injected register, so real savings versus a real verbose session may differ from the headline. See [`benchmarks/README.md`](./benchmarks/README.md) for the full caveat list.
+- **Real `output_tokens`, not tokenizer estimates.** Numbers come from the Claude Code session JSONL's `output_tokens` field — what the API actually billed.
 
 ### Korean
 
-`normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` and `caveman:*` are compression-rule modes.
+`normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` is the rule we ship.
 
 | Mode | Median output tokens (N=24) | Savings vs `normal` |
 | --- | --------------------------: | ------------------: |
 | `normal` | 1567 | (baseline) |
 | `terse` | 1145 | ~27% |
 | **`scrooge:ko/full`** | **511** | **~67%** |
-| `caveman:full` | 901 | ~43% |
 
-`scrooge:ko/full` cuts Korean output by **~67%** vs the verbose default and by **~43%** vs `caveman:full`. It also beats `terse`, so the gain is not just generic brevity.
+`scrooge:ko/full` cuts Korean output by **~67%** vs the verbose default. It also beats `terse`, so the gain is the register itself, not just generic brevity.
 
 ### English
-
-English remains below caveman at the `full` dial; the first release goal is Korean.
 
 | Mode | Median output tokens (N=24) | Savings vs `normal` |
 | --- | --------------------------: | ------------------: |
 | `normal` | 2235 | (baseline) |
 | **`scrooge:en/full`** | **774** | **~65%** |
-| `caveman:full` | 396 | ~82% |
 
-`scrooge:en/full` cuts English output by **~65%**, reaching ~80% of caveman's compression rate at the full dial.
+`scrooge:en/full` cuts English output by **~65%**. English compression is not Scrooge's primary positioning — the first release goal is Korean.
 
-## How It Works
+## Mechanics
 
-1. `/scrooge [lang] [dial]` activates a mode. Tokens compose on two independent axes (`/scrooge ko`, `/scrooge full`, `/scrooge ko lite`, …).
-2. The `UserPromptSubmit` hook parses the command, persists `{lang, dial}` to a state file, looks up the rule via `registry.json`, and injects it as `additionalContext`.
+1. `/scrooge [lang] [dial]` activates a mode. Tokens compose on two independent axes — `/scrooge ko`, `/scrooge full`, `/scrooge ko lite`, etc.
+2. The `UserPromptSubmit` hook parses the command, persists `{lang, dial}` to a state file, looks up the rule via [`registry.json`](registry.json), and injects it as `additionalContext`.
 3. Every subsequent turn reinjects a lightweight reminder so the register does not drift.
-4. `/scrooge off` clears state. Auto-clarity contexts in the rule itself drop compression for safety-critical replies.
+4. `/scrooge off` clears state. Auto-clarity contexts inside the rule itself drop compression for safety-critical replies — security warnings, irreversible-action confirmations, ambiguous multi-step sequences — without the user having to opt out.
 
-**Adding a language:**
+**Adding a language**:
 
 1. Author `rules/{lang}/{lite,full}.md`.
 2. Add one entry to [`registry.json`](registry.json):
@@ -223,24 +200,10 @@ English remains below caveman at the `full` dial; the first release goal is Kore
    }
    ```
 
-## Compared to caveman
-
-[caveman](https://github.com/JuliusBrussee/caveman) is the inspiration. Scrooge differs:
-
-| Axis | caveman | scrooge |
-| --- | --- | --- |
-| Languages | EN (+ wenyan classical Chinese) | EN, KO (i18n pluggable) |
-| Korean register | none | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default |
-| Safety escape | implicit | explicit in-rule auto-clarity, every dial |
-| Benchmark | tiktoken estimate | real `output_tokens` from session JSONL |
-| Architecture | rules in code | rules as data (`registry.json`) |
-
-Scrooge posts higher measured compression than `caveman:full` on **Korean** while keeping a Korean-native register. For English, caveman remains the stronger compression baseline; Scrooge's broader positioning is **accessibility** and **per-language extensibility**.
+3. Sample 5 outputs against the QA checklist (see `CONTRIBUTING.md`, once available) and PR.
 
 ## License
 
 MIT © 2026 Kir93. See [LICENSE](LICENSE).
 
 Inspired by [caveman](https://github.com/JuliusBrussee/caveman) (MIT, © Julius Brussee) — concept only, independently reimplemented i18n-first (no verbatim copy).
-
-Hero coin glyph: [Noto Emoji](https://github.com/googlefonts/noto-emoji) (Google, [SIL OFL 1.1](https://scripts.sil.org/OFL)).
