@@ -25,6 +25,7 @@ import child_process from 'node:child_process';
 
 const REPO = 'Kir93/scrooge-mode';
 const PLUGIN = 'scrooge'; // used as BOTH plugin and marketplace name → install target `scrooge@scrooge` (line below). Task 6's .claude-plugin/marketplace.json MUST set name: "scrooge" or this target won't resolve.
+const PACKAGE_NAME = 'scrooge-mode'; // npm package name in package.json; used by self-install guard to detect "running inside our own clone".
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Provider matrix ─────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ const PROVIDERS = [
 
 // ── Args ──────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
-  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null };
+  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null, globalSkills: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -50,6 +51,7 @@ function parseArgs(argv) {
       case '-u': case '--uninstall': o.uninstall = true; break;
       case '--list': o.listOnly = true; break;
       case '-h': case '--help': o.help = true; break;
+      case '--global-skills': o.globalSkills = true; break;
       case '--': break;
       case '--only': {
         const v = argv[++i];
@@ -148,6 +150,29 @@ function repoRoot() {
   return safeExists(path.join(root, 'registry.json')) && safeExists(path.join(root, 'hooks')) ? root : null;
 }
 
+// Walk up from cwd looking for a package.json whose `name` matches PACKAGE_NAME.
+// Used to detect "user is running the installer from inside the scrooge clone
+// itself" — `npx skills add` would otherwise clobber the tracked source layout
+// (regular `skills/<name>/SKILL.md` files get replaced by symlinks pointing at
+// a new `.agents/skills/<name>/`). Returns the matching root or null.
+export function findOwnRepoRoot(startDir, pkgName = PACKAGE_NAME) {
+  let dir = path.resolve(startDir);
+  const { root } = path.parse(dir);
+  while (true) {
+    const pkgPath = path.join(dir, 'package.json');
+    if (safeExists(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        if (pkg && pkg.name === pkgName) return dir;
+      } catch (_) { /* unparseable package.json — keep walking */ }
+    }
+    if (dir === root) return null;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 function configDir(opts) {
   return opts.configDir || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
@@ -226,8 +251,24 @@ function installViaSkills(prov, opts, results) {
     results.failed.push([prov.id, 'npx absent']);
     return;
   }
+  // Self-install guard: when invoked from inside the scrooge clone itself,
+  // `npx skills add` would rewrite our tracked source layout (regular
+  // `skills/<name>/SKILL.md` files become symlinks to a new `.agents/skills/`
+  // tree). Skip the skills CLI call here — the source already IS the canonical
+  // layout, and the Claude install path above doesn't need this step.
+  const ownRoot = findOwnRepoRoot(process.cwd());
+  if (ownRoot) {
+    process.stdout.write(`  skipped: running inside the scrooge clone (${ownRoot}).\n`);
+    process.stdout.write('    To install into a separate target dir, cd elsewhere first.\n\n');
+    results.skipped.push([prov.id, 'inside own repo']);
+    return;
+  }
   // --yes --all: no-TTY curl|bash can't drive the skills selection UI.
-  const r = run('npx', ['-y', 'skills', 'add', REPO, '-a', prov.profile, '--yes', '--all'], opts.dryRun);
+  // -g (global) when --global-skills is set: places the skill under the
+  // agent's user-level dir instead of polluting cwd with `.agents/` + a lock
+  // file. Default = project scope (matches the skills ecosystem default).
+  const scope = opts.globalSkills ? ['-g'] : [];
+  const r = run('npx', ['-y', 'skills', 'add', REPO, '-a', prov.profile, ...scope, '--yes', '--all'], opts.dryRun);
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
   process.stdout.write('\n');
@@ -310,13 +351,17 @@ function printHelp() {
 Usage: node bin/install.js [flags]
 
 Flags:
-  --only <id>     install only the named agent (repeatable; allows soft agents)
-  --list          list supported agents
-  --uninstall,-u  remove scrooge from detected agents
-  --dry-run       print actions without running them
-  --force         reinstall even if already present
-  --config-dir P  override Claude config dir (default $CLAUDE_CONFIG_DIR or ~/.claude)
-  --help,-h       this help
+  --only <id>      install only the named agent (repeatable; allows soft agents)
+  --list           list supported agents
+  --uninstall,-u   remove scrooge from detected agents
+  --dry-run        print actions without running them
+  --force          reinstall even if already present
+  --global-skills  install Codex / Cursor / etc. skills at user (global) scope
+                   instead of project scope (default = project, matches the
+                   skills CLI default; project scope drops .agents/ + a lock
+                   file in the cwd).
+  --config-dir P   override Claude config dir (default $CLAUDE_CONFIG_DIR or ~/.claude)
+  --help,-h        this help
 `);
 }
 

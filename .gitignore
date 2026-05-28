@@ -24,3 +24,11 @@ node_modules/
 # Benchmark results (per-machine, not part of the repo)
 benchmarks/results-*.jsonl
 benchmarks/results-*.md
+
+# `skills` CLI install artifacts. If someone runs `npx skills add` (or our
+# installer's curl|bash one-liner) from inside this repo, the skills ecosystem
+# drops a canonical copy at .agents/ + a lock file + may symlink skills/<name>.
+# Our self-install guard (bin/install.js) refuses to run skills add here, but
+# direct `npx skills add` invocations bypass that, so guard the git tree too.
+.agents/
+skills-lock.json

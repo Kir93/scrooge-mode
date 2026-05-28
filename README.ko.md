@@ -120,6 +120,17 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 
 약 10초. Node ≥18 필요. 설치 안 된 에이전트는 건너뜀. 재실행 안전. 미리보기(적용 없이 확인): `--dry-run`. 특정 에이전트만: `--only claude`.
 
+> **원라이너 실행 위치가 중요하다.** 비 Claude 타깃(Codex, Cursor 등) 설치는 내부적으로 `npx skills add`를 호출하는데, 업스트림 `skills` CLI는 cwd 또는 상위에 `package.json`이 있으면 **프로젝트 스코프**로 설치한다. 자기 프로젝트 안에서 `curl | bash`를 파이프하면 그 프로젝트 루트에 `.agents/`, `skills/<name>` symlink, `skills-lock.json`이 떨어진다. 회피책:
+>
+> - **홈 디렉토리에서 실행** (`cd ~`) 한 다음 원라이너 — `package.json` ancestor가 없어 user 스코프로 설치됨.
+> - 또는 `--global-skills`로 user 스코프 강제:
+>
+>   ```bash
+>   curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash -s -- --global-skills
+>   ```
+>
+> *이 저장소* 클론 안에서 실행한 경우는 자동 감지·스킵된다 — 소스 자체가 이미 canonical layout이라 덮을 필요 없음.
+
 ### 제거
 
 ```bash

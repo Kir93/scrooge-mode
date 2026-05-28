@@ -122,6 +122,17 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 
 ~10 seconds. Needs Node ≥18. Skips any agent you don't have. Safe to re-run. Preview without applying: append `--dry-run`. Restrict to one agent: `--only claude`.
 
+> **Where you run the one-liner matters.** For non-Claude targets (Codex, Cursor, etc.) the installer calls `npx skills add`, which the upstream `skills` CLI installs at **project scope** when it detects a `package.json` in the cwd or an ancestor. If you pipe `curl | bash` from inside one of your own projects, you'll find a fresh `.agents/`, `skills/<name>` symlink, and `skills-lock.json` in that project's root. Two ways to avoid that:
+>
+> - **Run from your home directory** (`cd ~`) before the curl one-liner — no `package.json` ancestor → installs at user scope.
+> - Or pass `--global-skills` to force user-scope explicitly:
+>
+>   ```bash
+>   curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash -s -- --global-skills
+>   ```
+>
+> Running from inside a clone of *this* repo is auto-detected and skipped — the source already is the canonical layout.
+
 ### Uninstall
 
 ```bash
