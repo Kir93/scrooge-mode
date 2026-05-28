@@ -13,12 +13,8 @@
       "name": "scrooge",
       "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
       "version": "0.1.0",
-      "source": {
-        "source": "github",
-        "repo": "Kir93/scrooge-mode"
-      },
-      "category": "productivity",
-      "skills": ["skills/scrooge"]
+      "source": "./",
+      "category": "productivity"
     }
   ]
 }
