@@ -1,6 +1,6 @@
 {
   "name": "scrooge",
-  "description": "KO-first bilingual (KO/EN) LLM output-compression mode. Cuts output tokens while keeping full technical accuracy. Token miser persona.",
+  "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
   "author": {
     "name": "Kir93",
     "url": "https://github.com/Kir93"

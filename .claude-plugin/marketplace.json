@@ -1,0 +1,21 @@
+{
+  "name": "scrooge",
+  "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
+  "owner": {
+    "name": "Kir93",
+    "url": "https://github.com/Kir93"
+  },
+  "metadata": {
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "scrooge",
+      "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
+      "version": "0.1.0",
+      "source": "./",
+      "category": "productivity",
+      "skills": ["skills/scrooge"]
+    }
+  ]
+}

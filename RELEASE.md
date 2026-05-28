@@ -1,0 +1,85 @@
+# Release procedure
+
+Maintainer runbook for publishing Scrooge. Both install paths resolve **directly
+from the public GitHub repo** — no central submission is required to make them
+work. Tagging + pushing is the release.
+
+Repo: `Kir93/scrooge-mode`. Plugin/marketplace name: `scrooge`. npm name: `scrooge-mode`.
+
+## Version sources (must match)
+
+A release sets one version in three places. They must be identical:
+
+| File | Field |
+| ---- | ----- |
+| `package.json` | `version` |
+| `.claude-plugin/marketplace.json` | `metadata.version` |
+| `.claude-plugin/marketplace.json` | `plugins[0].version` |
+
+`.claude-plugin/plugin.json` currently has no `version` field. If one is
+added later, update this table at the same time.
+
+## 1. Pre-flight
+
+Run from a clean tree on `main`:
+
+- `npm test` — passes (Node `node:test` harness).
+- `npx markdownlint-cli2 "**/*.md"` — clean.
+- `node -e "JSON.parse(require('fs').readFileSync('registry.json'))"` and the same
+  for `package.json`, `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json` — all parse.
+- Every `registry.json` path resolves to an existing `rules/**` file, and every
+  `rules/**` file is reachable from the registry.
+- Bilingual + dial parity holds (`ko`/`en`, `lite`/`full`, `README.md`/`README.ko.md`).
+- The three version sources above match.
+
+## 2. Bump version
+
+Edit the three version sources to the new version (semver). Commit:
+
+```bash
+git commit -m "chore: 버전 vX.Y.Z" package.json .claude-plugin/marketplace.json
+```
+
+## 3. Tag and push
+
+```bash
+git tag vX.Y.Z
+git push origin main --tags
+```
+
+This publishes the git-based install paths. Both commands below now resolve.
+
+## 4. Verify resolution
+
+Claude Code plugin path:
+
+```bash
+claude plugin marketplace add Kir93/scrooge-mode   # reads .claude-plugin/marketplace.json
+claude plugin install scrooge@scrooge              # plugin@marketplace
+```
+
+skills ecosystem path (Codex and other agents):
+
+```bash
+npx skills add Kir93/scrooge-mode --list           # lists skills/scrooge
+npx skills add Kir93/scrooge-mode -a codex --yes --all
+```
+
+The one-line installer (`bin/install.js`, run via `npx -y github:Kir93/scrooge-mode`)
+drives both of the above per detected agent — no npm publish needed.
+
+## 5. (Optional) skills.sh directory listing
+
+`npx skills add <repo>` works without this; it only affects `npx skills find`
+discoverability. Submission to <https://skills.sh> is external and manually
+reviewed — expect approval delay. Treat as a separate, non-blocking step.
+
+## 6. (Optional) npm publish
+
+The installer uses the `github:` shorthand, so npm is not required. Publish
+`scrooge-mode` only if an npm vector is wanted:
+
+```bash
+npm pack --dry-run   # confirm file set (hooks/lib/skills/commands/.claude-plugin included)
+npm publish
+```
