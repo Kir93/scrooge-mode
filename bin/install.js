@@ -5,7 +5,9 @@
 //   - Claude Code  → `claude plugin marketplace add` + `plugin install`
 //                    (the plugin manifest wires the UserPromptSubmit hook);
 //                    the statusline badge is copied + registered in settings.json.
-//   - Codex / others → `npx skills add <repo> -a <profile>` (skill-only).
+//   - Codex       → `npx skills add <repo> -a codex` + user-level
+//                   `~/.codex/config.toml` UserPromptSubmit hook.
+//   - Others      → `npx skills add <repo> -a <profile>` (skill-only).
 // Undetected agents are skipped without error.
 //
 // Distribution:
@@ -22,11 +24,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import child_process from 'node:child_process';
+import crypto from 'node:crypto';
 
 const REPO = 'Kir93/scrooge-mode';
 const PLUGIN = 'scrooge'; // used as BOTH plugin and marketplace name → install target `scrooge@scrooge` (line below). Task 6's .claude-plugin/marketplace.json MUST set name: "scrooge" or this target won't resolve.
 const PACKAGE_NAME = 'scrooge-mode'; // npm package name in package.json; used by self-install guard to detect "running inside our own clone".
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+const CODEX_HOOK_STATUS = 'Tracking scrooge mode...';
 
 // ── Provider matrix ─────────────────────────────────────────────────────────
 // `soft: true` = best-effort probe; excluded from auto-detect, opt-in via --only.
@@ -177,6 +181,25 @@ function configDir(opts) {
   return opts.configDir || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
+function codexDir() {
+  return process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
+}
+
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const from = path.join(src, entry.name);
+    const to = path.join(dest, entry.name);
+    if (entry.isDirectory()) copyDirRecursive(from, to);
+    else if (entry.isFile()) fs.copyFileSync(from, to);
+  }
+}
+
+function quoteCmd(s) {
+  if (IS_WIN) return `"${String(s).replace(/"/g, '\\"')}"`;
+  return `"${String(s).replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
 // ── Claude install ──────────────────────────────────────────────────────────
 function installClaude(opts, results) {
   results.detected++;
@@ -274,6 +297,206 @@ function installViaSkills(prov, opts, results) {
   process.stdout.write('\n');
 }
 
+// ── Codex hook install ─────────────────────────────────────────────────────
+function installCodex(prov, opts, results) {
+  installViaSkills(prov, opts, results);
+  wireCodexHook(opts, results);
+}
+
+function codexPayloadRoot() {
+  return path.join(codexDir(), 'scrooge');
+}
+
+function codexWrapperBody() {
+  return `#!/usr/bin/env node
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+process.env.CLAUDE_CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.dirname(here);
+await import('./hooks/scrooge-activate.js');
+`;
+}
+
+function codexHookCommand(wrapperPath) {
+  return `${quoteCmd(process.execPath)} ${quoteCmd(wrapperPath)}`;
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((k) => [k, canonicalJson(value[k])]));
+  }
+  return value;
+}
+
+export function codexHookHash(command) {
+  const identity = {
+    event_name: 'user_prompt_submit',
+    hooks: [{ async: false, command, statusMessage: CODEX_HOOK_STATUS, timeout: 5, type: 'command' }],
+  };
+  const serialized = JSON.stringify(canonicalJson(identity));
+  return 'sha256:' + crypto.createHash('sha256').update(serialized).digest('hex');
+}
+
+function normalizedPath(p) {
+  try { return fs.realpathSync(p); } catch (_) {}
+  try { return path.join(fs.realpathSync(path.dirname(p)), path.basename(p)); } catch (_) {}
+  return path.resolve(p);
+}
+
+function countUserPromptSubmitGroups(text) {
+  return (String(text || '').match(/^\s*\[\[hooks\.UserPromptSubmit\]\]/gm) || []).length;
+}
+
+function removeHookStateBlock(text, stateKey) {
+  if (!stateKey) return text;
+  const lines = String(text || '').split(/\n/);
+  const header = `[hooks.state.${JSON.stringify(stateKey)}]`;
+  const out = [];
+  for (let i = 0; i < lines.length;) {
+    if (lines[i].trim() !== header) {
+      out.push(lines[i++]);
+      continue;
+    }
+    i++;
+    while (i < lines.length && !/^\s*\[/.test(lines[i])) i++;
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+export function removeCodexHookConfig(text) {
+  const lines = String(text || '').split(/\n/);
+  const out = [];
+  for (let i = 0; i < lines.length;) {
+    if (lines[i].trim() !== '[[hooks.UserPromptSubmit]]') {
+      out.push(lines[i++]);
+      continue;
+    }
+    const block = [lines[i++]];
+    while (i < lines.length && !/^\s*\[/.test(lines[i])) block.push(lines[i++]);
+    if (block.join('\n').includes('scrooge-activate.js') || block.join('\n').includes('codex-activate.mjs')) continue;
+    out.push(...block);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+export function mergeCodexHookConfig(text, command, keySource = null) {
+  let current = removeCodexHookConfig(text).replace(/\s*$/, '');
+  const stateIdx = current.search(/^\[hooks\.state/m);
+  const beforeState = stateIdx === -1 ? current : current.slice(0, stateIdx);
+  const groupIndex = countUserPromptSubmitGroups(beforeState);
+  const stateKey = keySource ? `${keySource}:user_prompt_submit:${groupIndex}:0` : null;
+  current = removeHookStateBlock(current, stateKey).replace(/\s*$/, '');
+  const block =
+    `[[hooks.UserPromptSubmit]]\n` +
+    `hooks = [\n` +
+    `  { type = "command", command = ${JSON.stringify(command)}, timeout = 5, statusMessage = ${JSON.stringify(CODEX_HOOK_STATUS)} },\n` +
+    `]\n`;
+  const stateBlock = stateKey
+    ? `\n[hooks.state.${JSON.stringify(stateKey)}]\ntrusted_hash = ${JSON.stringify(codexHookHash(command))}\nenabled = true\n`
+    : '';
+  const newStateIdx = current.search(/^\[hooks\.state/m);
+  if (newStateIdx === -1) return `${current}${current ? '\n\n' : ''}${block}${stateBlock}`;
+  const before = current.slice(0, newStateIdx).replace(/\s*$/, '');
+  const after = current.slice(newStateIdx).replace(/^\s*/, '');
+  return `${before}${before ? '\n\n' : ''}${block}\n${after}${stateBlock}`;
+}
+
+function installCodexPayload(root, dest, opts) {
+  const wrapper = path.join(dest, 'codex-activate.mjs');
+  if (opts.dryRun) {
+    process.stdout.write(`  would copy Scrooge Codex hook payload to ${dest}\n`);
+    return wrapper;
+  }
+  fs.mkdirSync(dest, { recursive: true });
+  fs.writeFileSync(path.join(dest, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
+  fs.copyFileSync(path.join(root, 'registry.json'), path.join(dest, 'registry.json'));
+  copyDirRecursive(path.join(root, 'hooks'), path.join(dest, 'hooks'));
+  copyDirRecursive(path.join(root, 'rules'), path.join(dest, 'rules'));
+  copyDirRecursive(path.join(root, 'lib'), path.join(dest, 'lib'));
+  fs.writeFileSync(wrapper, codexWrapperBody());
+  try { fs.chmodSync(wrapper, 0o755); } catch (_) {}
+  return wrapper;
+}
+
+function wireCodexHook(opts, results) {
+  const root = repoRoot();
+  if (!root) {
+    process.stdout.write('  (codex hook: run from a package/clone that includes hooks, rules, lib, and registry.json)\n');
+    results.failed.push(['codex-hook', 'missing package files']);
+    return;
+  }
+
+  const cfg = codexDir();
+  const payload = codexPayloadRoot();
+  const configPath = path.join(cfg, 'config.toml');
+  const wrapper = installCodexPayload(root, payload, opts);
+  const command = codexHookCommand(wrapper);
+
+  if (opts.dryRun) {
+    process.stdout.write(`  would merge Scrooge UserPromptSubmit hook into ${configPath}\n`);
+    results.installed.push('codex-hook');
+    return;
+  }
+
+  try {
+    fs.mkdirSync(cfg, { recursive: true });
+    const before = safeExists(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
+    const after = mergeCodexHookConfig(before, command, normalizedPath(configPath));
+    if (after !== before) {
+      if (safeExists(configPath) && !safeExists(configPath + '.bak')) {
+        try { fs.copyFileSync(configPath, configPath + '.bak'); } catch (_) {}
+      }
+      fs.writeFileSync(configPath, after + (after.endsWith('\n') ? '' : '\n'));
+      process.stdout.write('  Codex user-level hook configured.\n');
+      results.installed.push('codex-hook');
+    } else {
+      process.stdout.write('  Codex user-level hook already configured.\n');
+      results.skipped.push(['codex-hook', 'already configured']);
+    }
+  } catch (e) {
+    process.stdout.write(`  Codex hook wiring failed: ${e.message}\n`);
+    results.failed.push(['codex-hook', e.message]);
+  }
+}
+
+function unwireCodexHook(opts, results) {
+  const cfg = codexDir();
+  const configPath = path.join(cfg, 'config.toml');
+  const payload = codexPayloadRoot();
+
+  if (opts.dryRun) {
+    process.stdout.write(`  would remove Scrooge Codex hook from ${configPath}\n`);
+    process.stdout.write(`  would remove ${payload}\n`);
+    return;
+  }
+
+  if (safeExists(configPath)) {
+    try {
+      const before = fs.readFileSync(configPath, 'utf8');
+      const after = removeCodexHookConfig(before);
+      if (after !== before) {
+        fs.writeFileSync(configPath, after.replace(/\s*$/, '\n'));
+        process.stdout.write('  removed Scrooge Codex hook from config.toml\n');
+        results.removed.push('codex-hook');
+      }
+    } catch (e) {
+      process.stdout.write(`  Codex hook removal failed: ${e.message}\n`);
+    }
+  }
+  if (safeExists(payload)) {
+    try {
+      fs.rmSync(payload, { recursive: true, force: true });
+      process.stdout.write(`  removed ${payload}\n`);
+    } catch (_) {}
+  }
+  for (const f of ['.scrooge-active', '.scrooge-statusline-suffix']) {
+    const p = path.join(cfg, f);
+    if (safeExists(p)) { try { fs.unlinkSync(p); } catch (_) {} process.stdout.write(`  removed ${p}\n`); }
+  }
+}
+
 // ── Uninstall ───────────────────────────────────────────────────────────────
 function uninstall(opts, results) {
   process.stdout.write('🪙 scrooge uninstall\n');
@@ -302,6 +525,7 @@ function uninstall(opts, results) {
     const p = f.startsWith('.') ? path.join(cfg, f) : path.join(cfg, 'hooks', f);
     if (safeExists(p) && !opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} process.stdout.write(`  removed ${p}\n`); }
   }
+  unwireCodexHook(opts, results);
   process.stdout.write('\nuninstall done.\n');
   process.stdout.write('npx-skills installs (Codex/Cursor/etc.) — remove via that agent\'s skill manager.\n');
 }
@@ -336,6 +560,7 @@ function main() {
   for (const p of targets) {
     if (!opts.only.length && !detectMatch(p.detect)) continue;
     if (p.id === 'claude') installClaude(opts, results);
+    else if (p.id === 'codex') installCodex(p, opts, results);
     else installViaSkills(p, opts, results);
   }
 

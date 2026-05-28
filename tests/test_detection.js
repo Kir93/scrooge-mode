@@ -14,7 +14,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { detectMatch } from '../bin/install.js';
+import {
+  codexHookHash,
+  detectMatch,
+  mergeCodexHookConfig,
+  removeCodexHookConfig,
+} from '../bin/install.js';
 
 const INSTALL_JS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'install.js');
 
@@ -97,4 +102,60 @@ test('main() fires when invoked through a bin symlink (CLI-guard regression)', {
   fs.rmSync(dir, { recursive: true, force: true });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /Supported agents/); // proves main() ran via the symlink
+});
+
+test('mergeCodexHookConfig inserts user hook before hook state', () => {
+  const before = [
+    'model = "gpt-5"',
+    '',
+    '[hooks.state]',
+    '',
+    '[hooks.state."/tmp/x:post_tool_use:0:0"]',
+    'trusted_hash = "sha256:abc"',
+    '',
+  ].join('\n');
+  const command = 'node "/tmp/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, '/home/me/.codex/config.toml');
+
+  assert.match(after, /\[\[hooks\.UserPromptSubmit\]\]/);
+  assert.match(after, /codex-activate\.mjs/);
+  assert.ok(after.indexOf('[[hooks.UserPromptSubmit]]') < after.indexOf('[hooks.state]'));
+  assert.match(after, /\[hooks\.state\."\/tmp\/x:post_tool_use:0:0"\]/);
+  assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:0:0"\]/);
+  assert.match(after, new RegExp(`trusted_hash = "${codexHookHash(command)}"`));
+});
+
+test('mergeCodexHookConfig replaces old scrooge hook and preserves unrelated hooks', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /old/scrooge-activate.js" }]',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo keep" }]',
+    '',
+  ].join('\n');
+  const after = mergeCodexHookConfig(before, 'node "/new/codex-activate.mjs"', '/home/me/.codex/config.toml');
+
+  assert.doesNotMatch(after, /\/old\/scrooge-activate\.js/);
+  assert.match(after, /echo keep/);
+  assert.equal((after.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 2);
+  assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:1:0"\]/);
+});
+
+test('removeCodexHookConfig removes only scrooge hook blocks', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /new/codex-activate.mjs" }]',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo keep" }]',
+    '',
+    '[hooks.state]',
+    '',
+  ].join('\n');
+  const after = removeCodexHookConfig(before);
+
+  assert.doesNotMatch(after, /codex-activate\.mjs/);
+  assert.match(after, /echo keep/);
+  assert.match(after, /\[hooks\.state\]/);
 });
