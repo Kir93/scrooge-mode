@@ -14,5 +14,17 @@
 
   // MD025 (single-h1): spec/task docs use YAML frontmatter with a `title:` field
   // plus a `# Heading`. Don't count the frontmatter title as a second h1.
-  "MD025": { "front_matter_title": "" }
+  "MD025": { "front_matter_title": "" },
+
+  // MD033 (no-inline-html): README uses a centered HTML hero (img / p align="center" /
+  // h1 / badges / nav) and side-by-side <table> for the Before/After demo. GitHub renders
+  // these correctly; the lint rule's "use markdown" advice cannot express centering or
+  // a 2-column comparison. Disable repo-wide.
+  "MD033": false,
+
+  // MD041 (first-line-heading): README leads with the centered HTML hero, not a `#`
+  // heading. The `<h1 align="center">` immediately below carries the document title;
+  // the lint rule cannot see it because it only inspects the first markdown line.
+  // Skill manifests (SKILL.md) intentionally lead with prose, not a heading.
+  "MD041": false
 }
