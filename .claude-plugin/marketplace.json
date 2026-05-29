@@ -6,7 +6,16 @@
     "url": "https://github.com/Kir93"
   },
   "metadata": {
-    "version": "0.2.1"
+    "version": "0.2.1",
+    "keywords": [
+      "compression",
+      "korean",
+      "token-saving",
+      "skill",
+      "codex",
+      "claude-code"
+    ],
+    "homepage": "https://github.com/Kir93/scrooge-mode"
   },
   "plugins": [
     {
