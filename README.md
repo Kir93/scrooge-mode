@@ -69,71 +69,13 @@ Same three metrics, same technical decision shape — **~73% fewer output tokens
 
 ## Install
 
-Multi-agent installer — auto-detects Claude Code, Codex, Cursor, Windsurf, Cline, Continue, and Gemini CLI, and wires Scrooge into each.
-
-### npx (cross-platform, recommended)
+Recommended quick-start:
 
 ```bash
 npx -y github:Kir93/scrooge-mode
 ```
 
-### macOS / Linux
-
-```bash
-# curl | bash (no clone)
-curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash
-
-# or from a local clone
-./install.sh
-```
-
-### Windows (PowerShell)
-
-```powershell
-# PowerShell one-liner (no clone)
-irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
-
-# or from a local clone
-./install.ps1
-```
-
-~10 seconds. Needs Node ≥18. Skips any agent you don't have. Safe to re-run. Preview without applying: append `--dry-run`. Restrict to one agent: `--only claude`.
-
-Codex gets an additional user-level hook: the installer copies Scrooge's hook payload to `~/.codex/scrooge/` and merges a `UserPromptSubmit` entry into `~/.codex/config.toml`. It does **not** create per-project `.codex/hooks.json`.
-
-> **Where you run the one-liner matters.** For non-Claude targets (Codex, Cursor, etc.) the installer calls `npx skills add`, which the upstream `skills` CLI installs at **project scope** when it detects a `package.json` in the cwd or an ancestor. If you pipe `curl | bash` from inside one of your own projects, you'll find a fresh `.agents/`, `skills/<name>` symlink, and `skills-lock.json` in that project's root. Two ways to avoid that:
->
-> - **Run from your home directory** (`cd ~`) before the curl one-liner — no `package.json` ancestor → installs at user scope.
-> - Or pass `--global-skills` to force user-scope explicitly:
->
->   ```bash
->   curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash -s -- --global-skills
->   ```
->
-> Running from inside a clone of *this* repo is auto-detected and skipped — the source already is the canonical layout.
-> This warning is about `skills` CLI files only; the Codex activation hook is always user-level.
-
-### Uninstall
-
-```bash
-# macOS / Linux
-./uninstall.sh
-
-# cross-platform via npx
-npx -y github:Kir93/scrooge-mode -- -u
-```
-
-```powershell
-# Windows (PowerShell)
-./uninstall.ps1
-```
-
-**Claude Code plugin path** (resolves directly from this repo after the `v0.1.0` tag):
-
-```bash
-claude plugin marketplace add Kir93/scrooge-mode
-claude plugin install scrooge@scrooge
-```
+Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
 **Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag.
 
@@ -230,6 +172,10 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 | Benchmarking here | Comparison arm (`caveman:full`) | Real `output_tokens` runner, paired reports |
 
 In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.
+
+## Contributing
+
+Development setup, parity rules, language-addition steps, PR checks, and branch protection guidance live in [CONTRIBUTING.md](CONTRIBUTING.md). 한국어 기여 가이드는 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md).
 
 ## License
 

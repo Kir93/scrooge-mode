@@ -67,71 +67,13 @@ Jump to: [데모](#데모) · [설치](#설치) · [표면](#표면) · [벤치�
 
 ## 설치
 
-멀티 에이전트 설치기 — Claude Code, Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI 자동 감지, 각각에 Scrooge 연결.
-
-### npx (크로스플랫폼, 권장)
+권장 quick-start:
 
 ```bash
 npx -y github:Kir93/scrooge-mode
 ```
 
-### macOS / Linux
-
-```bash
-# curl | bash (클론 불필요)
-curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash
-
-# 또는 로컬 클론에서
-./install.sh
-```
-
-### Windows (PowerShell)
-
-```powershell
-# PowerShell 원라이너 (클론 불필요)
-irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
-
-# 또는 로컬 클론에서
-./install.ps1
-```
-
-약 10초. Node ≥18 필요. 설치 안 된 에이전트는 건너뜀. 재실행 안전. 미리보기(적용 없이 확인): `--dry-run`. 특정 에이전트만: `--only claude`.
-
-Codex는 추가로 user-level hook을 받음. 설치기가 Scrooge hook payload를 `~/.codex/scrooge/`에 복사하고 `~/.codex/config.toml`에 `UserPromptSubmit` 항목을 병합함. 프로젝트별 `.codex/hooks.json`은 만들지 않음.
-
-> **원라이너 실행 위치가 중요함.** 비 Claude 타깃(Codex, Cursor 등) 설치는 내부적으로 `npx skills add`를 호출하는데, 업스트림 `skills` CLI는 cwd 또는 상위에 `package.json`이 있으면 **프로젝트 스코프**로 설치함. 자기 프로젝트 안에서 `curl | bash`를 파이프하면 그 프로젝트 루트에 `.agents/`, `skills/<name>` symlink, `skills-lock.json` 떨어짐. 회피책:
->
-> - **홈 디렉토리에서 실행** (`cd ~`) 한 다음 원라이너 — `package.json` ancestor 없어 user 스코프로 설치됨.
-> - 또는 `--global-skills`로 user 스코프 강제:
->
->   ```bash
->   curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash -s -- --global-skills
->   ```
->
-> _이 저장소_ 클론 안에서 실행한 경우는 자동 감지·스킵됨 — 소스 자체가 이미 canonical layout이라 덮을 필요 없음.
-> 이 주의는 `skills` CLI 파일에만 해당함. Codex activation hook은 항상 user-level.
-
-### 제거
-
-```bash
-# macOS / Linux
-./uninstall.sh
-
-# 크로스플랫폼 (npx)
-npx -y github:Kir93/scrooge-mode -- -u
-```
-
-```powershell
-# Windows (PowerShell)
-./uninstall.ps1
-```
-
-**Claude Code plugin 경로** (이 저장소에서 직접 해석, `v0.1.0` tag 이후):
-
-```bash
-claude plugin marketplace add Kir93/scrooge-mode
-claude plugin install scrooge@scrooge
-```
+상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
 **활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`.
 
@@ -215,6 +157,10 @@ claude plugin install scrooge@scrooge
 | 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
 
 요약: Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨. 핵심은 한국어 1순위 register 설계이고, caveman은 출처와 가장 강한 영어 비교 baseline으로 명시함.
+
+## 기여
+
+개발 setup, parity 규칙, 언어 추가 절차, PR check, branch protection 지침은 [CONTRIBUTING.ko.md](CONTRIBUTING.ko.md). English contributing guide는 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 라이선스 / 출처
 
