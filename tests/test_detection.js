@@ -18,6 +18,7 @@ import {
   codexHookHash,
   detectMatch,
   mergeCodexHookConfig,
+  pruneClaudeSkillLeak,
   removeCodexHookConfig,
 } from '../bin/install.js';
 
@@ -158,4 +159,70 @@ test('removeCodexHookConfig removes only scrooge hook blocks', () => {
   assert.doesNotMatch(after, /codex-activate\.mjs/);
   assert.match(after, /echo keep/);
   assert.match(after, /\[hooks\.state\]/);
+});
+
+// pruneClaudeSkillLeak — removes a leaked Claude-scope `scrooge` skill symlink
+// (the skills CLI scatters one into every globally-linked agent), without
+// touching the shared ~/.agents copy or a real directory we didn't create.
+function leakFixture() {
+  const cfg = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-leak-'));
+  const shared = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-agents-'));
+  fs.writeFileSync(path.join(shared, 'SKILL.md'), '# shared skill\n');
+  fs.mkdirSync(path.join(cfg, 'skills'));
+  return { cfg, shared };
+}
+
+test('pruneClaudeSkillLeak unlinks the leaked symlink, keeps its target', () => {
+  const { cfg, shared } = leakFixture();
+  const link = path.join(cfg, 'skills', 'scrooge');
+  fs.symlinkSync(shared, link);
+  const results = { removed: [] };
+
+  pruneClaudeSkillLeak({ configDir: cfg }, results);
+
+  assert.equal(fs.existsSync(link), false, 'leaked symlink removed');
+  assert.equal(fs.existsSync(path.join(shared, 'SKILL.md')), true, 'shared copy intact');
+  assert.deepEqual(results.removed, ['claude-skill-leak']);
+  fs.rmSync(cfg, { recursive: true, force: true });
+  fs.rmSync(shared, { recursive: true, force: true });
+});
+
+test('pruneClaudeSkillLeak leaves a real directory untouched', () => {
+  const { cfg, shared } = leakFixture();
+  const real = path.join(cfg, 'skills', 'scrooge');
+  fs.mkdirSync(real);
+  fs.writeFileSync(path.join(real, 'SKILL.md'), '# user-authored\n');
+  const results = { removed: [] };
+
+  pruneClaudeSkillLeak({ configDir: cfg }, results);
+
+  assert.equal(fs.existsSync(path.join(real, 'SKILL.md')), true, 'real dir preserved');
+  assert.deepEqual(results.removed, []);
+  fs.rmSync(cfg, { recursive: true, force: true });
+  fs.rmSync(shared, { recursive: true, force: true });
+});
+
+test('pruneClaudeSkillLeak is a no-op when nothing leaked', () => {
+  const { cfg, shared } = leakFixture();
+  const results = { removed: [] };
+
+  pruneClaudeSkillLeak({ configDir: cfg }, results);
+
+  assert.deepEqual(results.removed, []);
+  fs.rmSync(cfg, { recursive: true, force: true });
+  fs.rmSync(shared, { recursive: true, force: true });
+});
+
+test('pruneClaudeSkillLeak in dry-run reports but does not unlink', () => {
+  const { cfg, shared } = leakFixture();
+  const link = path.join(cfg, 'skills', 'scrooge');
+  fs.symlinkSync(shared, link);
+  const results = { removed: [] };
+
+  pruneClaudeSkillLeak({ configDir: cfg, dryRun: true }, results);
+
+  assert.equal(fs.existsSync(link), true, 'dry-run keeps the symlink');
+  assert.deepEqual(results.removed, []);
+  fs.rmSync(cfg, { recursive: true, force: true });
+  fs.rmSync(shared, { recursive: true, force: true });
 });

@@ -525,9 +525,42 @@ function uninstall(opts, results) {
     const p = f.startsWith('.') ? path.join(cfg, f) : path.join(cfg, 'hooks', f);
     if (safeExists(p) && !opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} process.stdout.write(`  removed ${p}\n`); }
   }
+  pruneClaudeSkillLeak(opts, results);
   unwireCodexHook(opts, results);
   process.stdout.write('\nuninstall done.\n');
   process.stdout.write('npx-skills installs (Codex/Cursor/etc.) — remove via that agent\'s skill manager.\n');
+}
+
+// ── Claude skill-leak prune ──────────────────────────────────────────────────
+// The skills CLI (codex/cursor/etc. paths) symlinks each added skill into every
+// globally-linked agent — so when the user's ~/.agents already links Claude, a
+// `scrooge` skill leaks into <config>/skills/ even though we target another
+// agent. On Claude, scrooge runs through the plugin's UserPromptSubmit hook; a
+// competing user-level `scrooge` skill is redundant and, on hosts that route
+// `/scrooge` to the skill, keeps the hook from persisting state. When the Claude
+// plugin is in play this run, drop only that leaked symlink — never a real
+// directory we didn't create, and never the shared ~/.agents copy other agents
+// still use.
+export function pruneClaudeSkillLeak(opts, results) {
+  const leak = path.join(configDir(opts), 'skills', 'scrooge');
+  let st;
+  try { st = fs.lstatSync(leak); } catch (_) { return; } // absent → nothing to prune
+  if (!st.isSymbolicLink()) return; // a real dir we didn't create — leave it
+  if (opts.dryRun) { process.stdout.write(`  would remove redundant Claude-scope scrooge skill ${leak}\n`); return; }
+  try {
+    try {
+      fs.unlinkSync(leak);
+    } catch (e) {
+      // Windows rejects unlink on a directory symlink/junction (EPERM/EISDIR);
+      // rmdir removes the link itself without recursing into the target.
+      if (IS_WIN && (e.code === 'EPERM' || e.code === 'EISDIR')) fs.rmdirSync(leak);
+      else throw e;
+    }
+    process.stdout.write('  removed redundant Claude-scope scrooge skill (plugin hook is canonical)\n');
+    results.removed.push('claude-skill-leak');
+  } catch (e) {
+    process.stdout.write(`  NOTE: could not remove ${leak}: ${e.message}\n`);
+  }
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -563,6 +596,14 @@ function main() {
     else if (p.id === 'codex') installCodex(p, opts, results);
     else installViaSkills(p, opts, results);
   }
+
+  // Claude is served by the plugin hook, so a skill-CLI leak into its scope is
+  // redundant — prune it, but only once the plugin is actually in place (installed
+  // this run or already present). If the plugin install failed, leave the leak: it
+  // is the one /scrooge surface left, and removing it would strand Claude entirely.
+  const claudePluginPresent =
+    results.installed.includes('claude') || results.skipped.some(([id]) => id === 'claude');
+  if (claudePluginPresent) pruneClaudeSkillLeak(opts, results);
 
   process.stdout.write(`\nDone. detected ${results.detected}, installed [${results.installed.join(', ')}]`);
   if (results.skipped.length) process.stdout.write(`, skipped ${results.skipped.length}`);
