@@ -49,6 +49,12 @@ git push origin main --tags
 
 This publishes the git-based install paths. Both commands below now resolve.
 
+> Hook payload note: changes under `hooks/`, `rules/`, `lib/`, or `registry.json`
+> reach existing Codex installs only on reinstall — the installer copies them into
+> `~/.codex/scrooge/`, so a published fix does not auto-update an already-installed
+> Codex hook. When a release touches those paths, call out "existing Codex users:
+> reinstall to upgrade" in the release notes.
+
 ## 4. Verify resolution
 
 Claude Code plugin path:
