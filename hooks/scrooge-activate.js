@@ -79,7 +79,10 @@ function readRuleBody(rulePath) {
 // null means "no recognized command this turn" (including unknown args — leave
 // state untouched, matching caveman's no-silent-overwrite behavior).
 function parseCommand(prompt) {
-  const m = /^\/scrooge(?:\s+(.*))?$/i.exec((prompt || '').trim());
+  // `:scrooge` covers the plugin-namespaced invocation form (/scrooge:scrooge),
+  // which some hosts pass through verbatim — matching the stats path below and
+  // the reference caveman hook. Without it, namespaced activation never persists.
+  const m = /^\/scrooge(?::scrooge)?(?:\s+(.*))?$/i.exec((prompt || '').trim());
   if (!m) return null;
   const args = (m[1] || '')
     .trim()

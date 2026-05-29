@@ -53,6 +53,24 @@ test('bare /scrooge on a fresh session activates en/full (G5 default)', () => {
   assert.match(ctx, /SCROOGE MODE ACTIVE — en\/full/);
 });
 
+test('plugin-namespaced /scrooge:scrooge activates like the bare form', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, '/scrooge:scrooge ko');
+  assert.deepEqual(state, { lang: 'ko', dial: 'full' });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/);
+});
+
+test('plugin-namespaced /scrooge:scrooge off clears state', () => {
+  const cfg = freshConfig();
+  const activated = runHook(cfg, '/scrooge:scrooge ko');
+  // Guard the regression directly: without the namespaced match the activation
+  // is a no-op, so this assertion — not the null checks below — is what fails.
+  assert.deepEqual(activated.state, { lang: 'ko', dial: 'full' });
+  const { state, ctx } = runHook(cfg, '/scrooge:scrooge off');
+  assert.equal(state, null);
+  assert.equal(ctx, null);
+});
+
 test('bare /scrooge forces dial=full but keeps the current lang (G5)', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge lite'); // → en/lite
