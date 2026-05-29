@@ -40,6 +40,26 @@ Edit the three version sources to the new version (semver). Commit:
 git commit -m "chore: 버전 vX.Y.Z" package.json .claude-plugin/marketplace.json
 ```
 
+## 3a. Workflow tag and push (recommended)
+
+After the version commit is on `main`, run the manual GitHub Actions workflow:
+
+```bash
+gh workflow run release.yml -f version=vX.Y.Z --ref main
+```
+
+The workflow is `workflow_dispatch` only. It checks that `package.json.version`,
+`.claude-plugin/marketplace.json` `metadata.version`, and
+`.claude-plugin/marketplace.json` `plugins[0].version` all match the input
+version without the leading `v`, then creates tag `vX.Y.Z` and runs:
+
+```bash
+git push origin vX.Y.Z
+```
+
+The workflow declares `permissions: contents: write` so `GITHUB_TOKEN` can push
+the tag. It does not run `npm publish`; §6 stays optional and manual.
+
 ## 3. Tag and push
 
 ```bash
@@ -79,6 +99,16 @@ drives both of the above per detected agent — no npm publish needed.
 `npx skills add <repo>` works without this; it only affects `npx skills find`
 discoverability. Submission to <https://skills.sh> is external and manually
 reviewed — expect approval delay. Treat as a separate, non-blocking step.
+
+Status (2026-05-29): prepared, external merge non-blocking. Current skills.sh
+FAQ says leaderboard listing appears automatically through anonymous telemetry
+when users run `npx skills add <owner/repo>`; no separate PR submission path was
+found in the public skills.sh docs. Track discovery with:
+
+- Install source: `npx skills add Kir93/scrooge-mode`
+- Directory URL: <https://skills.sh/Kir93/scrooge-mode>
+- Badge URL: <https://skills.sh/b/Kir93/scrooge-mode>
+- Submit/PR URL: N/A until skills.sh exposes a manual submission queue.
 
 ## 6. (Optional) npm publish
 

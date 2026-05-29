@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
+
+      - name: Verify registry paths
+        run: |
+          node --input-type=module <<'NODE'
+          import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+          import path from 'node:path';
+
+          const registry = JSON.parse(readFileSync('registry.json', 'utf8'));
+          const reachable = new Set();
+          const errors = [];
+
+          for (const [lang, dials] of Object.entries(registry)) {
+            for (const [dial, rulePath] of Object.entries(dials)) {
+              const normalized = String(rulePath).trim();
+              if (!normalized.startsWith('rules/')) {
+                errors.push(`${lang}.${dial} points outside rules/: ${normalized}`);
+                continue;
+              }
+
+              if (!existsSync(normalized) || !statSync(normalized).isFile()) {
+                errors.push(`${lang}.${dial} missing file: ${normalized}`);
+                continue;
+              }
+
+              reachable.add(path.normalize(normalized));
+            }
+          }
+
+          function listMarkdownFiles(dir) {
+            return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+              const filePath = path.join(dir, entry.name);
+              if (entry.isDirectory()) return listMarkdownFiles(filePath);
+              if (entry.isFile() && entry.name.endsWith('.md')) return [filePath];
+              return [];
+            });
+          }
+
+          for (const filePath of listMarkdownFiles('rules')) {
+            if (!reachable.has(path.normalize(filePath))) {
+              errors.push(`rules file is not reachable from registry.json: ${filePath}`);
+            }
+          }
+
+          if (errors.length > 0) {
+            console.error(errors.join('\n'));
+            process.exit(1);
+          }
+          NODE
+
+      - name: Verify JSON files
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const files = [
+            'package.json',
+            'registry.json',
+            '.claude-plugin/marketplace.json',
+            '.claude-plugin/plugin.json',
+          ];
+
+          for (const file of files) {
+            try {
+              JSON.parse(readFileSync(file, 'utf8'));
+            } catch (error) {
+              console.error(`${file}: ${error.message}`);
+              process.exitCode = 1;
+            }
+          }
+          NODE

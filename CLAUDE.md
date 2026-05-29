@@ -41,6 +41,7 @@ Verify with `npm test` (the `node:test` harness — covers hook parsing, state s
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
 - **Bilingual + dial parity**: `ko`/`en` and `lite`/`full` counterparts stay aligned.
 - **JSON valid**: `registry.json` parses.
+- **Lockfile with `npm ci`**: any CI, release, or doc change that introduces `npm ci` must include/update `package-lock.json` in the same change. `npm ci` fails without a lockfile.
 
 For multi-step tasks, state a brief plan with a per-step verify.
 
