@@ -12,7 +12,7 @@ AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 sk
 
 **`~67% KO · ~65% EN · 100% 정확성 · 존대 제거`** — `claude-opus-4-7`, N=24 paired median.
 
-Jump to: [데모](#데모) · [설치](#설치) · [표면](#표면) · [벤치마크](#벤치마크) · [메커니즘](#메커니즘)
+Jump to: [데모](#데모) · [설치](#설치) · [표면](#표면) · [벤치마크](#벤치마크) · [메커니즘](#메커니즘) · [caveman 비교](#caveman과-비교)
 
 ---
 
@@ -108,7 +108,7 @@ Codex는 추가로 user-level hook을 받음. 설치기가 Scrooge hook payload�
 >   curl -fsSL https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.sh | bash -s -- --global-skills
 >   ```
 >
-> *이 저장소* 클론 안에서 실행한 경우는 자동 감지·스킵됨 — 소스 자체가 이미 canonical layout이라 덮을 필요 없음.
+> _이 저장소_ 클론 안에서 실행한 경우는 자동 감지·스킵됨 — 소스 자체가 이미 canonical layout이라 덮을 필요 없음.
 > 이 주의는 `skills` CLI 파일에만 해당함. Codex activation hook은 항상 user-level.
 
 ### 제거
@@ -137,15 +137,15 @@ claude plugin install scrooge@scrooge
 
 ## 표면
 
-| 구성 | 설명 |
-| --- | --- |
-| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en` × `lite`/`full`. 세션 단위 지속. |
-| `/scrooge off` | 상태 해제, 일반 prose 복귀. |
-| `UserPromptSubmit` hook | 매 turn마다 register 재주입으로 dial drift 차단. |
-| Safety auto-clarity | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 양 언어 · 모든 dial. |
-| `registry.json` | `언어 × dial → 규칙 파일 경로` 1:1 매핑. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄. |
-| 토큰 절감 statusline | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님. |
-| CLI 벤치마크 하네스 | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조. |
+| 구성                     | 설명                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en` × `lite`/`full`. 세션 단위 지속.                         |
+| `/scrooge off`           | 상태 해제, 일반 prose 복귀.                                                               |
+| `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
+| Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 양 언어 · 모든 dial.    |
+| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄. |
+| 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
+| CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
 
 **왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — 언어 추가는 규칙 파일 1개 + `registry.json` 항목 1줄, rule-engine 수술 없음.
 
@@ -161,24 +161,26 @@ claude plugin install scrooge@scrooge
 
 ### 한국어
 
-`normal`은 모델 기본 답변, `terse`는 "간결하게 답해"만 적용한 control, `scrooge:*`는 우리가 출하하는 규칙.
+`normal`은 모델 기본 답변, `terse`는 "간결하게 답해"만 적용한 control, `scrooge:*`는 우리가 출하하는 규칙. `caveman:full`은 비교 baseline이며 Scrooge 모드 아님.
 
-| Mode | 대표 output tokens (N=24) | normal 대비 절감 |
-| --- | -----------------------: | ---------------: |
-| `normal` | 1567 | (baseline) |
-| `terse` | 1145 | ~27% |
-| **`scrooge:ko/full`** | **511** | **~67%** |
+| Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
+| --------------------- | ------------------------: | ---------------: |
+| `normal`              |                      1567 |       (baseline) |
+| `terse`               |                      1145 |             ~27% |
+| **`scrooge:ko/full`** |                   **511** |         **~67%** |
+| `caveman:full`        |                       901 |             ~43% |
 
-`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~67%** 줄임. `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과.
+`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~67%**, `caveman:full` 대비 **~43%** 줄임. `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과.
 
 ### 영어
 
-| Mode | 대표 output tokens (N=24) | normal 대비 절감 |
-| --- | -----------------------: | ---------------: |
-| `normal` | 2235 | (baseline) |
-| **`scrooge:en/full`** | **774** | **~65%** |
+| Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
+| --------------------- | ------------------------: | ---------------: |
+| `normal`              |                      2235 |       (baseline) |
+| **`scrooge:en/full`** |                   **774** |         **~65%** |
+| `caveman:full`        |                       396 |             ~82% |
 
-`scrooge:en/full`은 영어 출력을 **~65%** 줄임. 영어 압축은 Scrooge 1순위 포지셔닝 아님 — 1차 배포 목표는 한국어.
+`scrooge:en/full`은 영어 출력을 **~65%** 줄임. `caveman:full`이 여전히 더 강한 영어 압축 baseline이며, Scrooge 1차 배포 목표는 Korean-native compression.
 
 ## 메커니즘
 
@@ -199,6 +201,20 @@ claude plugin install scrooge@scrooge
    ```
 
 3. 5건 sample 출력을 QA checklist (`CONTRIBUTING.md` 공개 후) 기준 self-check → PR.
+
+## caveman과 비교
+
+[caveman](https://github.com/JuliusBrussee/caveman)은 영감을 준 프로젝트. Scrooge는 fork나 README/code 복붙이 아니라, caveman을 명시적 benchmark/reference로 두는 KO-first 독립 구현.
+
+| 축                | caveman                            | Scrooge                                                |
+| ----------------- | ---------------------------------- | ------------------------------------------------------ |
+| 1차 목표          | 공격적 영어 압축                   | Korean-native 이중언어 압축                            |
+| 언어              | EN (+ wenyan 한문)                 | KO, EN; `registry.json` 기반 i18n                      |
+| 한국어 register   | 없음                               | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default  |
+| 이번 영어 결과    | 더 강한 압축 (`396` median tokens) | 덜 공격적 (`774` median tokens), clarity/i18n tradeoff |
+| 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
+
+요약: Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨. 핵심은 한국어 1순위 register 설계이고, caveman은 출처와 가장 강한 영어 비교 baseline으로 명시함.
 
 ## 라이선스 / 출처
 

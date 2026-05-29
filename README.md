@@ -12,7 +12,7 @@ KO-first bilingual (KO/EN) output-compression skill for AI coding agents — [Cl
 
 **`~67% KO · ~65% EN · 100% accuracy · honorifics stripped`** — `claude-opus-4-7`, N=24 paired median.
 
-Jump to: [Demo](#demo) · [Install](#install) · [Surface](#surface) · [Benchmarks](#benchmarks) · [Mechanics](#mechanics)
+Jump to: [Demo](#demo) · [Install](#install) · [Surface](#surface) · [Benchmarks](#benchmarks) · [Mechanics](#mechanics) · [Compared to caveman](#compared-to-caveman)
 
 ---
 
@@ -163,15 +163,16 @@ Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction command
 
 ### Korean
 
-`normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` is the rule we ship.
+`normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` is the rule we ship. `caveman:full` is a comparison baseline, not a Scrooge mode.
 
 | Mode | Median output tokens (N=24) | Savings vs `normal` |
 | --- | --------------------------: | ------------------: |
 | `normal` | 1567 | (baseline) |
 | `terse` | 1145 | ~27% |
 | **`scrooge:ko/full`** | **511** | **~67%** |
+| `caveman:full` | 901 | ~43% |
 
-`scrooge:ko/full` cuts Korean output by **~67%** vs the verbose default. It also beats `terse`, so the gain is the register itself, not just generic brevity.
+`scrooge:ko/full` cuts Korean output by **~67%** vs the verbose default and by **~43%** vs `caveman:full`. It also beats `terse`, so the gain is the register itself, not just generic brevity.
 
 ### English
 
@@ -179,8 +180,22 @@ Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction command
 | --- | --------------------------: | ------------------: |
 | `normal` | 2235 | (baseline) |
 | **`scrooge:en/full`** | **774** | **~65%** |
+| `caveman:full` | 396 | ~82% |
 
-`scrooge:en/full` cuts English output by **~65%**. English compression is not Scrooge's primary positioning — the first release goal is Korean.
+`scrooge:en/full` cuts English output by **~65%**. `caveman:full` is still the stronger English compression baseline; Scrooge's first release goal is Korean-native compression.
+
+**Mini English sample (`en/full`)**
+
+> Explain why a database index speeds up reads and slows down writes.
+
+```text
+Index = extra lookup structure.
+
+Reads: planner searches index keys, then fetches matching rows; avoids full table scan when predicate is selective.
+Writes: INSERT/UPDATE/DELETE must maintain index pages, maybe split/rebalance B-tree, write more WAL, and consume cache/disk.
+
+Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-heavy tables.
+```
 
 ## Mechanics
 
@@ -201,6 +216,20 @@ Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction command
    ```
 
 3. Sample 5 outputs against the QA checklist (see `CONTRIBUTING.md`, once available) and PR.
+
+## Compared to caveman
+
+[caveman](https://github.com/JuliusBrussee/caveman) inspired the project. Scrooge is not a fork or README/code copy; it is an independent, KO-first implementation with caveman kept as an explicit benchmark/reference point.
+
+| Axis | caveman | Scrooge |
+| --- | --- | --- |
+| Primary target | Aggressive English compression | Korean-native bilingual compression |
+| Languages | EN (+ wenyan classical Chinese) | KO, EN; i18n via `registry.json` |
+| Korean register | None | Native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default |
+| English result in this run | Stronger compression (`396` median tokens) | Less aggressive (`774` median tokens), clarity/i18n tradeoff |
+| Benchmarking here | Comparison arm (`caveman:full`) | Real `output_tokens` runner, paired reports |
+
+In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.
 
 ## License
 
