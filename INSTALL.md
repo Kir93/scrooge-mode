@@ -91,7 +91,6 @@ Useful flags:
 ```bash
 npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
-npx -y github:Kir93/scrooge-mode -- --global-skills
 ```
 
 Uninstall:
@@ -157,12 +156,7 @@ If this fails, install Claude Code first or use the `skills` ecosystem path for 
 
 ### Project-Scope Skills Files Appear
 
-If `.agents/`, `skills/<name>`, or `skills-lock.json` appears in a project after `curl | bash`, rerun from your home directory or pass `--global-skills`.
-
-```bash
-cd ~
-npx -y github:Kir93/scrooge-mode -- --global-skills
-```
+Scrooge always installs skills at user (global) scope, so `.agents/`, `skills/<name>`, or `skills-lock.json` should never appear in a project. If you find leftovers from an older version, clean up by running the skills CLI removal for each installed agent (e.g. `npx -y skills remove Kir93/scrooge-mode -a codex`) and deleting any remaining `.agents/` or `skills-lock.json` from the project root.
 
 ### Permission Errors
 

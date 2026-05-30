@@ -46,7 +46,7 @@ const PROVIDERS = [
 
 // ── Args ──────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
-  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null, globalSkills: false };
+  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -55,7 +55,6 @@ function parseArgs(argv) {
       case '-u': case '--uninstall': o.uninstall = true; break;
       case '--list': o.listOnly = true; break;
       case '-h': case '--help': o.help = true; break;
-      case '--global-skills': o.globalSkills = true; break;
       case '--': break;
       case '--only': {
         const v = argv[++i];
@@ -287,11 +286,10 @@ function installViaSkills(prov, opts, results) {
     return;
   }
   // --yes --all: no-TTY curl|bash can't drive the skills selection UI.
-  // -g (global) when --global-skills is set: places the skill under the
-  // agent's user-level dir instead of polluting cwd with `.agents/` + a lock
-  // file. Default = project scope (matches the skills ecosystem default).
-  const scope = opts.globalSkills ? ['-g'] : [];
-  const r = run('npx', ['-y', 'skills', 'add', REPO, '-a', prov.profile, ...scope, '--yes', '--all'], opts.dryRun);
+  // -g (global): always install under the agent's user-level dir; the
+  // skills ecosystem default of project scope drops `.agents/` + a lock file
+  // into cwd, which we never want for scrooge.
+  const r = run('npx', ['-y', 'skills', 'add', REPO, '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun);
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
   process.stdout.write('\n');
@@ -622,10 +620,6 @@ Flags:
   --uninstall,-u   remove scrooge from detected agents
   --dry-run        print actions without running them
   --force          reinstall even if already present
-  --global-skills  install Codex / Cursor / etc. skills at user (global) scope
-                   instead of project scope (default = project, matches the
-                   skills CLI default; project scope drops .agents/ + a lock
-                   file in the cwd).
   --config-dir P   override Claude config dir (default $CLAUDE_CONFIG_DIR or ~/.claude)
   --help,-h        this help
 `);

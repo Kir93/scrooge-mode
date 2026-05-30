@@ -91,7 +91,6 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 ```bash
 npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
-npx -y github:Kir93/scrooge-mode -- --global-skills
 ```
 
 제거:
@@ -157,12 +156,7 @@ command -v claude
 
 ### Project-Scope Skills Files Appear
 
-`curl | bash` 후 프로젝트에 `.agents/`, `skills/<name>`, `skills-lock.json` 생기면 홈 디렉토리에서 재실행하거나 `--global-skills` 사용.
-
-```bash
-cd ~
-npx -y github:Kir93/scrooge-mode -- --global-skills
-```
+scrooge는 항상 user(global) scope로 설치하므로 프로젝트에 `.agents/`, `skills/<name>`, `skills-lock.json` 생기지 않음. 구버전 잔재 발견되면 설치된 agent별로 skills CLI 제거 (`npx -y skills remove Kir93/scrooge-mode -a codex` 등) 후 프로젝트 루트에 남은 `.agents/`·`skills-lock.json` 수동 삭제.
 
 ### Permission Errors
 
