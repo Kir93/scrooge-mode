@@ -2,6 +2,8 @@
 
 `토큰은 돈 — 구두쇠처럼 써라`
 
+> AI 코딩 에이전트 응답의 출력 토큰을 줄이는 skill — 같은 답, 적은 토큰.
+
 [![Stars](https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow)](https://github.com/Kir93/scrooge-mode/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat)](https://github.com/Kir93/scrooge-mode/commits/main)
 [![License](https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat)](LICENSE)
