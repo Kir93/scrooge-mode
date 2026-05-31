@@ -119,6 +119,8 @@ Windows PowerShell:
 /scrooge ko full
 ```
 
+Claude Code hook에선 자연어로도 활성화 — "스크루지처럼 답해줘" / "talk like scrooge"로 켜고, "스크루지 꺼" / "stop scrooge"로 해제.
+
 예상 동작:
 
 - 명령이 `ko/full` 활성화.

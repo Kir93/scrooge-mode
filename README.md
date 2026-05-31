@@ -1,4 +1,4 @@
-# 🪙 scrooge
+# 💰 scrooge
 
 `tokens are money — spend them like a miser`
 
@@ -79,7 +79,7 @@ npx -y github:Kir93/scrooge-mode
 
 Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
-**Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag.
+**Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
 
 ## Surface
 
@@ -87,6 +87,7 @@ Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshoot
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en` × `lite`/`full`. Persists per session.                                                                 |
 | `/scrooge off`           | Clear state, return to normal prose.                                                                                                             |
+| Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Both languages, every dial. |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1. Adding a language = one new rule file + one registry entry.                                         |
@@ -163,7 +164,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 
 ## Compared to caveman
 
-[caveman](https://github.com/JuliusBrussee/caveman) inspired the project. Scrooge is not a fork or README/code copy; it is an independent, KO-first implementation with caveman kept as an explicit benchmark/reference point.
+[caveman](https://github.com/JuliusBrussee/caveman) inspired the project. Scrooge is not a fork or README/code copy; it is an independent, KO-first implementation with caveman kept as an explicit benchmark/reference point. If you came here looking for a **caveman alternative** — or a **Korean caveman** — that is the niche: the same token-miser idea, rebuilt Korean-first rather than translated.
 
 | Axis                       | caveman                                    | Scrooge                                                      |
 | -------------------------- | ------------------------------------------ | ------------------------------------------------------------ |

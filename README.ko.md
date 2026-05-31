@@ -1,4 +1,4 @@
-# 🪙 scrooge
+# 💰 scrooge
 
 `토큰은 돈 — 구두쇠처럼 써라`
 
@@ -77,7 +77,7 @@ npx -y github:Kir93/scrooge-mode
 
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
-**활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`.
+**활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
 
 ## 표면
 
@@ -85,6 +85,7 @@ npx -y github:Kir93/scrooge-mode
 | ------------------------ | ----------------------------------------------------------------------------------------- |
 | `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en` × `lite`/`full`. 세션 단위 지속.                         |
 | `/scrooge off`           | 상태 해제, 일반 prose 복귀.                                                               |
+| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 양 언어 · 모든 dial.    |
 | `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄. |
@@ -148,7 +149,7 @@ npx -y github:Kir93/scrooge-mode
 
 ## caveman과 비교
 
-[caveman](https://github.com/JuliusBrussee/caveman)은 영감을 준 프로젝트. Scrooge는 fork나 README/code 복붙이 아니라, caveman을 명시적 benchmark/reference로 두는 KO-first 독립 구현.
+[caveman](https://github.com/JuliusBrussee/caveman)은 영감을 준 프로젝트. Scrooge는 fork나 README/code 복붙이 아니라, caveman을 명시적 benchmark/reference로 두는 KO-first 독립 구현. **caveman alternative**(caveman 대안) — 또는 **Korean caveman**(한국어 caveman) — 을 찾아왔다면 바로 그 자리: 같은 token-miser 아이디어를 번역이 아니라 한국어 1순위로 재구축한 것.
 
 | 축                | caveman                            | Scrooge                                                |
 | ----------------- | ---------------------------------- | ------------------------------------------------------ |

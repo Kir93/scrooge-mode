@@ -22,6 +22,21 @@ Mode persists across turns until changed or the session ends. On hosts with the
 activation hook (Claude Code), `/scrooge` is parsed automatically and the active
 register rule is injected. On skill-only hosts, apply the matching register below.
 
+**Natural language (hook).** Where the activation hook runs, plain language also
+toggles the mode — no slash required:
+
+- Activate: "talk like scrooge", "scrooge mode", "be a token miser" → `en`;
+  "스크루지처럼 …", "스크루지 모드", "스크루지로 답" → `ko`. The "scrooge" name
+  must be present (a bare "압축 모드" / "토큰 아껴" does not activate). Dial is
+  always `full`; use the slash form for `lite`. Language follows the phrase.
+- Deactivate: "stop scrooge" / "스크루지 꺼".
+- Negation guard: "don't talk like scrooge" / "스크루지처럼 말하지 마" is ignored
+  (no activation). A valid `/scrooge` command always wins over NL in the same turn.
+
+This NL parsing is deterministic and hook-side. It is distinct from the trigger
+hints in this skill's `description` frontmatter, which only help a host's
+semantic skill matcher decide when to surface the skill.
+
 ## Registers
 
 Full rule text lives in `rules/{lang}/{dial}.md` (resolved via `registry.json`).

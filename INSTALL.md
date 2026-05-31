@@ -119,6 +119,8 @@ After install, start the target agent and activate Scrooge:
 /scrooge ko full
 ```
 
+On the Claude Code hook, plain language also activates — "talk like scrooge" / "스크루지처럼 답해줘" turns it on, "stop scrooge" / "스크루지 꺼" clears.
+
 Expected behavior:
 
 - The command activates `ko/full`.

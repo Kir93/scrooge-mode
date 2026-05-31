@@ -32,6 +32,7 @@ import {
   clearState,
   getStatePath,
 } from './scrooge-config.js';
+import { parseNaturalActivation } from './nl-activation.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OFF_TOKENS = new Set(['off', 'stop', 'disable']);
@@ -169,7 +170,10 @@ process.stdin.on('end', () => {
       return;
     }
 
-    const cmd = parseCommand(prompt);
+    // Slash command wins (SC 3.3); natural-language intent is the fallback when
+    // the prompt holds no recognized /scrooge command. Both return the same
+    // shape, so the set/off branches below handle either source uniformly.
+    const cmd = parseCommand(prompt) || parseNaturalActivation(prompt);
 
     if (cmd && cmd.action === 'off') {
       clearState(statePath);
