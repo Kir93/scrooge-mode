@@ -6,7 +6,7 @@
     "url": "https://github.com/Kir93"
   },
   "metadata": {
-    "version": "0.2.3",
+    "version": "0.3.0",
     "keywords": [
       "compression",
       "korean",
@@ -21,7 +21,7 @@
     {
       "name": "scrooge",
       "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
-      "version": "0.2.3",
+      "version": "0.3.0",
       "source": "./",
       "category": "productivity"
     }
