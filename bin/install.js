@@ -497,7 +497,7 @@ function unwireCodexHook(opts, results) {
 
 // ── Uninstall ───────────────────────────────────────────────────────────────
 function uninstall(opts, results) {
-  process.stdout.write('🪙 scrooge uninstall\n');
+  process.stdout.write('💰 scrooge uninstall\n');
   // Claude plugin + statusline
   if (hasCmd('claude')) {
     const probe = capture('claude', ['plugin', 'list']);

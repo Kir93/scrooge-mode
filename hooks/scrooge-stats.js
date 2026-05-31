@@ -83,12 +83,12 @@ function formatStats({ outputTokens, cacheReadTokens, turns, model, file, state 
 }
 
 function formatShare({ outputTokens, turns, state }) {
-  if (turns === 0) return '🪙 scrooge armed, no turns yet';
+  if (turns === 0) return '💰 scrooge armed, no turns yet';
   const est = state ? deriveEstimate(outputTokens, state.dial) : null;
   if (est) {
-    return `🪙 saved ~${est.saved.toLocaleString()} output tokens (est) across ${turns} turns this session`;
+    return `💰 saved ~${est.saved.toLocaleString()} output tokens (est) across ${turns} turns this session`;
   }
-  return `🪙 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session`;
+  return `💰 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session`;
 }
 
 // Pre-rendered statusline suffix: saved estimate when available, else raw output
