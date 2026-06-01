@@ -37,7 +37,11 @@ function deriveEstimate(outputTokens, dial) {
   const ratio = dial != null ? SAVINGS_RATIO[dial] : undefined;
   if (ratio == null || ratio <= 0 || ratio >= 1) return null;
   const estNormal = Math.round(outputTokens / (1 - ratio));
-  return { estNormal, saved: estNormal - outputTokens, pct: Math.round(ratio * 100) };
+  return {
+    estNormal,
+    saved: estNormal - outputTokens,
+    pct: Math.round(ratio * 100),
+  };
 }
 
 function shortPath(p) {
@@ -46,10 +50,22 @@ function shortPath(p) {
 }
 
 // Pure formatter — split from main() so tests can pass synthetic inputs.
-function formatStats({ outputTokens, cacheReadTokens, turns, model, file, state }) {
+function formatStats({
+  outputTokens,
+  cacheReadTokens,
+  turns,
+  model,
+  file,
+  state,
+}) {
   const head = `\nScrooge Stats\n${SEP}\n`;
   if (turns === 0) {
-    return head + 'No conversation yet — stats available after the first response.\n' + SEP + '\n';
+    return (
+      head +
+      'No conversation yet — stats available after the first response.\n' +
+      SEP +
+      '\n'
+    );
   }
 
   const modeLabel = state ? `${state.lang}/${state.dial}` : 'inactive';
@@ -106,8 +122,25 @@ function main() {
   const sessionFile = sfIdx !== -1 ? args[sfIdx + 1] : null;
   const share = args.includes('--share');
 
-  const claudeDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
-  const sess = readSession({ claudeDir, sessionFile });
+  const defaultCodexDir =
+    process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
+  const configuredDir = process.env.CLAUDE_CONFIG_DIR;
+  const agent =
+    process.env.SCROOGE_AGENT ||
+    (configuredDir && path.basename(configuredDir) === '.codex'
+      ? 'codex'
+      : 'claude');
+  if (agent === 'codex' && !process.env.CLAUDE_CONFIG_DIR) {
+    process.env.CLAUDE_CONFIG_DIR = defaultCodexDir;
+  }
+  const claudeDir =
+    process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+  const sess = readSession({
+    agent,
+    claudeDir,
+    codexDir: defaultCodexDir,
+    sessionFile,
+  });
   const state = readState();
   const view = { ...sess, state };
 
@@ -122,7 +155,9 @@ function main() {
   process.stdout.write(share ? formatShare(view) + '\n' : formatStats(view));
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) main();
 
 export {

@@ -312,6 +312,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 process.env.CLAUDE_CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.dirname(here);
+process.env.SCROOGE_AGENT = 'codex';
 await import('./hooks/scrooge-activate.js');
 `;
 }
