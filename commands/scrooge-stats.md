@@ -6,6 +6,9 @@ disable-model-invocation: true
 
 # scrooge-stats
 
+Compatibility shim for Claude command installs. The canonical discoverable
+agent surface is `skills/scrooge-stats/SKILL.md`.
+
 The `UserPromptSubmit` hook (`hooks/scrooge-activate.js`) intercepts a
 `/scrooge-stats` prompt, runs `hooks/scrooge-stats.js` against the active session
 transcript, and blocks the turn — returning the stats block as the hook reason.

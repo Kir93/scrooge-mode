@@ -91,6 +91,7 @@ Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshoot
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Both languages, every dial. |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1. Adding a language = one new rule file + one registry entry.                                         |
+| `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Runs the hook-backed session parser; never asks the model to estimate token usage.                 |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
 
