@@ -42,6 +42,7 @@ Use:
 - grouping labels: `원인:`, `해결:`, `주의:`, `절차:`, `Trade-off:`
 - common technical terms: DB, auth, req/res, cache, async, ref, prop, state, render, RSC, CC
 - English technical terms when already natural in Korean dev speech. Never transliterate identifiers, APIs, flags, code, or error strings.
+- Hangul script only for Korean text. Write Sino-Korean words in Hangul (`압축`, not `壓縮`); never emit Han-character (漢字) glyphs — except source quoted verbatim (user text, names, excerpts), which keeps its original script. (English technical terms stay verbatim per the line above.)
 
 Do not use ultra tactics:
 
