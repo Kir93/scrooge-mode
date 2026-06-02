@@ -1,6 +1,6 @@
 {
   "name": "scrooge-mode",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
   "type": "module",
   "bin": {
