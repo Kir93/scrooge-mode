@@ -19,9 +19,16 @@ import { fileURLToPath } from 'node:url';
 import { readState, writeSuffix } from './scrooge-config.js';
 import { readSession } from '../lib/session-log.js';
 
-// Per-dial mean output-token compression ratio, filled by the Task 5 benchmark
-// (e.g. { full: 0.5, lite: 0.3 }). Empty until then — no estimate is shown.
-const SAVINGS_RATIO = {};
+// Per-(lang, dial) mean output-token compression ratio vs the uncompressed
+// baseline, from the README benchmark (N=24, claude-opus-4-7, register-only
+// isolation): ko/full ~67%, en/full ~65%. Only `full` is measured; `lite` has
+// no benchmark yet, so it is omitted and lite sessions still show "estimate
+// pending" rather than a fabricated number. Register-only isolation means real
+// sessions may differ — hence the "(est)" label on every derived figure.
+const SAVINGS_RATIO = {
+  ko: { full: 0.67 },
+  en: { full: 0.65 },
+};
 
 const SEP = '──────────────────────────────';
 
@@ -32,9 +39,11 @@ function humanizeTokens(n) {
   return String(Math.round(n));
 }
 
-// Counterfactual estimate for one dial, or null when no benchmark ratio exists.
-function deriveEstimate(outputTokens, dial) {
-  const ratio = dial != null ? SAVINGS_RATIO[dial] : undefined;
+// Counterfactual estimate for one (lang, dial), or null when no benchmark ratio
+// exists for that pair (e.g. any lite session, or a lang not yet benchmarked).
+function deriveEstimate(outputTokens, lang, dial) {
+  const ratio =
+    lang != null && dial != null ? SAVINGS_RATIO[lang]?.[dial] : undefined;
   if (ratio == null || ratio <= 0 || ratio >= 1) return null;
   const estNormal = Math.round(outputTokens / (1 - ratio));
   return {
@@ -69,7 +78,7 @@ function formatStats({
   }
 
   const modeLabel = state ? `${state.lang}/${state.dial}` : 'inactive';
-  const est = state ? deriveEstimate(outputTokens, state.dial) : null;
+  const est = state ? deriveEstimate(outputTokens, state.lang, state.dial) : null;
 
   let savings;
   let footer = '';
@@ -82,7 +91,7 @@ function formatStats({
     footer = `Estimate from benchmarks/ (mean per-dial, ${modeLabel}). Measured tokens above; savings are counterfactual.`;
   } else {
     savings =
-      `Savings estimate pending — benchmark (Task 5) not yet run for '${state.dial}'.\n` +
+      `Savings estimate pending — no benchmark ratio for '${state.lang}/${state.dial}' yet.\n` +
       'Measured output tokens shown above; no estimate fabricated.';
   }
 
@@ -100,7 +109,7 @@ function formatStats({
 
 function formatShare({ outputTokens, turns, state }) {
   if (turns === 0) return '💰 scrooge armed, no turns yet';
-  const est = state ? deriveEstimate(outputTokens, state.dial) : null;
+  const est = state ? deriveEstimate(outputTokens, state.lang, state.dial) : null;
   if (est) {
     return `💰 saved ~${est.saved.toLocaleString()} output tokens (est) across ${turns} turns this session`;
   }
@@ -111,7 +120,7 @@ function formatShare({ outputTokens, turns, state }) {
 // tokens while active, else empty (clears the badge suffix when inactive).
 function suffixFor({ outputTokens, turns, state }) {
   if (!state || turns === 0) return '';
-  const est = deriveEstimate(outputTokens, state.dial);
+  const est = deriveEstimate(outputTokens, state.lang, state.dial);
   if (est) return `⛏ ~${humanizeTokens(est.saved)} saved (est)`;
   return `⛏ ${humanizeTokens(outputTokens)} tok`;
 }

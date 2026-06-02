@@ -1,19 +1,27 @@
 ---
 description: 현재 세션의 실측 출력 토큰과 (벤치마크 존재 시) 추정 절감량 표시 — measured output tokens + estimated savings for this session
 argument-hint: '[--share]'
-disable-model-invocation: true
+allowed-tools: Bash
 ---
 
 # scrooge-stats
 
-Compatibility shim for Claude command installs. The canonical discoverable
-agent surface is `skills/scrooge-stats/SKILL.md`.
+Show measured Scrooge session token usage and an estimated savings figure.
 
-The `UserPromptSubmit` hook (`hooks/scrooge-activate.js`) intercepts a
-`/scrooge-stats` prompt, runs `hooks/scrooge-stats.js` against the active session
-transcript, and blocks the turn — returning the stats block as the hook reason.
-`--share` swaps the full block for a one-line summary.
+**Primary path — hook intercept.** The `UserPromptSubmit` hook
+(`hooks/scrooge-activate.js`) catches the raw `/scrooge-stats` prompt, runs
+`hooks/scrooge-stats.js` against the active session transcript, and blocks the
+turn — returning the stats block directly. When that fires you never see this
+body, and the model never computes anything.
 
-So on Claude Code the work happens in the hook before the model sees this body.
-On hosts without the activation hook, run it directly:
-`node hooks/scrooge-stats.js [--share]`.
+**Fallback — you are reading this because the hook did not intercept.** Run the
+script yourself and show its output verbatim:
+
+```bash
+node hooks/scrooge-stats.js
+```
+
+Append `--share` for a one-line summary. Do **not** recompute or estimate tokens
+yourself — report only what the script prints (measured output tokens, plus a
+benchmark-based "(est)" savings figure when available). If the script is not
+found (a host without the repo), say so rather than fabricating numbers.
