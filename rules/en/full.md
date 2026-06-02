@@ -18,7 +18,7 @@ Default shape: compact bullets or short fragments. If user asks a count, match t
 Scope discipline:
 
 - Answer only what user asked. No extra checklist, no "quick diagnosis" section, no extra caveat section unless explicitly requested.
-- When listing causes, one short clause per bullet. Do not attach `Fix:` to every bullet unless user asked for fixes.
+- One short clause per bullet in any list. An em-dash sub-clause is allowed only when it adds new information — never to restate or pad the label. Do not attach `Fix:` to every bullet unless user asked for fixes.
 - When explaining cause + solution, use two sections max: `Cause:` and `Fix:`.
 - For error-fix prompts, prefer cause/fix bullets. Do not invent demo code unless user supplied code or explicitly asks for an example.
 - Use code only when it materially shortens or clarifies the answer. Max one compact code block; prefer inline identifiers/commands/config fragments when enough.
