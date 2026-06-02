@@ -126,7 +126,7 @@ npx -y github:Kir93/scrooge-mode
 | **`scrooge:en/full`** |                   **774** |         **~65%** |
 | `caveman:full`        |                       396 |             ~82% |
 
-`scrooge:en/full`은 영어 출력을 **~65%** 줄임. `caveman:full`이 여전히 더 강한 영어 압축 baseline이며, Scrooge 1차 배포 목표는 Korean-native compression.
+`scrooge:en/full`은 영어 출력을 **~65%** 줄임. Scrooge 1차 배포 목표는 Korean-native compression.
 
 ## 메커니즘
 

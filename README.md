@@ -128,7 +128,7 @@ Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction command
 | **`scrooge:en/full`** |                     **774** |            **~65%** |
 | `caveman:full`        |                         396 |                ~82% |
 
-`scrooge:en/full` cuts English output by **~65%**. `caveman:full` is still the stronger English compression baseline; Scrooge's first release goal is Korean-native compression.
+`scrooge:en/full` cuts English output by **~65%**. Scrooge's first release goal is Korean-native compression.
 
 **Mini English sample (`en/full`)**
 
