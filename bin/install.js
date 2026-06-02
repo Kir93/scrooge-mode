@@ -364,24 +364,60 @@ function removeHookStateBlock(text, stateKey) {
   return out.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
-export function removeCodexHookConfig(text) {
+function isUserPromptSubmitHeader(line) {
+  return String(line || '').trim() === '[[hooks.UserPromptSubmit]]';
+}
+
+function isUserPromptSubmitHooksHeader(line) {
+  return String(line || '').trim() === '[[hooks.UserPromptSubmit.hooks]]';
+}
+
+function isTableHeader(line) {
+  return /^\s*\[/.test(String(line || ''));
+}
+
+function collectUserPromptSubmitBlock(lines, start) {
+  const block = [lines[start++]];
+  while (start < lines.length) {
+    const line = lines[start];
+    if (isUserPromptSubmitHeader(line)) break;
+    if (isTableHeader(line) && !isUserPromptSubmitHooksHeader(line)) break;
+    block.push(line);
+    start++;
+  }
+  return { block, next: start };
+}
+
+export function removeCodexHookConfig(text, keySource = null) {
   const lines = String(text || '').split(/\n/);
   const out = [];
+  const removedStateKeys = [];
+  let groupIndex = 0;
   for (let i = 0; i < lines.length;) {
-    if (lines[i].trim() !== '[[hooks.UserPromptSubmit]]') {
+    if (!isUserPromptSubmitHeader(lines[i])) {
       out.push(lines[i++]);
       continue;
     }
-    const block = [lines[i++]];
-    while (i < lines.length && !/^\s*\[/.test(lines[i])) block.push(lines[i++]);
-    if (block.join('\n').includes('scrooge-activate.js') || block.join('\n').includes('codex-activate.mjs')) continue;
+    const { block, next } = collectUserPromptSubmitBlock(lines, i);
+    i = next;
+    const joined = block.join('\n');
+    if (joined.includes('scrooge-activate.js') || joined.includes('codex-activate.mjs')) {
+      if (keySource) removedStateKeys.push(`${keySource}:user_prompt_submit:${groupIndex}:0`);
+      groupIndex++;
+      continue;
+    }
     out.push(...block);
+    groupIndex++;
   }
-  return out.join('\n').replace(/\n{3,}/g, '\n\n');
+  let nextText = out.join('\n');
+  for (const stateKey of removedStateKeys) {
+    nextText = removeHookStateBlock(nextText, stateKey);
+  }
+  return nextText.replace(/\n{3,}/g, '\n\n');
 }
 
 export function mergeCodexHookConfig(text, command, keySource = null) {
-  let current = removeCodexHookConfig(text).replace(/\s*$/, '');
+  let current = removeCodexHookConfig(text, keySource).replace(/\s*$/, '');
   const stateIdx = current.search(/^\[hooks\.state/m);
   const beforeState = stateIdx === -1 ? current : current.slice(0, stateIdx);
   const groupIndex = countUserPromptSubmitGroups(beforeState);

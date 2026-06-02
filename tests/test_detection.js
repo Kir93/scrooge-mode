@@ -143,6 +143,46 @@ test('mergeCodexHookConfig replaces old scrooge hook and preserves unrelated hoo
   assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:1:0"\]/);
 });
 
+test('mergeCodexHookConfig removes legacy nested scrooge hooks and stale hook state', () => {
+  const before = [
+    'model = "gpt-5"',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    '',
+    '[[hooks.UserPromptSubmit.hooks]]',
+    'type = "command"',
+    'command = \'"node" "/old/scrooge/codex-activate.mjs"\'',
+    'timeout = 5',
+    'statusMessage = "Tracking scrooge mode..."',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [',
+    '  { type = "command", command = "\\"node\\" \\"/newer/scrooge/codex-activate.mjs\\"", timeout = 5, statusMessage = "Tracking scrooge mode..." },',
+    ']',
+    '',
+    '[hooks.state]',
+    '',
+    '[hooks.state."/home/me/.codex/config.toml:user_prompt_submit:0:0"]',
+    'trusted_hash = "sha256:old"',
+    'enabled = true',
+    '',
+    '[hooks.state."/home/me/.codex/config.toml:user_prompt_submit:1:0"]',
+    'trusted_hash = "sha256:newer"',
+    'enabled = true',
+    '',
+  ].join('\n');
+  const command = 'node "/current/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, '/home/me/.codex/config.toml');
+
+  assert.doesNotMatch(after, /\/old\/scrooge\/codex-activate\.mjs/);
+  assert.doesNotMatch(after, /\/newer\/scrooge\/codex-activate\.mjs/);
+  assert.match(after, /\/current\/scrooge\/codex-activate\.mjs/);
+  assert.equal((after.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 1);
+  assert.doesNotMatch(after, /user_prompt_submit:1:0/);
+  assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:0:0"\]/);
+  assert.match(after, new RegExp(`trusted_hash = "${codexHookHash(command)}"`));
+});
+
 test('removeCodexHookConfig removes only scrooge hook blocks', () => {
   const before = [
     '[[hooks.UserPromptSubmit]]',
@@ -159,6 +199,26 @@ test('removeCodexHookConfig removes only scrooge hook blocks', () => {
   assert.doesNotMatch(after, /codex-activate\.mjs/);
   assert.match(after, /echo keep/);
   assert.match(after, /\[hooks\.state\]/);
+});
+
+test('removeCodexHookConfig removes legacy nested scrooge hook blocks', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    '',
+    '[[hooks.UserPromptSubmit.hooks]]',
+    'type = "command"',
+    'command = "node /new/codex-activate.mjs"',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo keep" }]',
+    '',
+  ].join('\n');
+  const after = removeCodexHookConfig(before);
+
+  assert.doesNotMatch(after, /codex-activate\.mjs/);
+  assert.doesNotMatch(after, /\[\[hooks\.UserPromptSubmit\.hooks\]\]/);
+  assert.match(after, /echo keep/);
+  assert.equal((after.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 1);
 });
 
 // pruneClaudeSkillLeak — removes a leaked Claude-scope `scrooge` skill symlink
