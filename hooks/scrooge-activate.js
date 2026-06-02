@@ -128,6 +128,33 @@ function buildFullInjection(lang, dial, ruleBody) {
   );
 }
 
+function parseStatsCommand(prompt) {
+  const trimmed = (prompt || '').trim();
+  const patterns = [
+    /^\/scrooge(?::scrooge)?-stats(?<args>(?:\s+.*)?)$/i,
+    /^\$scrooge-stats(?<args>(?:\s+.*)?)$/i,
+    /^\[\$scrooge-stats\]\([^)]+\)(?<args>(?:\s+.*)?)$/i,
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(trimmed);
+    if (!match) continue;
+    const args = match.groups?.args || '';
+    return { share: /\s--share(?:\s|$)/.test(` ${args.trim()}`) };
+  }
+  return null;
+}
+
+// Codex surfaces a hook's block reason to the user; Claude (especially in the
+// editor) renders it invisibly. So we intercept the stats trigger only under
+// Codex — on Claude the scrooge-stats skill runs the script and prints the
+// figures as a normal, user-visible message instead. Detection mirrors
+// scrooge-stats.js: explicit SCROOGE_AGENT wins, else a .codex config dir.
+function isCodexAgent() {
+  if (process.env.SCROOGE_AGENT) return process.env.SCROOGE_AGENT === 'codex';
+  const dir = process.env.CLAUDE_CONFIG_DIR;
+  return Boolean(dir && path.basename(dir) === '.codex');
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -149,14 +176,18 @@ process.stdin.on('end', () => {
     const prompt = data.prompt || '';
     const statePath = getStatePath();
 
-    // /scrooge-stats — intercept, run the stats script, and block the prompt,
-    // returning its output as the reason. transcript_path is passed so stats
-    // reads the active session, not whichever JSONL changed most recently.
-    if (/^\/scrooge(?::scrooge)?-stats(?:\s|$)/i.test(prompt.trim())) {
+    // /scrooge-stats and Codex skill-link forms — under Codex, intercept, run
+    // the stats script, and block the prompt, returning its output as the
+    // reason. On Claude we let the prompt through so the scrooge-stats skill
+    // surfaces the figures as a normal message (the block reason is not shown).
+    // transcript_path is passed so stats reads the active session, not
+    // whichever JSONL changed most recently.
+    const statsCommand = parseStatsCommand(prompt);
+    if (statsCommand && isCodexAgent()) {
       try {
         const argv = [path.join(HERE, 'scrooge-stats.js')];
         if (data.transcript_path) argv.push('--session-file', data.transcript_path);
-        if (/\s--share(?:\s|$)/.test(prompt)) argv.push('--share');
+        if (statsCommand.share) argv.push('--share');
         const out = execFileSync(process.execPath, argv, { encoding: 'utf8', timeout: 5000 });
         process.stdout.write(JSON.stringify({ decision: 'block', reason: out.trim() }));
       } catch (e) {

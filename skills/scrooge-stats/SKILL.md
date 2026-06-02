@@ -4,11 +4,21 @@ description: >
   Show measured Scrooge session token usage and estimated savings when
   available. Use when the user invokes /scrooge-stats, $scrooge-stats, asks for
   Scrooge token stats, or asks how many output tokens Scrooge saved.
-disable-model-invocation: true
+allowed-tools: Bash
 ---
 
-This skill is delivered by `hooks/scrooge-stats.js` (read by
-`hooks/scrooge-activate.js` on `/scrooge-stats`). The model does not compute or
-estimate token usage. The hook reads the active Claude/Codex transcript and
-returns `decision: "block"` with the formatted stats. If the hook did not run,
-report that the stats hook payload is unavailable; do not fabricate numbers.
+Run the stats script and show its output verbatim:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT:-.}/hooks/scrooge-stats.js"
+```
+
+Append `--share` for a one-line summary. Report only what the script prints
+(measured output tokens, plus a benchmark-based "(est)" savings figure when
+available) — do not recompute or estimate tokens yourself. If the script is not
+found (a host without the plugin files), say so rather than fabricating numbers.
+
+On Codex installs the `UserPromptSubmit` hook (`hooks/scrooge-activate.js`)
+intercepts the stats trigger and returns the figures directly, so this body
+never runs there. It is the path for hosts (e.g. Claude in the editor) where the
+hook's block payload is not surfaced to the user.

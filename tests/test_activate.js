@@ -18,6 +18,7 @@ import { readState } from '../hooks/scrooge-config.js';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
+const SESSION_FIXTURE = path.join(HERE, 'fixtures', 'sample-session.jsonl');
 
 const tmpDirs = [];
 function freshConfig() {
@@ -29,21 +30,51 @@ after(() => {
   for (const d of tmpDirs) fs.rmSync(d, { recursive: true, force: true });
 });
 
+// A minimal Codex-format session log. The Claude fixture above can't be reused
+// for codex-agent runs because scrooge-stats.js parses it as Codex and finds no
+// turns; token-count accuracy itself is covered by test_session_log.js, so here
+// we only need a log that yields a real report.
+function makeCodexSession() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-stats-codex-'));
+  tmpDirs.push(dir);
+  const file = path.join(dir, 'codex-session.jsonl');
+  const usage = (output, total) => ({
+    input_tokens: 1000,
+    cached_input_tokens: 100,
+    output_tokens: output,
+    reasoning_output_tokens: 0,
+    total_tokens: total,
+  });
+  const lines = [
+    { timestamp: '2026-06-01T00:00:00.000Z', type: 'session_meta', payload: { id: 'codex-fixture', model: 'gpt-5-codex' } },
+    { timestamp: '2026-06-01T00:00:01.000Z', type: 'event_msg', payload: { type: 'token_count', info: { last_token_usage: usage(300, 1300), total_token_usage: usage(300, 1300) } } },
+    { timestamp: '2026-06-01T00:00:02.000Z', type: 'event_msg', payload: { type: 'token_count', info: { last_token_usage: usage(120, 920), total_token_usage: usage(420, 2220) } } },
+  ];
+  fs.writeFileSync(file, lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  return file;
+}
+
 // Run the hook once. Returns { state, ctx } — the persisted {lang,dial} (or
 // null) and the injected additionalContext (or null when nothing was emitted).
-function runHook(configDir, prompt) {
+function runHook(configDir, prompt, extra = {}, envOverrides = {}) {
   const r = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify({ prompt }),
+    input: JSON.stringify({ prompt, ...extra }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT },
+    env: {
+      ...process.env,
+      CLAUDE_CONFIG_DIR: configDir,
+      CLAUDE_PLUGIN_ROOT: REPO_ROOT,
+      ...envOverrides,
+    },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   let ctx = null;
+  let result = null;
   if (r.stdout.trim()) {
-    const j = JSON.parse(r.stdout);
-    ctx = j.hookSpecificOutput ? j.hookSpecificOutput.additionalContext : null;
+    result = JSON.parse(r.stdout);
+    ctx = result.hookSpecificOutput ? result.hookSpecificOutput.additionalContext : null;
   }
-  return { state: readState(path.join(configDir, '.scrooge-active')), ctx };
+  return { state: readState(path.join(configDir, '.scrooge-active')), ctx, result };
 }
 
 test('bare /scrooge on a fresh session activates en/full (G5 default)', () => {
@@ -69,6 +100,66 @@ test('plugin-namespaced /scrooge:scrooge off clears state', () => {
   const { state, ctx } = runHook(cfg, '/scrooge:scrooge off');
   assert.equal(state, null);
   assert.equal(ctx, null);
+});
+
+// Codex surfaces the hook's block reason, so the stats trigger is intercepted
+// there. CODEX_ENV forces the agent regardless of the test runner's own config.
+const CODEX_ENV = { SCROOGE_AGENT: 'codex' };
+
+test('Codex intercepts /scrooge-stats and returns the measured hook report', () => {
+  const cfg = freshConfig();
+  const { result } = runHook(cfg, '/scrooge-stats', { transcript_path: makeCodexSession() }, CODEX_ENV);
+
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /Scrooge Stats/);
+  assert.match(result.reason, /Output tokens:/);
+});
+
+test('Codex intercepts the $scrooge-stats skill trigger like the slash command', () => {
+  const cfg = freshConfig();
+  const { result } = runHook(cfg, '$scrooge-stats', { transcript_path: makeCodexSession() }, CODEX_ENV);
+
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /Scrooge Stats/);
+});
+
+test('Codex intercepts the markdown skill link for scrooge-stats', () => {
+  const cfg = freshConfig();
+  const { result } = runHook(
+    cfg,
+    '[$scrooge-stats](/Users/crhan/.agents/skills/scrooge-stats/SKILL.md)',
+    { transcript_path: makeCodexSession() },
+    CODEX_ENV
+  );
+
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /Scrooge Stats/);
+});
+
+test('Codex skill-link stats trigger supports --share', () => {
+  const cfg = freshConfig();
+  const { result } = runHook(
+    cfg,
+    '[$scrooge-stats](/Users/crhan/.agents/skills/scrooge-stats/SKILL.md) --share',
+    { transcript_path: makeCodexSession() },
+    CODEX_ENV
+  );
+
+  assert.equal(result.decision, 'block');
+  // --share yields the one-line summary, not the full block.
+  assert.match(result.reason, /output tokens this session/);
+});
+
+test('Claude does not intercept /scrooge-stats — the skill surfaces the figures', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko'); // active mode so a fall-through turn reminds
+  const { result, ctx } = runHook(cfg, '/scrooge-stats', { transcript_path: SESSION_FIXTURE });
+
+  // No block: the prompt passes through to the registered skill instead, which
+  // runs the stats script and prints a normal, user-visible message.
+  assert.notEqual(result?.decision, 'block');
+  // Falls through to the active-mode reminder branch (not the stats intercept).
+  assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/);
 });
 
 test('bare /scrooge forces dial=full but keeps the current lang (G5)', () => {
