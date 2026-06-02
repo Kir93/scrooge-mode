@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import {
   parseClaudeSession,
   parseCodexSession,
+  findRecentClaudeSession,
   findRecentCodexSession,
   readSession,
   EMPTY_SUMMARY,
@@ -229,4 +230,22 @@ test('readSession routes the codex agent to Codex parsing', (t) => {
 test('findRecentCodexSession returns null when no sessions dir resolves', () => {
   const r = findRecentCodexSession(path.join(HERE, 'fixtures', 'empty-codex-config'));
   assert.equal(r, null);
+});
+
+test('findRecentClaudeSession skips subagent transcripts and picks the main session', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-claude-skip-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const proj = path.join(dir, 'projects', 'slug');
+  fs.mkdirSync(path.join(proj, 'sess-uuid', 'subagents'), { recursive: true });
+  const main = path.join(proj, 'main.jsonl');
+  const sub = path.join(proj, 'sess-uuid', 'subagents', 'agent-x.jsonl');
+  fs.writeFileSync(main, '{}\n');
+  fs.writeFileSync(sub, '{}\n');
+  // Make the subagent log strictly newer so a naive recency scan would pick it.
+  const older = new Date('2026-06-01T00:00:00Z');
+  const newer = new Date('2026-06-02T00:00:00Z');
+  fs.utimesSync(main, older, older);
+  fs.utimesSync(sub, newer, newer);
+
+  assert.equal(findRecentClaudeSession(dir), main);
 });
