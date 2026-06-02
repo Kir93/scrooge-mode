@@ -33,3 +33,10 @@ Describe the order in which a Next.js 13 Pages Router project should be migrated
 Recommend the first three components to build when introducing a design system to a React project.
 Provide a decision checklist for a REST API team considering migrating to GraphQL.
 Describe a backpressure strategy when designing a WebSocket-based real-time notification system.
+
+# --- edge: verbose-prone (register stress) ---
+# Prompts that tempt verbose multi-clause prose — surface where en/full over-explains. One expected answer each.
+A `Promise.all` rejects when one input rejects while the other fetches keep running. Explain why, and how to cancel the rest.
+Explain the Node.js event loop phases and give one example task for each phase.
+Review this and list every correctness and performance issue: ```js\nasync function load(ids) { const out = []; for (const id of ids) { out.push(await fetch('/u/'+id).then(r=>r.json())); } return out; }\n```
+Walk through, step by step, the procedure to diagnose a memory leak in a Node.js production service.
