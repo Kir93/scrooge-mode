@@ -13,7 +13,9 @@
       "token-saving",
       "skill",
       "codex",
-      "claude-code"
+      "claude-code",
+      "caveman-alternative",
+      "llm-output-compression"
     ],
     "homepage": "https://github.com/Kir93/scrooge-mode"
   },

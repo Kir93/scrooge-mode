@@ -26,7 +26,9 @@
     "token-compression",
     "i18n",
     "korean",
-    "llm"
+    "llm",
+    "caveman-alternative",
+    "llm-output-compression"
   ],
   "author": "Kir93 <kir931028@gmail.com>",
   "license": "MIT",
