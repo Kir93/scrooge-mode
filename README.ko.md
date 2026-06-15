@@ -1,22 +1,39 @@
-# 💰 scrooge
+<p align="center">
+  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4b0/emoji.svg" width="120" alt="money bag" />
+</p>
 
-`토큰은 돈 — 구두쇠처럼 써라`
+<h1 align="center">scrooge</h1>
+
+<p align="center">
+  <code>토큰은 돈 — 구두쇠처럼 써라</code>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Kir93/scrooge-mode/stargazers"><img src="https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/Kir93/scrooge-mode/commits/main"><img src="https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat" alt="Last Commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat" alt="License"></a>
+</p>
+
+<p align="center">
+  <a href="README.md">English</a> · 한국어
+</p>
+
+<p align="center">
+  <a href="#데모">데모</a> ·
+  <a href="#설치">설치</a> ·
+  <a href="#표면">표면</a> ·
+  <a href="#벤치마크">벤치마크</a> ·
+  <a href="#메커니즘">메커니즘</a> ·
+  <a href="#caveman과-비교">caveman 비교</a>
+</p>
+
+---
 
 > AI 코딩 에이전트 응답의 출력 토큰을 줄이는 skill — 같은 답, 적은 토큰.
-
-[![Stars](https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow)](https://github.com/Kir93/scrooge-mode/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat)](https://github.com/Kir93/scrooge-mode/commits/main)
-[![License](https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat)](LICENSE)
-
-[English](README.md) · 한국어
 
 AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI 지원. 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
 **`~67% KO · ~65% EN · 100% 정확성 · 존대 제거`** — `claude-opus-4-7`, N=24 paired median.
-
-Jump to: [데모](#데모) · [설치](#설치) · [표면](#표면) · [벤치마크](#벤치마크) · [메커니즘](#메커니즘) · [caveman 비교](#caveman과-비교)
-
----
 
 ## 데모
 

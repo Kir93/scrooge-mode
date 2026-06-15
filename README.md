@@ -1,22 +1,39 @@
-# 💰 scrooge
+<p align="center">
+  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f4b0/emoji.svg" width="120" alt="money bag" />
+</p>
 
-`tokens are money — spend them like a miser`
+<h1 align="center">scrooge</h1>
+
+<p align="center">
+  <code>tokens are money — spend them like a miser</code>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Kir93/scrooge-mode/stargazers"><img src="https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/Kir93/scrooge-mode/commits/main"><img src="https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat" alt="Last Commit"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat" alt="License"></a>
+</p>
+
+<p align="center">
+  English · <a href="README.ko.md">한국어</a>
+</p>
+
+<p align="center">
+  <a href="#demo">Demo</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#surface">Surface</a> ·
+  <a href="#benchmarks">Benchmarks</a> ·
+  <a href="#mechanics">Mechanics</a> ·
+  <a href="#compared-to-caveman">Compared to caveman</a>
+</p>
+
+---
 
 > Output-compression skill for AI coding agents — same answer, fewer tokens on every reply.
-
-[![Stars](https://img.shields.io/github/stars/Kir93/scrooge-mode?style=flat&color=yellow)](https://github.com/Kir93/scrooge-mode/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/Kir93/scrooge-mode?style=flat)](https://github.com/Kir93/scrooge-mode/commits/main)
-[![License](https://img.shields.io/github/license/Kir93/scrooge-mode?style=flat)](LICENSE)
-
-English · [한국어](README.ko.md)
 
 KO-first bilingual (KO/EN) output-compression skill for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI. The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
 **`~67% KO · ~65% EN · 100% accuracy · honorifics stripped`** — `claude-opus-4-7`, N=24 paired median.
-
-Jump to: [Demo](#demo) · [Install](#install) · [Surface](#surface) · [Benchmarks](#benchmarks) · [Mechanics](#mechanics) · [Compared to caveman](#compared-to-caveman)
-
----
 
 ## Demo
 
