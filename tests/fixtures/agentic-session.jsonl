@@ -1,0 +1,6 @@
+{"type":"user","message":{"role":"user","content":"go"}}
+{"type":"assistant","message":{"id":"msg_A","model":"claude-opus-4-7","content":[{"type":"text","text":"part 1"}],"usage":{"input_tokens":500,"output_tokens":120,"cache_read_input_tokens":40,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_A","model":"claude-opus-4-7","content":[{"type":"text","text":"part 2"}],"usage":{"input_tokens":500,"output_tokens":120,"cache_read_input_tokens":40,"cache_creation_input_tokens":0}}}
+{not valid json at all
+{"type":"assistant","message":{"id":"msg_B","model":"claude-opus-4-7","content":[{"type":"text","text":"let me check"}],"usage":{"input_tokens":600,"output_tokens":80,"cache_read_input_tokens":10,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_B","model":"claude-opus-4-7","content":[{"type":"tool_use","id":"toolu_1","name":"Bash","input":{}}],"usage":{"input_tokens":600,"output_tokens":80,"cache_read_input_tokens":10,"cache_creation_input_tokens":0}}}

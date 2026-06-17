@@ -27,6 +27,11 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // the session-log.js date together. Assertions below check exact values
 // (output 300, cache 50) so a stale fixture fails loudly rather than silently.
 const FIXTURE = path.join(HERE, 'fixtures', 'sample-session.jsonl');
+// agentic-session.jsonl is the canary against schema-drift blind spots the
+// prose-only fixture above can't catch: two responses whose usage is repeated
+// across content-block lines under one message.id (dedup), and one whose text
+// block precedes a same-id tool_use block (prose/tool_use classification).
+const AGENTIC_FIXTURE = path.join(HERE, 'fixtures', 'agentic-session.jsonl');
 
 function makeCodexSession(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codex-session-'));
@@ -106,6 +111,29 @@ test('parseClaudeSession sums output/cache tokens across assistant turns', () =>
   assert.equal(s.cacheReadTokens, 50);
   assert.equal(s.turns, 2);
   assert.equal(s.model, 'claude-opus-4-7');
+  // No tool_use blocks in this fixture → all output is prose.
+  assert.equal(s.proseOutputTokens, 300);
+  assert.equal(s.toolUseOutputTokens, 0);
+});
+
+test('parseClaudeSession dedups repeated message.id usage (no content-block double count)', () => {
+  const s = parseClaudeSession(AGENTIC_FIXTURE);
+  // Four assistant usage lines across two message.ids; a naive per-line sum is
+  // 400 output / 100 cache, the dedup-by-id count is 200 / 50 across 2 turns.
+  assert.equal(s.outputTokens, 200);
+  assert.equal(s.cacheReadTokens, 50);
+  assert.equal(s.turns, 2);
+  assert.equal(s.model, 'claude-opus-4-7');
+});
+
+test('parseClaudeSession buckets a mixed text+tool_use response as tool_use, not first-seen prose', () => {
+  const s = parseClaudeSession(AGENTIC_FIXTURE);
+  // msg_A is prose (120). msg_B streams a text block before a same-id tool_use
+  // block → the whole response is tool_use (80). First-seen classification would
+  // mis-bucket msg_B as prose; the buckets must still sum to total output.
+  assert.equal(s.proseOutputTokens, 120);
+  assert.equal(s.toolUseOutputTokens, 80);
+  assert.equal(s.proseOutputTokens + s.toolUseOutputTokens, s.outputTokens);
 });
 
 test('parseClaudeSession degrades to EMPTY_SUMMARY for a missing file', () => {

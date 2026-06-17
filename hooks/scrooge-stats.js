@@ -16,8 +16,9 @@
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { readState, writeSuffix } from './scrooge-config.js';
+import { readState, writeSuffix, getStatePath, deriveSessionKey } from './scrooge-config.js';
 import { readSession } from '../lib/session-log.js';
+import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
 
 // Per-(lang, dial) mean output-token compression ratio vs the uncompressed
 // baseline, from the README benchmark (N=24, claude-opus-4-7, register-only
@@ -41,14 +42,17 @@ function humanizeTokens(n) {
 
 // Counterfactual estimate for one (lang, dial), or null when no benchmark ratio
 // exists for that pair (e.g. any lite session, or a lang not yet benchmarked).
-function deriveEstimate(outputTokens, lang, dial) {
+// The ratio is a prose-register figure, so it is applied to prose output tokens
+// only — tool_use output (bash/edit/tool JSON) is not compressed by the register
+// and must stay out of the savings base (ADR-003).
+function deriveEstimate(proseOutputTokens, lang, dial) {
   const ratio =
     lang != null && dial != null ? SAVINGS_RATIO[lang]?.[dial] : undefined;
   if (ratio == null || ratio <= 0 || ratio >= 1) return null;
-  const estNormal = Math.round(outputTokens / (1 - ratio));
+  const estNormal = Math.round(proseOutputTokens / (1 - ratio));
   return {
     estNormal,
-    saved: estNormal - outputTokens,
+    saved: estNormal - proseOutputTokens,
     pct: Math.round(ratio * 100),
   };
 }
@@ -58,14 +62,33 @@ function shortPath(p) {
   return p.length > 48 ? '...' + p.slice(-48) : p;
 }
 
+// Lifetime ledger block — accumulated savings across sessions, or a `--since`
+// window. Empty when the ledger has no sessions yet.
+function formatLedger(ledger, since) {
+  if (!ledger || ledger.sessions === 0) return '';
+  const label = since ? `Since ${since}` : 'Lifetime';
+  let block =
+    `${SEP}\n${label} (ledger):\n` +
+    `Sessions:              ${ledger.sessions.toLocaleString()}\n` +
+    `Output tokens saved:   ${ledger.savedTokens.toLocaleString()} (est, prose-only)\n`;
+  if (ledger.savedUsd > 0) {
+    block += `Est. value saved:      ~$${ledger.savedUsd.toFixed(2)} (est)\n`;
+  }
+  return block;
+}
+
 // Pure formatter — split from main() so tests can pass synthetic inputs.
 function formatStats({
   outputTokens,
+  proseOutputTokens = 0,
+  toolUseOutputTokens = 0,
   cacheReadTokens,
   turns,
   model,
   file,
   state,
+  ledger = null,
+  since = null,
 }) {
   const head = `\nScrooge Stats\n${SEP}\n`;
   if (turns === 0) {
@@ -78,7 +101,9 @@ function formatStats({
   }
 
   const modeLabel = state ? `${state.lang}/${state.dial}` : 'inactive';
-  const est = state ? deriveEstimate(outputTokens, state.lang, state.dial) : null;
+  const est = state
+    ? deriveEstimate(proseOutputTokens, state.lang, state.dial)
+    : null;
 
   let savings;
   let footer = '';
@@ -86,9 +111,9 @@ function formatStats({
     savings = 'Scrooge inactive this session — no savings estimate.';
   } else if (est) {
     savings =
-      `Est. without scrooge:  ${est.estNormal.toLocaleString()}\n` +
+      `Est. without scrooge:  ${est.estNormal.toLocaleString()} (prose-only basis)\n` +
       `Est. tokens saved:     ${est.saved.toLocaleString()} (~${est.pct}%, est)`;
-    footer = `Estimate from benchmarks/ (mean per-dial, ${modeLabel}). Measured tokens above; savings are counterfactual.`;
+    footer = `Estimate from benchmarks/ (mean per-dial, ${modeLabel}); applied to prose output only — tool_use output excluded. Savings are counterfactual.`;
   } else {
     savings =
       `Savings estimate pending — no benchmark ratio for '${state.lang}/${state.dial}' yet.\n` +
@@ -101,26 +126,31 @@ function formatStats({
     `Mode:     ${modeLabel}\n` +
     `Turns:    ${turns}\n${SEP}\n` +
     `Output tokens:         ${outputTokens.toLocaleString()}\n` +
+    `  prose:               ${proseOutputTokens.toLocaleString()}\n` +
+    `  tool_use:            ${toolUseOutputTokens.toLocaleString()}\n` +
     `Cache-read tokens:     ${cacheReadTokens.toLocaleString()}\n${SEP}\n` +
     `${savings}\n` +
-    (footer ? footer + '\n' : '')
+    (footer ? footer + '\n' : '') +
+    formatLedger(ledger, since)
   );
 }
 
-function formatShare({ outputTokens, turns, state }) {
+function formatShare({ outputTokens, proseOutputTokens = 0, turns, state }) {
   if (turns === 0) return '💰 scrooge armed, no turns yet';
-  const est = state ? deriveEstimate(outputTokens, state.lang, state.dial) : null;
+  const est = state
+    ? deriveEstimate(proseOutputTokens, state.lang, state.dial)
+    : null;
   if (est) {
-    return `💰 saved ~${est.saved.toLocaleString()} output tokens (est) across ${turns} turns this session`;
+    return `💰 saved ~${est.saved.toLocaleString()} prose output tokens (est) across ${turns} turns this session`;
   }
   return `💰 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session`;
 }
 
 // Pre-rendered statusline suffix: saved estimate when available, else raw output
 // tokens while active, else empty (clears the badge suffix when inactive).
-function suffixFor({ outputTokens, turns, state }) {
+function suffixFor({ outputTokens, proseOutputTokens = 0, turns, state }) {
   if (!state || turns === 0) return '';
-  const est = deriveEstimate(outputTokens, state.lang, state.dial);
+  const est = deriveEstimate(proseOutputTokens, state.lang, state.dial);
   if (est) return `⛏ ~${humanizeTokens(est.saved)} saved (est)`;
   return `⛏ ${humanizeTokens(outputTokens)} tok`;
 }
@@ -130,6 +160,8 @@ function main() {
   const sfIdx = args.indexOf('--session-file');
   const sessionFile = sfIdx !== -1 ? args[sfIdx + 1] : null;
   const share = args.includes('--share');
+  const sinceIdx = args.indexOf('--since');
+  const sinceArg = sinceIdx !== -1 ? args[sinceIdx + 1] || null : null;
 
   const defaultCodexDir =
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
@@ -150,16 +182,36 @@ function main() {
     codexDir: defaultCodexDir,
     sessionFile,
   });
-  const state = readState();
-  const view = { ...sess, state };
+  // Session-scoped state: derive the canonical session key from the transcript
+  // (its stem is the session_id, the same key the activation hook wrote under) so
+  // stats reads the SAME state file the other surfaces use, not the global one.
+  const sessionKey = deriveSessionKey({ transcript_path: sess.file });
+  const state = readState(getStatePath(sessionKey));
 
-  // Refresh the statusline suffix on every run, tagged "<sessionId>:<text>" so a
+  // Upsert this session into the lifetime ledger BEFORE aggregating, so the
+  // total includes the current run. Upsert (not append) is keyed on sessionKey:
+  // running /scrooge-stats N times in one session overwrites the one entry, never
+  // double-counts. Skipped when sessionless or no turns yet.
+  const est = state ? deriveEstimate(sess.proseOutputTokens, state.lang, state.dial) : null;
+  if (sessionKey && sess.turns > 0) {
+    upsertSession({
+      sessionId: sessionKey,
+      model: sess.model,
+      proseOutputTokens: sess.proseOutputTokens,
+      savedTokens: est ? est.saved : 0,
+      ts: Date.now(),
+    });
+  }
+  const since = sinceArg ? sinceToEpoch(sinceArg, Date.now()) : null;
+  const ledger = aggregateLedger({ since });
+  const view = { ...sess, state, ledger, since: sinceArg };
+
+  // Refresh the statusline suffix on every run, tagged "<sessionKey>:<text>" so a
   // statusline in a different (or fresh) session does not render a stale number.
-  // The session id is the transcript filename stem (Claude writes <uuid>.jsonl),
-  // which matches the session_id the statusline receives on its stdin payload.
-  const sessionId = sess.file ? path.basename(sess.file, '.jsonl') : '';
+  // The key is the sanitized transcript stem, matching the statusline's own
+  // sanitized session_id — so the tag compare is exact across both surfaces.
   const text = suffixFor(view);
-  writeSuffix(text ? `${sessionId}:${text}` : '');
+  writeSuffix(text && sessionKey ? `${sessionKey}:${text}` : '');
 
   process.stdout.write(share ? formatShare(view) + '\n' : formatStats(view));
 }
