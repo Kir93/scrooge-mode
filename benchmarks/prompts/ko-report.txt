@@ -1,0 +1,36 @@
+# Scrooge benchmark — KO report corpus (HELD-OUT)
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+#
+# TRAIN/TEST SEPARATION: this is the *report* corpus. It is held out from rule
+# tuning — never tune rules/{ko,en}/*.md against these prompts. Use prompts/ko.txt
+# (the dev corpus) for tuning. Headline numbers should come from this report set.
+# NOTE: newly authored 2026-06-16; review for difficulty/domain parity before
+# publishing numbers measured against it.
+
+# --- debug ---
+React에서 input에 타이핑할 때마다 폼 전체가 리렌더되는 원인과 해결책을 설명해줘.
+Node.js 서버 기동 시 `EADDRINUSE` 에러가 나는 원인과 해결 순서를 알려줘.
+TypeScript에서 `Type 'string | undefined' is not assignable to type 'string'` 에러를 안전하게 푸는 방법은?
+PostgreSQL에서 어떤 인덱스의 `idx_scan`이 0일 때 점검 순서를 알려줘.
+React `useMemo`가 매 렌더마다 재계산되는 상황의 원인을 설명해줘.
+
+# --- explain ---
+JavaScript event delegation의 동작 원리와 장점을 설명해줘.
+CDN 캐시에서 `Cache-Control: s-maxage`와 `max-age`의 차이를 설명해줘.
+트랜잭션 격리 수준 `READ COMMITTED`와 `REPEATABLE READ`의 차이를 알려줘.
+HTTP cookie의 `SameSite=Lax`와 `Strict`의 동작 차이를 설명해줘.
+React reconciliation에서 `key`가 왜 중요한지 설명해줘.
+
+# --- review ---
+다음 코드의 문제점을 알려줘: ```js\nconst cache = {}; function memo(fn) { return (n) => { if (cache[n]) return cache[n]; return cache[n] = fn(n); }; }\n```
+`arr.forEach(async (x) => { await save(x); })`로 순차 저장을 기대하는 코드의 문제점은?
+SQL `SELECT * FROM orders WHERE status != 'done'`에 인덱스가 잘 안 타는 이유를 평가해줘.
+React에서 `key={index}`로 리스트를 렌더하며 중간 항목을 삭제하는 코드의 위험을 알려줘.
+
+# --- plan ---
+단일 PostgreSQL을 read replica로 확장할 때 가장 먼저 봐야 할 점검 항목 3가지를 알려줘.
+REST API에 rate limiting을 도입할 때 알고리즘 선택 기준을 알려줘.
+레거시 jQuery 페이지를 React로 점진 이관하는 순서를 알려줘.
+모바일 앱 오프라인 동기화를 설계할 때 충돌 해결 전략을 알려줘.
+CI 파이프라인 빌드 시간이 길어질 때 단축 우선순위를 알려줘.

@@ -52,6 +52,39 @@ over another.
 - **Estimate label** — savings % is an estimate, not a measured contract.
   Different prompts compress differently; the same arm shows variance across
   runs. Treat the table as guidance, not specification.
+- **Dedup token counting (aligned with the stats methodology)** — Claude writes
+  one JSONL line per content block, repeating the same `message.id` and `usage`
+  on each, so a naive sum double-counts (≈2.89x on agentic sessions). The harness
+  dedups by `message.id` (fallback `requestId` → line index), counts each id's
+  usage once, and splits prose vs tool_use. The headline `output_tokens` is the
+  **prose-only** bucket — the same basis `scrooge-stats` uses — and the pre-dedup
+  naive sum is kept as `raw_output_tokens` so a regression to double-counting is
+  visible in the data. This mirrors `lib/session-log.js` `parseClaudeSession`.
+- **Register pre-flight verification** — before measuring, the harness scans for
+  active register-hook channels — **scrooge AND caveman** — and records the result
+  (`verify_register_clean`). An *active* channel (a present `.scrooge-active*`
+  state file, a `.caveman-active` flag, or `settings.json` actively wiring caveman)
+  is **blocking**: the run aborts unless `--allow-contaminated`. Installed-but-inert
+  files (caveman plugin marketplace, skill symlink) are **advisory** (printed,
+  non-blocking). Each row records `isolation_verified`. Scrooge matters here
+  because the user's own scrooge plugin hook will otherwise inject a compression
+  directive into every arm — including the neutral baseline.
+- **Per-session contamination exclusion** — every session transcript is scanned
+  (injection surface only — attachment/hook/message text, not the cwd/gitBranch
+  metadata) for a register-hook injection: scrooge's reminder (`SCROOGE 활성 …`) in
+  ANY arm, or a caveman fingerprint in a non-caveman arm. A hit marks the row
+  `contaminated`, drops it from scoring, and lets `--resume` retry once the channel
+  is removed. This is the authoritative backstop behind the pre-flight check; it
+  guards against both the 34/97-session caveman pollution and the scrooge-self-hook
+  pollution that compressed the baseline of an earlier opus-4-8 run.
+- **Train/test separation** — `prompts/{ko,en}.txt` is the *dev* corpus the rules
+  were tuned against; `prompts/{ko,en}-report.txt` is the held-out *report* corpus
+  for headline numbers. Never tune `rules/{ko,en}/*.md` against the report set, or
+  the headline overstates real-world savings. The dev and report sets mirror the
+  same categories (debug/explain/review/plan) and domains with disjoint prompts.
+- **Pinned model** — pass `--model <id>` (e.g. `--model claude-opus-4-7`) for a
+  reproducible headline. Without it, the CLI's configured model is used and the
+  number drifts as that default changes.
 
 ## How to run
 
@@ -68,11 +101,15 @@ python3 benchmarks/report.py --input benchmarks/results-dry.jsonl
 
 # 2. live run (uses your subscription quota). --workers 4 = 4-way parallel,
 #    ~4x faster wall clock. Safe on Claude Max; lower it if you hit rate limits.
+#    --model pins the model for a reproducible headline; isolation moves register
+#    state files aside and the pre-flight register check aborts on an active
+#    scrooge/caveman channel (see Host isolation).
 python3 benchmarks/run.py \
   --prompts benchmarks/prompts/ko.txt \
   --arms normal,terse,scrooge:ko/full,caveman:full \
   --runs 1 \
   --workers 1 \
+  --model claude-opus-4-7 \
   --resume \
   --output benchmarks/results-ko.jsonl
 
@@ -171,20 +208,36 @@ generic "answer concisely" instruction.
 
 ## Host isolation
 
-The harness moves the following aside for the benchmark duration (default;
-disable with `--no-isolate-host`):
+A register plugin's hook (scrooge's `UserPromptSubmit`/`SessionStart`, caveman's)
+injects its directive into the *user-message channel* of every child `claude
+--print` — independently of `--system-prompt`, and into the neutral baseline too.
+`--system-prompt` replaces the system prompt but does **not** stop these hooks, so
+without isolation the "normal" arm silently receives a compression instruction and
+the savings-vs-normal number collapses (and a KO scrooge state even forces Korean
+answers onto an English run).
 
-- `~/.claude/settings.json` — if any hook injects rule text via
-  `SessionStart` or `UserPromptSubmit` (e.g. caveman's globally-installed
-  hook), child `claude --print` calls inherit it, polluting the "normal"
-  arm baseline. Moving this file aside guarantees the only register
-  instruction reaching the child is the one this benchmark passes via
-  `--system-prompt`.
-- `~/.claude/.caveman-active` — caveman's state file. Belt-and-suspenders;
-  some hooks may default-activate without it.
+To stop this, the harness moves the hooks' **activation-state files** aside for the
+benchmark duration (default; disable with `--no-isolate-host`):
 
-Both files are restored on exit. If the parent claude session re-creates
-either file mid-benchmark, the stale backup is discarded.
+- `~/.claude/.scrooge-active` and any `~/.claude/.scrooge-active-*` — scrooge's
+  state. `hooks/scrooge-activate.js` injects nothing when the state file is absent
+  (`if (state) emit(...)`), so removing it silences the hook.
+- `~/.claude/.caveman-active` — caveman's state flag.
+
+Moving only the *state files* (not `settings.json`) silences the register hooks
+without dropping the parent session's other hooks or risking a plugin re-enable.
+`--isolate-settings` additionally moves `settings.json` for the rare case of a hook
+wired there directly (off by default). All moved files are restored on exit; a
+stale backup (parent re-created the file mid-run) is discarded rather than
+clobbered.
+
+After moving them, the harness runs a **pre-flight register check**
+(`verify_register_clean`) inside the isolation window: a remaining `.scrooge-active*`
+/ `.caveman-active` / actively-wired caveman in `settings.json` is **blocking** (the
+run aborts unless `--allow-contaminated`); an installed-but-inert caveman plugin or
+skill symlink is **advisory**. The per-session contamination check (above) is the
+authoritative backstop — any row whose transcript shows a register-hook injection
+is excluded regardless of the pre-flight tier.
 
 ## Limitations
 
@@ -200,11 +253,11 @@ either file mid-benchmark, the stale backup is discarded.
 - **Host-isolation lock**: only one `run.py` may isolate the host at a
   time. An atomic mkdir lock at `/tmp/scrooge-bench-isolation.lock.d/`
   serializes invocations across processes; a second concurrent run exits
-  immediately with code 2 instead of clobbering the first's backups
-  (`~/.claude/settings.json` could previously be lost). Backups now carry
-  the holder PID (`/tmp/scrooge-bench-settings.json.<pid>.bak`). If a run
-  crashes and leaves the lock dir behind, check `holder.pid` inside it,
-  confirm that PID is no longer running, then remove the dir manually.
+  immediately with code 2 instead of clobbering the first's backups. Backups
+  carry the holder PID (e.g. `/tmp/scrooge-bench-.scrooge-active.<pid>.bak`). If
+  a run is hard-killed it may leave a state file in `/tmp` and the lock dir
+  behind: restore the `.bak` to `~/.claude/` and, after checking `holder.pid` is
+  no longer running, remove the lock dir manually.
 - **Hook-based activation is bypassed** by design — the rule text is injected
   via `claude --print --system-prompt …` rather than via the production
   UserPromptSubmit hook. Functionally equivalent (same model context, same

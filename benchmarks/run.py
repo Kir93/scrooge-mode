@@ -162,6 +162,12 @@ class RunResult:
     output_text: Optional[str] = None
     error: Optional[str] = None
     provider: str = "claude"
+    tool_use_output_tokens: Optional[int] = None
+    total_output_tokens: Optional[int] = None
+    raw_output_tokens: Optional[int] = None
+    turns: Optional[int] = None
+    isolation_verified: Optional[bool] = None
+    contaminated: bool = False
 
 
 NORMAL_BASELINE_SYSTEM = (
@@ -170,7 +176,7 @@ NORMAL_BASELINE_SYSTEM = (
 )
 
 
-def build_cmd(rule_text: str, prompt: str) -> list[str]:
+def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None) -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -192,14 +198,28 @@ def build_cmd(rule_text: str, prompt: str) -> list[str]:
     elsewhere in this module.
     """
     system = rule_text if rule_text else NORMAL_BASELINE_SYSTEM
-    return ["claude", "--print", "--system-prompt", system, "--", prompt]
+    cmd = ["claude", "--print", "--system-prompt", system]
+    if model:
+        cmd += ["--model", model]
+    cmd += ["--", prompt]
+    return cmd
 
 
 def cwd_session_dir(cwd: Path) -> Path:
-    """Compute the Claude projects subdir for the given cwd (slugified)."""
-    slug = re.sub(r"[^A-Za-z0-9]+", "-", str(cwd))
-    slug = re.sub(r"-+", "-", slug).strip("-")
-    return CLAUDE_PROJECTS_DIR / f"-{slug}"
+    """Compute the Claude projects subdir for the given cwd.
+
+    Claude Code slugifies the cwd by replacing each non-alphanumeric character
+    with `-` — one dash per character, with NO run-collapsing: a cwd ending
+    `.../n6/_5c0` becomes `...-n6--5c0` (double dash from the `/` then `_`). The
+    prior regex collapsed runs (`[^A-Za-z0-9]+` plus `-+`→`-`), so any cwd with
+    consecutive separators — e.g. a macOS `/var/folders/<a>/_<hash>/T/tmp.X` temp
+    dir, exactly the empty `--cwd` this benchmark wants — hashed to the wrong
+    subdir and session discovery failed with "no new session file found". Match
+    Claude's char-by-char rule exactly. For paths without consecutive separators
+    (e.g. the repo root) the result is unchanged.
+    """
+    slug = re.sub(r"[^A-Za-z0-9]", "-", str(cwd))
+    return CLAUDE_PROJECTS_DIR / slug
 
 
 def newest_session_file(d: Path) -> Optional[Path]:
@@ -209,40 +229,162 @@ def newest_session_file(d: Path) -> Optional[Path]:
     return files[0] if files else None
 
 
-def parse_assistant_tokens(session_path: Path) -> tuple[Optional[int], Optional[int], Optional[str]]:
-    """Sum output/cache tokens across assistant turns in this session JSONL."""
-    out = 0
-    cache = 0
+@dataclass
+class TokenSummary:
+    prose_output_tokens: int
+    tool_use_output_tokens: int
+    total_output_tokens: int
+    raw_output_tokens: int
+    cache_read_tokens: int
+    turns: int
+    model: Optional[str]
+    has_usage: bool
+
+
+def parse_assistant_tokens(session_path: Path) -> TokenSummary:
+    """Token summary for one session JSONL, aligned with the Task 1 stats
+    methodology (`lib/session-log.js` `parseClaudeSession`).
+
+    Claude writes one JSONL line per *content block* of a response, repeating the
+    same `message.id` and `usage` on each line. Naively summing every line
+    double-counts usage (measured ~2.89x on agentic sessions). So dedup by
+    `message.id` (fallback `requestId` -> line index) and count each id's usage
+    once (last-wins for repeats). A response is bucketed as tool_use when ANY of
+    its content blocks is tool_use, decided only after scanning every line for
+    that id. The benchmark headline (`output_tokens`) is the prose-only bucket,
+    matching how `scrooge-stats` applies its savings ratio to prose alone.
+
+    `raw_output_tokens` keeps the pre-dedup naive sum so a regression back to
+    double-counting is visible in the data.
+    """
+    by_id: dict = {}
+    raw_sum = 0
     model = None
-    found = False
-    with session_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if obj.get("type") != "assistant":
-                continue
-            msg = obj.get("message") or {}
-            usage = msg.get("usage") or {}
-            ot = usage.get("output_tokens")
-            cr = usage.get("cache_read_input_tokens")
-            if isinstance(ot, int):
-                out += ot
-                found = True
-            if isinstance(cr, int):
-                cache += cr
-            model = model or msg.get("model")
-    if not found:
-        return None, None, model
-    return out, cache, model
+    line_index = -1
+    try:
+        text = session_path.read_text(encoding="utf-8")
+    except OSError:
+        return TokenSummary(0, 0, 0, 0, 0, 0, None, False)
+
+    for line in text.split("\n"):
+        line_index += 1
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if entry.get("type") != "assistant":
+            continue
+        msg = entry.get("message") or {}
+        mid = msg.get("id") or entry.get("requestId") or f"__line_{line_index}"
+        rec = by_id.get(mid)
+        if rec is None:
+            rec = {"output": 0, "cache": 0, "has_usage": False, "tool_use": False}
+            by_id[mid] = rec
+        usage = msg.get("usage") or {}
+        ot = usage.get("output_tokens")
+        if isinstance(ot, int):
+            rec["output"] = ot  # last-wins; idempotent for repeated same-id lines
+            rec["cache"] = usage.get("cache_read_input_tokens") or 0
+            rec["has_usage"] = True
+            raw_sum += ot
+        content = msg.get("content")
+        if isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict) and block.get("type") == "tool_use":
+                    rec["tool_use"] = True
+                    break
+        if model is None and msg.get("model"):
+            model = msg.get("model")
+
+    prose = tool_use = cache = turns = 0
+    for rec in by_id.values():
+        if not rec["has_usage"]:
+            continue
+        cache += rec["cache"]
+        turns += 1
+        if rec["tool_use"]:
+            tool_use += rec["output"]
+        else:
+            prose += rec["output"]
+    return TokenSummary(
+        prose_output_tokens=prose,
+        tool_use_output_tokens=tool_use,
+        total_output_tokens=prose + tool_use,
+        raw_output_tokens=raw_sum,
+        cache_read_tokens=cache,
+        turns=turns,
+        model=model,
+        has_usage=turns > 0,
+    )
+
+
+CAVEMAN_FINGERPRINT = re.compile(r"caveman", re.IGNORECASE)
+# scrooge's hook reminder/injection/countermand strings (hooks/scrooge-activate.js
+# buildReminder / buildFullInjection / buildCountermand). Their presence in a
+# transcript means the scrooge UPS/SessionStart hook fired — which, post-isolation,
+# it must not. A benchmark answer never emits these literals.
+SCROOGE_HOOK_FINGERPRINT = re.compile(r"SCROOGE\s+(활성|active|MODE ACTIVE|OFF)", re.IGNORECASE)
+_NOISE_KEYS = ("cwd", "gitBranch")
+
+
+def _injection_scan_text(session_path: Path) -> Optional[str]:
+    """Concatenate a session JSONL's register-injection surface (attachment/hook/
+    message content), with the noisy top-level `cwd`/`gitBranch` metadata removed.
+    Claude stamps cwd+gitBranch on most lines, so scanning the raw text would let a
+    benchmark run from a path or branch containing a register name self-trigger
+    contamination. Returns None if unreadable."""
+    try:
+        raw = session_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    chunks = []
+    for line in raw.split("\n"):
+        if not line.strip():
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue  # skip unparseable lines rather than scan raw metadata
+        if isinstance(obj, dict):
+            for k in _NOISE_KEYS:
+                obj.pop(k, None)
+        chunks.append(json.dumps(obj, ensure_ascii=False))
+    return "\n".join(chunks)
+
+
+def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
+    """Return a contamination marker if a register hook leaked into this arm's
+    session, else None. The authoritative per-row backstop behind host_isolation.
+
+    Two register hooks can inject a compression directive into a child
+    `claude --print` through the hook channel (it lands in the transcript as a
+    hook_additional_context attachment, which this scan sees):
+      - scrooge — the user's own UPS/SessionStart hook ("SCROOGE 활성 …"). After
+        isolation moves `.scrooge-active` aside it must inject nothing, so its
+        reminder appearing in ANY arm (including the scrooge arm, whose register
+        must come only from --system-prompt) means isolation failed. This is the
+        contaminant that corrupted the first opus-4-8 run (compressed every
+        baseline; cross-lingually broke EN).
+      - caveman — the historical 34/97 leak; flagged in any NON-caveman arm (a
+        caveman arm legitimately carries the word).
+    A flagged row is excluded (output_tokens=None) and retried under --resume.
+    The scan ignores cwd/gitBranch metadata (see `_injection_scan_text`).
+    """
+    text = _injection_scan_text(session_path)
+    if text is None:
+        return None
+    if SCROOGE_HOOK_FINGERPRINT.search(text):
+        return "scrooge register-hook injection in session transcript"
+    if "caveman" not in arm.lower() and CAVEMAN_FINGERPRINT.search(text):
+        return "caveman fingerprint in session transcript"
+    return None
 
 
 def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
-            cwd: Path, dry_run: bool, timeout: int) -> RunResult:
+            cwd: Path, dry_run: bool, timeout: int, model: Optional[str] = None,
+            isolation_verified: Optional[bool] = None) -> RunResult:
     session_dir = cwd_session_dir(cwd)
     before = newest_session_file(session_dir)
     before_mtime = before.stat().st_mtime if before else 0
@@ -264,9 +406,11 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          output_tokens=fake_tokens, cache_read_tokens=0,
                          model="dry-run", elapsed_s=time.monotonic() - start,
                          session_file=None, output_chars=len(fake_text),
-                         output_text=fake_text)
+                         output_text=fake_text, tool_use_output_tokens=0,
+                         total_output_tokens=fake_tokens, raw_output_tokens=fake_tokens,
+                         turns=1, isolation_verified=isolation_verified)
 
-    cmd = build_cmd(rule_text, prompt)
+    cmd = build_cmd(rule_text, prompt, model)
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
     except subprocess.TimeoutExpired:
@@ -297,12 +441,27 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          session_file=None,
                          error="no new session file found for benchmark cwd")
 
-    out_tokens, cache_tokens, model = parse_assistant_tokens(session_path)
+    summary = parse_assistant_tokens(session_path)
     output_text = r.stdout.strip()
-    return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=out_tokens,
-                     cache_read_tokens=cache_tokens, model=model, elapsed_s=elapsed,
-                     session_file=session_path.name, output_chars=len(output_text),
-                     output_text=output_text)
+    contamination = detect_contamination(session_path, arm)
+    if contamination:
+        # Exclude (output_tokens=None) so the row is not scored and `--resume`
+        # retries it once the activation channel is removed.
+        return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=None,
+                         cache_read_tokens=summary.cache_read_tokens, model=summary.model,
+                         elapsed_s=elapsed, session_file=session_path.name,
+                         output_chars=len(output_text), output_text=output_text,
+                         isolation_verified=isolation_verified, contaminated=True,
+                         error=f"contamination: {contamination}")
+    headline = summary.prose_output_tokens if summary.has_usage else None
+    return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=headline,
+                     cache_read_tokens=summary.cache_read_tokens, model=summary.model,
+                     elapsed_s=elapsed, session_file=session_path.name,
+                     output_chars=len(output_text), output_text=output_text,
+                     tool_use_output_tokens=summary.tool_use_output_tokens,
+                     total_output_tokens=summary.total_output_tokens,
+                     raw_output_tokens=summary.raw_output_tokens,
+                     turns=summary.turns, isolation_verified=isolation_verified)
 
 
 def is_session_limit(error: Optional[str]) -> bool:
@@ -341,33 +500,34 @@ ISOLATION_LOCK_DIR = Path("/tmp/scrooge-bench-isolation.lock.d")
 
 
 @contextlib.contextmanager
-def host_isolation(enabled: bool):
-    """Move ~/.claude/settings.json and ~/.claude/.caveman-active aside.
+def host_isolation(enabled: bool, isolate_settings: bool = False):
+    """Neutralize host register hooks for the benchmark by moving their *state
+    files* aside (`~/.claude/.scrooge-active`, any `.scrooge-active-*`, and
+    `~/.claude/.caveman-active`).
 
-    Why both:
+    Why state files, not settings.json: a register plugin's hook (scrooge's
+    UserPromptSubmit/SessionStart, caveman's) injects its directive into EVERY
+    child `claude --print` — including "normal" — only when its activation-state
+    file is present. `hooks/scrooge-activate.js` injects nothing when
+    `.scrooge-active` is absent (`if (state) emit(...)`), so removing the state
+    file silences the hook without touching `settings.json`. This is critical:
+    moving `settings.json` would also (a) drop the parent session's unrelated
+    hooks and (b) — if the CLI default-enables marketplace plugins when
+    `settings.json` is absent — risk RE-ENABLING a plugin into every arm. State-
+    file removal avoids both. Without this, the user's own scrooge hook silently
+    compresses the "neutral" baseline and (cross-lingually) corrupts the EN run.
 
-    - `~/.claude/settings.json` registers caveman's SessionStart + UPS hooks
-      globally; every child `claude --print` we spawn inherits them, so the
-      caveman SKILL.md gets injected as a SessionStart attachment into ALL
-      arms (including "normal"). That pollutes the baseline and silently
-      caps the upper bound of any "savings vs normal" measurement.
-    - `~/.claude/.caveman-active` is the state file caveman's hooks consult.
-      Even if a hook fires without it, removing it is belt-and-suspenders.
-
-    Moving both for the benchmark duration gives a clean child environment.
-    The parent claude session (the one orchestrating the benchmark) loses
-    those hooks too — that's a deliberate side effect, since the parent
-    invoked the benchmark explicitly.
+    `isolate_settings=True` (opt-in, `--isolate-settings`) additionally moves
+    `settings.json` for the rare case where a register hook is wired directly in
+    `settings.json` rather than gated by a state file. Off by default.
 
     Concurrency safety: an atomic mkdir-based lock (`ISOLATION_LOCK_DIR`)
-    serializes host isolation across processes — a second invocation
-    fails fast with exit code 2 instead of clobbering the first process's
-    backups, which previously risked permanent loss of the user's real
-    `~/.claude/settings.json`. Backup paths also carry the holder's PID so
-    a stale lock dir can be diagnosed manually.
+    serializes host isolation across processes — a second invocation fails fast
+    with exit code 2 instead of clobbering the first process's backups. Backup
+    paths carry the holder's PID so a stale lock dir can be diagnosed manually.
 
-    Restoration is best-effort: if a parent-session hook re-creates either
-    file mid-benchmark, we discard our stale backups instead of clobbering.
+    Restoration is best-effort: if a parent-session hook re-creates a moved file
+    mid-benchmark, we discard our stale backup instead of clobbering.
     """
     if not enabled:
         yield
@@ -389,12 +549,19 @@ def host_isolation(enabled: bool):
     except OSError:
         pass
 
-    targets = [
-        (Path.home() / ".claude" / "settings.json",
-         Path(f"/tmp/scrooge-bench-settings.json.{pid}.bak")),
-        (Path.home() / ".claude" / ".caveman-active",
-         Path(f"/tmp/scrooge-bench-caveman-active.{pid}.bak")),
-    ]
+    claude = Path.home() / ".claude"
+    targets = []
+    if isolate_settings:
+        targets.append((claude / "settings.json",
+                        Path(f"/tmp/scrooge-bench-settings.json.{pid}.bak")))
+    # Register activation-state files. Moving these silences register hooks
+    # (scrooge injects nothing without .scrooge-active; caveman consults its flag)
+    # without disturbing settings.json or plugin enablement.
+    state_files = [claude / ".scrooge-active", claude / ".caveman-active"]
+    state_files += sorted(claude.glob(".scrooge-active-*"))
+    for sf in state_files:
+        safe = re.sub(r"[^A-Za-z0-9.]+", "-", sf.name)
+        targets.append((sf, Path(f"/tmp/scrooge-bench-{safe}.{pid}.bak")))
     moved = []
     try:
         for live, backup in targets:
@@ -424,6 +591,81 @@ def host_isolation(enabled: bool):
                   f"{ISOLATION_LOCK_DIR}: {e}", file=sys.stderr)
 
 
+def _settings_caveman_active(path: Path) -> bool:
+    """True only if settings.json *actively* wires caveman — an enabled plugin
+    entry or a hook command referencing it. A disabled plugin entry
+    (`"caveman@caveman": false`) or a marketplace registry entry is NOT active and
+    must not block a clean run; the mere presence of the string "caveman" in the
+    file (e.g. `extraKnownMarketplaces`) is not an injection channel.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    plugins = data.get("enabledPlugins")
+    if isinstance(plugins, dict):
+        for name, enabled in plugins.items():
+            if "caveman" in str(name).lower() and enabled:
+                return True
+    hooks = data.get("hooks")
+    if hooks is not None and "caveman" in json.dumps(hooks).lower():
+        return True
+    return False
+
+
+def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
+    """Scan the effective environment for register-hook activation channels —
+    scrooge AND caveman. Returns a list of `(severity, message)`; empty = clean.
+
+    Run this *after* `host_isolation` has moved register state files aside, so it
+    confirms the isolation worked (no `.scrooge-active*` / `.caveman-active` left)
+    and catches channels isolation does not move. Two severities, because "files
+    present" is not the same as "actively injecting":
+
+      - `blocking`  — an active state/hook channel that injects a register into
+        every child `claude --print` right now: a present `.scrooge-active*` state
+        file (scrooge's UPS/SessionStart hook would compress ALL arms — the bug
+        that corrupted the first clean run), a `.caveman-active` flag, or
+        host/project `settings.json` actively wiring caveman. A clean run must not
+        proceed; isolation should have removed the state files.
+      - `advisory`  — register files installed but only active once enabled via a
+        hook channel: caveman plugin-marketplace install, skill symlink. Surfaced,
+        not hard-blocked; the per-session `detect_contamination` is the
+        authoritative backstop and excludes any row whose transcript shows a
+        register injection regardless.
+
+    The original 34/97 pollution (caveman) AND the scrooge-self-hook pollution
+    (every arm got "SCROOGE 활성 …") both came from a register hook leaking into
+    all arms; this is the pre-measurement gate recording "0 active channels".
+    """
+    home = Path.home()
+    findings: list[tuple[str, str]] = []
+
+    scrooge_states = [home / ".claude" / ".scrooge-active", cwd / ".scrooge-active"]
+    scrooge_states += sorted((home / ".claude").glob(".scrooge-active-*"))
+    for st in scrooge_states:
+        if st.exists():
+            findings.append(("blocking", f"scrooge register state active (hook will inject): {st}"))
+
+    for settings in [home / ".claude" / "settings.json", cwd / ".claude" / "settings.json"]:
+        if settings.exists() and _settings_caveman_active(settings):
+            findings.append(("blocking", f"caveman actively wired in {settings}"))
+
+    for flag in [home / ".claude" / ".caveman-active", cwd / ".caveman-active"]:
+        if flag.exists():
+            findings.append(("blocking", f"caveman state flag present: {flag}"))
+
+    for hit in (home / ".claude" / "plugins").glob("marketplaces/*/plugins/caveman"):
+        findings.append(("advisory", f"caveman plugin installed (inert unless enabled): {hit}"))
+
+    for skills_dir in [home / ".claude" / "skills", home / ".claude" / ".agents"]:
+        cav = skills_dir / "caveman"
+        if cav.is_symlink() or cav.exists():
+            findings.append(("advisory", f"caveman skill present (inert unless hooked): {cav}"))
+
+    return findings
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--prompts", required=True, type=Path, help="Path to prompts file (one per line).")
@@ -434,7 +676,12 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=120, help="Per-call timeout seconds. Default 120.")
     ap.add_argument("--dry-run", action="store_true", help="Synthesize fake responses (smoke test).")
     ap.add_argument("--no-isolate-host", action="store_true",
-                    help="Skip moving ~/.claude/{settings.json,.caveman-active} aside. Default: isolate.")
+                    help="Skip moving register state files (.scrooge-active*, .caveman-active) "
+                         "aside. Default: isolate, so host register hooks inject nothing.")
+    ap.add_argument("--isolate-settings", action="store_true",
+                    help="Also move ~/.claude/settings.json aside (heavy; drops the parent "
+                         "session's hooks and risks plugin re-enable). Off by default — moving "
+                         "register state files already silences register hooks.")
     ap.add_argument("--workers", type=int, default=1,
                     help="Concurrent claude --print calls. Default 1 (serial). >1 spawns a thread "
                          "pool; each call gets a unique sub-cwd under --cwd so session JSONL "
@@ -447,6 +694,12 @@ def main() -> int:
                     help="Skip successful (arm, prompt_id, run) keys already present in --output.")
     ap.add_argument("--keep-going-on-limit", action="store_true",
                     help="Do not stop serial execution when Claude reports a session/rate limit.")
+    ap.add_argument("--model", default=None,
+                    help="Pin the model passed to `claude --print` (e.g. claude-opus-4-7). "
+                         "Default: the CLI's configured model. Pin it for reproducible headline numbers.")
+    ap.add_argument("--allow-contaminated", action="store_true",
+                    help="Continue even if caveman activation channels are detected pre-run. "
+                         "Off by default: a clean run aborts on any finding.")
     args = ap.parse_args()
 
     if not args.dry_run and shutil.which("claude") is None:
@@ -481,6 +734,7 @@ def main() -> int:
               f"skipping {before_count - len(jobs)} jobs; remaining={len(jobs)}",
               file=sys.stderr)
     cwd_base = args.cwd.resolve()
+    isolation_verified = None
 
     def execute(job_idx_and_spec):
         idx, (arm_label, rule_text, prompt, pid, run) = job_idx_and_spec
@@ -492,7 +746,8 @@ def main() -> int:
         call_cwd.mkdir(parents=True, exist_ok=True)
         return idx, run_one(arm_label, rule_text, prompt, pid, run,
                             cwd=call_cwd, dry_run=args.dry_run,
-                            timeout=args.timeout)
+                            timeout=args.timeout, model=args.model,
+                            isolation_verified=isolation_verified)
 
     def write_result(idx, result):
         out.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")
@@ -503,7 +758,36 @@ def main() -> int:
               f"run={result.run} tokens={tok} t={result.elapsed_s:.1f}s{err}",
               file=sys.stderr)
 
-    with host_isolation(enabled=not args.no_isolate_host and not args.dry_run):
+    with host_isolation(enabled=not args.no_isolate_host and not args.dry_run,
+                        isolate_settings=args.isolate_settings):
+        if not args.dry_run:
+            findings = verify_register_clean(cwd_base)
+            blocking = [m for sev, m in findings if sev == "blocking"]
+            advisory = [m for sev, m in findings if sev == "advisory"]
+            for m in advisory:
+                print(f"[verify] advisory: {m}", file=sys.stderr)
+            if blocking:
+                print("error: register not clean — clean-run precondition failed:",
+                      file=sys.stderr)
+                for m in blocking:
+                    print(f"  - {m}", file=sys.stderr)
+                if not args.allow_contaminated:
+                    print("Aborting. Isolation should have moved register state files aside; "
+                          "a remaining .scrooge-active/.caveman-active means the move failed "
+                          "(check the isolation lock) or you passed --no-isolate-host. Re-run "
+                          "with isolation, or pass --allow-contaminated. The per-session check "
+                          "still excludes any row that leaked.", file=sys.stderr)
+                    return 2
+                print("--allow-contaminated set; continuing despite blocking findings.",
+                      file=sys.stderr)
+                isolation_verified = False
+            else:
+                isolation_verified = True
+                msg = "[verify] register clean — 0 active hook channels (scrooge + caveman)."
+                if advisory:
+                    msg += (f" ({len(advisory)} advisory install(s) noted above; "
+                            "per-session check guards each row.)")
+                print(msg, file=sys.stderr)
         with args.output.open("a", encoding="utf-8") as out:
             if args.workers <= 1:
                 for job in jobs:

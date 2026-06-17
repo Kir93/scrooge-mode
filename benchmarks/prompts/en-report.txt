@@ -1,0 +1,36 @@
+# Scrooge benchmark — EN report corpus (HELD-OUT)
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+#
+# TRAIN/TEST SEPARATION: this is the *report* corpus. It is held out from rule
+# tuning — never tune rules/{ko,en}/*.md against these prompts. Use prompts/en.txt
+# (the dev corpus) for tuning. Headline numbers should come from this report set.
+# NOTE: newly authored 2026-06-16; review for difficulty/domain parity before
+# publishing numbers measured against it.
+
+# --- debug ---
+Explain why a React form re-renders on every keystroke, and how to fix it.
+What causes a Node.js `EADDRINUSE` error on server start, and how do I resolve it?
+How do I safely resolve a TypeScript `Type 'string | undefined' is not assignable to type 'string'` error?
+What is the diagnostic order when a PostgreSQL index shows `idx_scan = 0`?
+Why does a `useMemo` recompute on every render?
+
+# --- explain ---
+Explain how JavaScript event delegation works and its benefits.
+Explain the difference between `Cache-Control: s-maxage` and `max-age` in CDN caching.
+Compare the `READ COMMITTED` and `REPEATABLE READ` transaction isolation levels.
+Explain the behavioral difference between `SameSite=Lax` and `Strict` cookies.
+Explain why `key` matters in React reconciliation.
+
+# --- review ---
+Identify the bug and suggest a fix: ```js\nconst cache = {}; function memo(fn) { return (n) => { if (cache[n]) return cache[n]; return cache[n] = fn(n); }; }\n```
+What is wrong with `arr.forEach(async (x) => { await save(x); })` when sequential saves are expected?
+Why does `SELECT * FROM orders WHERE status != 'done'` fail to use an index? Evaluate.
+What is the risk of rendering a list with `key={index}` while deleting middle items?
+
+# --- plan ---
+List the first three checks before scaling a single PostgreSQL to a read replica.
+What criteria decide the algorithm when adding rate limiting to a REST API?
+Outline the order to incrementally migrate a legacy jQuery page to React.
+When designing offline sync for a mobile app, describe the conflict-resolution approach.
+When CI build time grows, what is the priority order to shorten it?
