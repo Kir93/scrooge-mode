@@ -31,9 +31,9 @@
 
 > Output-compression skill for AI coding agents — same answer, fewer tokens on every reply.
 
-KO-first bilingual (KO/EN) output-compression skill for AI coding agents — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI. The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
+KO-first bilingual (KO/EN) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-**`~67% KO · ~65% EN · 100% accuracy · honorifics stripped`** — `claude-opus-4-7`, N=24 paired median.
+**`~70% KO · ~73% EN · output-only · honorifics stripped`** — `claude-opus-4-8`, N=20–21 paired median.
 
 ## Demo
 
@@ -94,9 +94,27 @@ Recommended quick-start:
 npx -y github:Kir93/scrooge-mode
 ```
 
+Pin a released version for reproducible installs (swap the tag for the release you want):
+
+```bash
+npx -y github:Kir93/scrooge-mode#v0.6.1
+```
+
 Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
 **Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
+
+### Host support
+
+The installer sets up each detected host at its capability tier:
+
+| Host | Install | Reinject hook | Stats | Statusline |
+| ---- | ------- | :-----------: | :---: | :--------: |
+| Claude Code | plugin | ✓ | ✓ | ✓ |
+| Codex | skills + `config.toml` hook | ✓ | ✓ | — |
+| Cursor · Windsurf · Cline · Continue · Gemini CLI | skills (skill-only) | — | — | — |
+
+Skill-only hosts get the register rule as a skill, but activation is manual — no per-turn reinject hook and no token stats. The full hook + stats + statusline experience is Claude Code; Codex gets the hook + stats via `~/.codex/config.toml`.
 
 ## Surface
 
@@ -116,11 +134,13 @@ Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshoot
 
 ## Benchmarks
 
-Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
+Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
 
 **Measurement conditions** (read before quoting the numbers):
 
-- **N=24 prompts × 1 run, paired median.** Single-run results; no variance estimate. Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~67%`, not "67.4% exactly").
+- **N=20–21 prompts × 1 run, paired median.** Single-run results; no variance estimate (a few prompts dropped on subscription timeouts). Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly").
+- **Register-clean run.** Both register hooks (scrooge's own activation hook and caveman) are neutralized for the benchmark so they cannot inject into the `normal`/`terse` baseline; token counts are deduped by `message.id` (prose-only basis). An earlier run whose baseline was silently compressed by the host's scrooge hook was discarded.
+- **Held-out cross-check.** Re-measured on a held-out prompt set (`prompts/{ko,en}-report.txt`, disjoint from the tuning corpus): KO ~71%, EN ~68% (N=11 each). Consistent with the headline above, so the savings are not an artifact of overfitting to the tuning prompts.
 - **Register-only isolation.** The harness runs each arm under `claude --print --system-prompt <rule>`, which _replaces_ Claude Code's default system prompt. This isolates the register effect cleanly, but real `/scrooge` sessions keep Claude Code's full system prompt alongside the injected register, so real savings versus a real verbose session may differ from the headline. See [`benchmarks/README.md`](./benchmarks/README.md) for the full caveat list.
 - **Real `output_tokens`, not tokenizer estimates.** Numbers come from the Claude Code session JSONL's `output_tokens` field — what the API actually billed.
 
@@ -128,24 +148,25 @@ Measured on **`claude-opus-4-7`**. Full methodology and raw reproduction command
 
 `normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` is the rule we ship. `caveman:full` is a comparison baseline, not a Scrooge mode.
 
-| Mode                  | Median output tokens (N=24) | Savings vs `normal` |
+| Mode                  | Median output tokens (N=20) | Savings vs `normal` |
 | --------------------- | --------------------------: | ------------------: |
-| `normal`              |                        1567 |          (baseline) |
-| `terse`               |                        1145 |                ~27% |
-| **`scrooge:ko/full`** |                     **511** |            **~67%** |
-| `caveman:full`        |                         901 |                ~43% |
+| `normal`              |                        3186 |          (baseline) |
+| `terse`               |                        2597 |                ~19% |
+| **`scrooge:ko/full`** |                     **972** |            **~70%** |
+| `caveman:full`        |                        1203 |                ~62% |
 
-`scrooge:ko/full` cuts Korean output by **~67%** vs the verbose default and by **~43%** vs `caveman:full`. It also beats `terse`, so the gain is the register itself, not just generic brevity.
+`scrooge:ko/full` cuts Korean output by **~70%** vs the verbose default and by **~19%** vs `caveman:full` (15/20 prompt wins). It also beats `terse`, so the gain is the register itself, not just generic brevity.
 
 ### English
 
-| Mode                  | Median output tokens (N=24) | Savings vs `normal` |
+| Mode                  | Median output tokens (N=21) | Savings vs `normal` |
 | --------------------- | --------------------------: | ------------------: |
-| `normal`              |                        2235 |          (baseline) |
-| **`scrooge:en/full`** |                     **774** |            **~65%** |
-| `caveman:full`        |                         396 |                ~82% |
+| `normal`              |                        3578 |          (baseline) |
+| `terse`               |                        2509 |                ~30% |
+| **`scrooge:en/full`** |                     **969** |            **~73%** |
+| `caveman:full`        |                        1264 |                ~65% |
 
-`scrooge:en/full` cuts English output by **~65%**. Scrooge's first release goal is Korean-native compression.
+`scrooge:en/full` cuts English output by **~73%** vs the verbose default and by **~23%** vs `caveman:full` (17/21 prompt wins) — its strongest result.
 
 **Mini English sample (`en/full`)**
 
@@ -178,7 +199,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
    }
    ```
 
-3. Sample 5 outputs against the QA checklist (see `CONTRIBUTING.md`, once available) and PR.
+3. Sample 5 outputs against the QA checklist (see [CONTRIBUTING.md](CONTRIBUTING.md)) and PR.
 
 ## Compared to caveman
 
@@ -189,7 +210,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 | Primary target             | Aggressive English compression             | Korean-native bilingual compression                          |
 | Languages                  | EN (+ wenyan classical Chinese)            | KO, EN; i18n via `registry.json`                             |
 | Korean register            | None                                       | Native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default        |
-| English result in this run | Stronger compression (`396` median tokens) | Less aggressive (`774` median tokens), clarity/i18n tradeoff |
+| English result in this run | `1264` median tokens                       | Stronger compression (`969` median tokens), wins ~23% on the clean run |
 | Benchmarking here          | Comparison arm (`caveman:full`)            | Real `output_tokens` runner, paired reports                  |
 
 In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.

@@ -2,4 +2,5 @@
 
 @./skills/scrooge/SKILL.md
 
-@./AGENTS.local.md
+<!-- Local-only overrides go in AGENTS.local.md (gitignored). It is intentionally
+     not @-included here so a fresh clone has no dangling include. -->

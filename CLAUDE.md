@@ -6,9 +6,9 @@ KO-first bilingual (KO/EN) **LLM output-compression skill**. npm `scrooge-mode` 
 
 ## What this repo is
 
-- **Product = docs, not runtime code.** Shipped artifacts: register rule files `rules/{lang}/{lite,full}.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
-- **Early development.** Installer, activation hook, token-savings stats, benchmark — future Tasks, intentionally unbuilt. Don't fill them in speculatively.
-- **Test harness landed (Task 7).** `npm test` runs `node --test` over `tests/` (zero-dep, Node built-in). No other build scripts — don't invent new ones; verify per §4.
+- **Product = the register rule docs.** The shipped behavioral contract is the register rule files `rules/{lang}/{lite,full}.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
+- **Runtime tooling ships too — all implemented, not stubs.** The installer (`bin/install.js`), activation + stats hooks (`hooks/`), the session-log/ledger libs (`lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
+- **Test harness:** `npm test` runs `node --test` over `tests/` (zero-dep, Node built-in). No other build scripts — don't invent new ones; verify per §4.
 
 ## Conventions
 

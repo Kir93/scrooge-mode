@@ -31,9 +31,9 @@
 
 > AI 코딩 에이전트 응답의 출력 토큰을 줄이는 skill — 같은 답, 적은 토큰.
 
-AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code), Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI 지원. 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
+AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
-**`~67% KO · ~65% EN · 100% 정확성 · 존대 제거`** — `claude-opus-4-7`, N=24 paired median.
+**`~70% KO · ~73% EN · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`, N=20–21 paired median.
 
 ## 데모
 
@@ -92,9 +92,27 @@ AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 sk
 npx -y github:Kir93/scrooge-mode
 ```
 
+재현 가능한 설치를 위해 release 버전 핀(원하는 release tag로 교체):
+
+```bash
+npx -y github:Kir93/scrooge-mode#v0.6.1
+```
+
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
 **활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
+
+### 호스트 지원
+
+installer가 감지된 호스트를 각 기능 tier로 설치함:
+
+| Host | 설치 | Reinject hook | Stats | Statusline |
+| ---- | ---- | :-----------: | :---: | :--------: |
+| Claude Code | plugin | ✓ | ✓ | ✓ |
+| Codex | skills + `config.toml` hook | ✓ | ✓ | — |
+| Cursor · Windsurf · Cline · Continue · Gemini CLI | skills (skill-only) | — | — | — |
+
+skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. 완전한 hook+stats+statusline은 Claude Code, Codex는 `~/.codex/config.toml`로 hook+stats 제공.
 
 ## 표면
 
@@ -114,11 +132,13 @@ npx -y github:Kir93/scrooge-mode
 
 ## 벤치마크
 
-**`claude-opus-4-7`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/).
+**`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/).
 
 **측정 조건** (숫자 인용 전 반드시 읽을 것):
 
-- **N=24 프롬프트 × 1회 실행, paired median.** 단일 실행 결과 · 분산 추정 없음. 재실행 시 각 셀이 몇 퍼센트 흔들릴 수 있음. 헤드라인 퍼센트는 1 유효숫자 추정으로 취급(`~67%`이지 "67.4%"가 아님).
+- **N=20–21 프롬프트 × 1회 실행, paired median.** 단일 실행 결과 · 분산 추정 없음(구독 timeout으로 몇 프롬프트 누락). 재실행 시 각 셀이 몇 퍼센트 흔들릴 수 있음. 헤드라인 퍼센트는 1 유효숫자 추정으로 취급(`~70%`이지 "69.5%"가 아님).
+- **Register-clean run.** register hook 둘(scrooge 자체 활성화 hook·caveman)을 측정 동안 중립화해 `normal`/`terse` baseline에 주입 못 하게 함. 토큰은 `message.id` dedup(prose-only 기준). baseline이 호스트 scrooge hook에 몰래 압축된 이전 run은 폐기함.
+- **Held-out cross-check.** 튜닝 corpus와 겹치지 않는 held-out 프롬프트셋(`prompts/{ko,en}-report.txt`)으로 재측정: KO ~71%, EN ~68%(각 N=11). 위 headline과 일치 → savings가 튜닝셋 overfit 아티팩트 아님.
 - **Register-only isolation.** 하네스는 `claude --print --system-prompt <rule>`로 각 arm 실행 — Claude Code 기본 system prompt를 **대체**함. register 효과를 깔끔히 분리하지만, 실제 `/scrooge` 세션은 Claude Code 전체 system prompt 위에 register가 얹히므로 verbose 세션 대비 실측 절감은 헤드라인과 다를 수 있음. 전체 caveat는 [`benchmarks/README.md`](./benchmarks/README.md).
 - **실측 `output_tokens` — tokenizer 추정 아님.** 숫자는 Claude Code 세션 JSONL의 `output_tokens` 필드 — API가 실제 청구한 값.
 
@@ -126,24 +146,25 @@ npx -y github:Kir93/scrooge-mode
 
 `normal`은 모델 기본 답변, `terse`는 "간결하게 답해"만 적용한 control, `scrooge:*`는 우리가 출하하는 규칙. `caveman:full`은 비교 baseline이며 Scrooge 모드 아님.
 
-| Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
+| Mode                  | 대표 output tokens (N=20) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
-| `normal`              |                      1567 |       (baseline) |
-| `terse`               |                      1145 |             ~27% |
-| **`scrooge:ko/full`** |                   **511** |         **~67%** |
-| `caveman:full`        |                       901 |             ~43% |
+| `normal`              |                      3186 |       (baseline) |
+| `terse`               |                      2597 |             ~19% |
+| **`scrooge:ko/full`** |                   **972** |         **~70%** |
+| `caveman:full`        |                      1203 |             ~62% |
 
-`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~67%**, `caveman:full` 대비 **~43%** 줄임. `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과.
+`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~70%**, `caveman:full` 대비 **~19%** 줄임(20개 중 15개 우세). `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과.
 
 ### 영어
 
-| Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
+| Mode                  | 대표 output tokens (N=21) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
-| `normal`              |                      2235 |       (baseline) |
-| **`scrooge:en/full`** |                   **774** |         **~65%** |
-| `caveman:full`        |                       396 |             ~82% |
+| `normal`              |                      3578 |       (baseline) |
+| `terse`               |                      2509 |             ~30% |
+| **`scrooge:en/full`** |                   **969** |         **~73%** |
+| `caveman:full`        |                      1264 |             ~65% |
 
-`scrooge:en/full`은 영어 출력을 **~65%** 줄임. Scrooge 1차 배포 목표는 Korean-native compression.
+`scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과.
 
 ## 메커니즘
 
@@ -163,7 +184,7 @@ npx -y github:Kir93/scrooge-mode
    }
    ```
 
-3. 5건 sample 출력을 QA checklist (`CONTRIBUTING.md` 공개 후) 기준 self-check → PR.
+3. 5건 sample 출력을 QA checklist ([CONTRIBUTING.md](CONTRIBUTING.md)) 기준 self-check → PR.
 
 ## caveman과 비교
 
@@ -174,7 +195,7 @@ npx -y github:Kir93/scrooge-mode
 | 1차 목표          | 공격적 영어 압축                   | Korean-native 이중언어 압축                            |
 | 언어              | EN (+ wenyan 한문)                 | KO, EN; `registry.json` 기반 i18n                      |
 | 한국어 register   | 없음                               | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default  |
-| 이번 영어 결과    | 더 강한 압축 (`396` median tokens) | 덜 공격적 (`774` median tokens), clarity/i18n tradeoff |
+| 이번 영어 결과    | `1264` median tokens               | 더 강한 압축 (`969` median tokens), 청정 run에서 ~23% 우세 |
 | 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
 
 요약: Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨. 핵심은 한국어 1순위 register 설계이고, caveman은 출처와 가장 강한 영어 비교 baseline으로 명시함.
