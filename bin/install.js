@@ -46,7 +46,7 @@ const PROVIDERS = [
 
 // ── Args ──────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
-  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null };
+  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null, tag: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -60,6 +60,12 @@ function parseArgs(argv) {
         const v = argv[++i];
         if (!v) die('error: --only requires an agent id');
         o.only.push(v);
+        break;
+      }
+      case '--tag': case '--ref': {
+        const v = argv[++i];
+        if (!v || v.startsWith('--')) die('error: --tag requires a git ref (e.g. v0.7.0)');
+        o.tag = v;
         break;
       }
       case '--config-dir': {
@@ -200,6 +206,33 @@ function quoteCmd(s) {
 }
 
 // ── Claude install ──────────────────────────────────────────────────────────
+// The repo spec passed to the marketplace / skills CLIs. With --tag it pins to a
+// git ref (`Kir93/scrooge-mode#v0.7.0`); npm-resolved channels honor the ref, and
+// the curl|bash path pins directly via `npx -y github:<repo>#<ref>`. A CLI that
+// does not parse a ref will reject it — --tag is opt-in, so an unpinned install is
+// unaffected. See INSTALL.md for the per-channel pinning matrix.
+function repoSpec(opts) {
+  return opts.tag ? `${REPO}#${opts.tag}` : REPO;
+}
+
+// Remove all Scrooge state/suffix files in a config dir, including the per-session
+// `.scrooge-active-<key>` files added with session-scope activation (Task 5) — a
+// fixed-name removal leaves those orphaned. unlinkSync removes a symlink itself
+// rather than following it.
+function removeStateFiles(dir, opts) {
+  let names;
+  try { names = fs.readdirSync(dir); } catch (_) { return; }
+  for (const name of names) {
+    const isState = name === '.scrooge-active' || name.startsWith('.scrooge-active-');
+    const isSuffix =
+      name === '.scrooge-statusline-suffix' || name.startsWith('.scrooge-statusline-suffix-');
+    if (!isState && !isSuffix) continue;
+    const p = path.join(dir, name);
+    if (opts.dryRun) { process.stdout.write(`  would remove ${p}\n`); continue; }
+    try { fs.unlinkSync(p); process.stdout.write(`  removed ${p}\n`); } catch (_) {}
+  }
+}
+
 function installClaude(opts, results) {
   results.detected++;
   process.stdout.write('→ Claude Code detected\n');
@@ -213,7 +246,7 @@ function installClaude(opts, results) {
       return;
     }
   }
-  const r1 = run('claude', ['plugin', 'marketplace', 'add', REPO], opts.dryRun);
+  const r1 = run('claude', ['plugin', 'marketplace', 'add', repoSpec(opts)], opts.dryRun);
   const r2 = run('claude', ['plugin', 'install', `${PLUGIN}@${PLUGIN}`], opts.dryRun);
   if ((r1.status || 0) === 0 && (r2.status || 0) === 0) results.installed.push('claude');
   else results.failed.push(['claude', 'claude plugin install failed']);
@@ -289,7 +322,7 @@ function installViaSkills(prov, opts, results) {
   // -g (global): always install under the agent's user-level dir; the
   // skills ecosystem default of project scope drops `.agents/` + a lock file
   // into cwd, which we never want for scrooge.
-  const r = run('npx', ['-y', 'skills', 'add', REPO, '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun);
+  const r = run('npx', ['-y', 'skills', 'add', repoSpec(opts), '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun);
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
   process.stdout.write('\n');
@@ -526,10 +559,7 @@ function unwireCodexHook(opts, results) {
       process.stdout.write(`  removed ${payload}\n`);
     } catch (_) {}
   }
-  for (const f of ['.scrooge-active', '.scrooge-statusline-suffix']) {
-    const p = path.join(cfg, f);
-    if (safeExists(p)) { try { fs.unlinkSync(p); } catch (_) {} process.stdout.write(`  removed ${p}\n`); }
-  }
+  removeStateFiles(cfg, opts);
 }
 
 // ── Uninstall ───────────────────────────────────────────────────────────────
@@ -556,10 +586,13 @@ function uninstall(opts, results) {
   // the user's pre-install snapshot. Point at it instead of risking data loss.
   const bakPath = settingsPath + '.bak';
   if (safeExists(bakPath)) process.stdout.write(`  NOTE: ${bakPath} kept (pre-install settings snapshot) — restore or delete it manually if unneeded.\n`);
-  for (const f of ['scrooge-statusline.sh', '.scrooge-active', '.scrooge-statusline-suffix']) {
-    const p = f.startsWith('.') ? path.join(cfg, f) : path.join(cfg, 'hooks', f);
-    if (safeExists(p) && !opts.dryRun) { try { fs.unlinkSync(p); } catch (_) {} process.stdout.write(`  removed ${p}\n`); }
+  const statuslineScript = path.join(cfg, 'hooks', 'scrooge-statusline.sh');
+  if (safeExists(statuslineScript) && !opts.dryRun) {
+    try { fs.unlinkSync(statuslineScript); } catch (_) {}
+    process.stdout.write(`  removed ${statuslineScript}\n`);
   }
+  // Glob-remove state/suffix files, incl. per-session `.scrooge-active-<key>` (Task 5).
+  removeStateFiles(cfg, opts);
   pruneClaudeSkillLeak(opts, results);
   unwireCodexHook(opts, results);
   process.stdout.write('\nuninstall done.\n');
@@ -568,33 +601,39 @@ function uninstall(opts, results) {
 
 // ── Claude skill-leak prune ──────────────────────────────────────────────────
 // The skills CLI (codex/cursor/etc. paths) symlinks each added skill into every
-// globally-linked agent — so when the user's ~/.agents already links Claude, a
-// `scrooge` skill leaks into <config>/skills/ even though we target another
-// agent. On Claude, scrooge runs through the plugin's UserPromptSubmit hook; a
-// competing user-level `scrooge` skill is redundant and, on hosts that route
-// `/scrooge` to the skill, keeps the hook from persisting state. When the Claude
-// plugin is in play this run, drop only that leaked symlink — never a real
-// directory we didn't create, and never the shared ~/.agents copy other agents
-// still use.
+// globally-linked agent — so when the user's ~/.agents already links Claude, the
+// plugin's skills leak into <config>/skills/ even though we target another agent.
+// On Claude these run through the plugin's UserPromptSubmit hook; a competing
+// user-level skill is redundant and, on hosts that route the trigger to the
+// skill, shadows the plugin — `scrooge-stats` especially, where the leaked
+// symlink breaks `/scrooge-stats`. When the Claude plugin is in play this run,
+// drop those leaked symlinks — never a real directory we didn't create, and never
+// the shared ~/.agents copy other agents still use. Array-based so a future
+// plugin skill is covered by adding its name here.
+const CLAUDE_SKILL_LEAK_NAMES = ['scrooge', 'scrooge-stats'];
+
 export function pruneClaudeSkillLeak(opts, results) {
-  const leak = path.join(configDir(opts), 'skills', 'scrooge');
-  let st;
-  try { st = fs.lstatSync(leak); } catch (_) { return; } // absent → nothing to prune
-  if (!st.isSymbolicLink()) return; // a real dir we didn't create — leave it
-  if (opts.dryRun) { process.stdout.write(`  would remove redundant Claude-scope scrooge skill ${leak}\n`); return; }
-  try {
+  const skillsDir = path.join(configDir(opts), 'skills');
+  for (const name of CLAUDE_SKILL_LEAK_NAMES) {
+    const leak = path.join(skillsDir, name);
+    let st;
+    try { st = fs.lstatSync(leak); } catch (_) { continue; } // absent → nothing to prune
+    if (!st.isSymbolicLink()) continue; // a real dir we didn't create — leave it
+    if (opts.dryRun) { process.stdout.write(`  would remove redundant Claude-scope ${name} skill ${leak}\n`); continue; }
     try {
-      fs.unlinkSync(leak);
+      try {
+        fs.unlinkSync(leak);
+      } catch (e) {
+        // Windows rejects unlink on a directory symlink/junction (EPERM/EISDIR);
+        // rmdir removes the link itself without recursing into the target.
+        if (IS_WIN && (e.code === 'EPERM' || e.code === 'EISDIR')) fs.rmdirSync(leak);
+        else throw e;
+      }
+      process.stdout.write(`  removed redundant Claude-scope ${name} skill (plugin hook is canonical)\n`);
+      results.removed.push('claude-skill-leak');
     } catch (e) {
-      // Windows rejects unlink on a directory symlink/junction (EPERM/EISDIR);
-      // rmdir removes the link itself without recursing into the target.
-      if (IS_WIN && (e.code === 'EPERM' || e.code === 'EISDIR')) fs.rmdirSync(leak);
-      else throw e;
+      process.stdout.write(`  NOTE: could not remove ${leak}: ${e.message}\n`);
     }
-    process.stdout.write('  removed redundant Claude-scope scrooge skill (plugin hook is canonical)\n');
-    results.removed.push('claude-skill-leak');
-  } catch (e) {
-    process.stdout.write(`  NOTE: could not remove ${leak}: ${e.message}\n`);
   }
 }
 
@@ -653,6 +692,8 @@ Usage: node bin/install.js [flags]
 
 Flags:
   --only <id>      install only the named agent (repeatable; allows soft agents)
+  --tag,--ref <r>  pin the install to a git ref (e.g. v0.7.0); npx git-ref is the
+                   guaranteed pin, marketplace/skills channels best-effort
   --list           list supported agents
   --uninstall,-u   remove scrooge from detected agents
   --dry-run        print actions without running them

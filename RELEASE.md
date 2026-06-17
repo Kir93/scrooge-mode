@@ -94,6 +94,12 @@ npx skills add Kir93/scrooge-mode -a codex --yes --all
 The one-line installer (`bin/install.js`, run via `npx -y github:Kir93/scrooge-mode`)
 drives both of the above per detected agent — no npm publish needed.
 
+A pushed tag is directly installable: `npx -y github:Kir93/scrooge-mode#vX.Y.Z`
+pins to the tagged commit (npm git-ref), and `bin/install.js --tag vX.Y.Z` forwards
+the ref to the marketplace / skills channels best-effort. So "tagging is the
+release" (§ top) now yields a reproducible, pinnable install — see INSTALL.md
+"Pin a released version" for the per-channel pinning matrix.
+
 ## 5. (Optional) skills.sh directory listing
 
 `npx skills add <repo>` works without this; it only affects `npx skills find`

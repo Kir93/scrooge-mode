@@ -286,3 +286,21 @@ test('pruneClaudeSkillLeak in dry-run reports but does not unlink', () => {
   fs.rmSync(cfg, { recursive: true, force: true });
   fs.rmSync(shared, { recursive: true, force: true });
 });
+
+test('pruneClaudeSkillLeak also unlinks a leaked scrooge-stats symlink', () => {
+  // Regression guard: `npx skills add --all` links every plugin skill, so
+  // scrooge-stats leaks the same way scrooge does and shadows /scrooge-stats
+  // (a recurring re-install bug). The prune must cover it, not just `scrooge`.
+  const { cfg, shared } = leakFixture();
+  const link = path.join(cfg, 'skills', 'scrooge-stats');
+  fs.symlinkSync(shared, link);
+  const results = { removed: [] };
+
+  pruneClaudeSkillLeak({ configDir: cfg }, results);
+
+  assert.equal(fs.existsSync(link), false, 'leaked scrooge-stats symlink removed');
+  assert.equal(fs.existsSync(path.join(shared, 'SKILL.md')), true, 'shared copy intact');
+  assert.deepEqual(results.removed, ['claude-skill-leak']);
+  fs.rmSync(cfg, { recursive: true, force: true });
+  fs.rmSync(shared, { recursive: true, force: true });
+});

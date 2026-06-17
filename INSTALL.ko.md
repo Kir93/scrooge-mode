@@ -93,6 +93,24 @@ npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
 ```
 
+release 버전 핀(재현 가능한 설치 — 원하는 release tag로 교체):
+
+```bash
+# curl|bash / npx — npm git-ref로 직접 핀(보장)
+npx -y github:Kir93/scrooge-mode#v0.6.1
+
+# installer가 구동하는 marketplace / skills 채널에도 tag 전달
+npx -y github:Kir93/scrooge-mode#v0.6.1 -- --tag v0.6.1
+```
+
+| 채널 | tag 핀 |
+| ---- | ------ |
+| `npx -y github:<repo>#<tag>` | ✅ 보장(npm git-ref) |
+| `--tag <ref>` → `claude plugin marketplace add` | best-effort — `claude` CLI가 git ref를 해석하면 적용 |
+| `--tag <ref>` → `npx skills add` | best-effort — `skills` CLI가 git ref를 해석하면 적용 |
+
+tag 없으면 모든 채널이 `main`을 추적.
+
 제거:
 
 ```bash

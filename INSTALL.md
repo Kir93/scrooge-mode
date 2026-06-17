@@ -93,6 +93,24 @@ npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
 ```
 
+Pin a released version (reproducible installs — swap the tag for the release you want):
+
+```bash
+# curl|bash / npx — pins directly via the npm git-ref (guaranteed)
+npx -y github:Kir93/scrooge-mode#v0.6.1
+
+# forward the tag to the marketplace / skills channels the installer drives
+npx -y github:Kir93/scrooge-mode#v0.6.1 -- --tag v0.6.1
+```
+
+| Channel | Tag pinning |
+| ------- | ----------- |
+| `npx -y github:<repo>#<tag>` | ✅ guaranteed (npm git-ref) |
+| `--tag <ref>` → `claude plugin marketplace add` | best-effort — applied if your `claude` CLI resolves git refs |
+| `--tag <ref>` → `npx skills add` | best-effort — applied if the `skills` CLI resolves git refs |
+
+Without a tag every channel tracks `main`.
+
 Uninstall:
 
 ```bash
