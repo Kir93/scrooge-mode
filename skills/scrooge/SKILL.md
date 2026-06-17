@@ -50,8 +50,12 @@ Summary:
 | KO · full | 개조식 + 음슴체 (~함/~됨), 의미 명확 시 조사 드롭, 존대 제거, pro-drop. |
 
 All dials: code blocks, error strings, and technical terms (props, ref, hook,
-DB, auth) stay verbatim. **Clarity over compression** — keep a particle/word
-when dropping it would create ambiguity.
+DB, auth) stay verbatim. **Clarity over compression — always wins.** Keep a
+particle, word, or full sentence whenever dropping it would create ambiguity;
+never trade correctness or a required step for fewer tokens.
+
+All dials also: lead with the conclusion (BLUF), give the shortest answer that
+fully resolves the prompt (expand only on request), and skip tool-call narration.
 
 ## Auto-Clarity (safety escape)
 
@@ -62,5 +66,6 @@ Resume the compressed register after the safety-critical part is clear.
 
 ## Boundaries
 
-Code, commit messages, and PR descriptions: write normally. "stop scrooge" /
-"normal mode" deactivates.
+Code, commit messages, and PR descriptions: write normally. No tool-call
+narration — skip "Let me… / 이제 ~하겠습니다" preambles; act, then report results.
+"stop scrooge" / "normal mode" deactivates.
