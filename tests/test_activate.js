@@ -99,7 +99,8 @@ test('plugin-namespaced /scrooge:scrooge off clears state', () => {
   assert.deepEqual(activated.state, { lang: 'ko', dial: 'full' });
   const { state, ctx } = runHook(cfg, '/scrooge:scrooge off');
   assert.equal(state, null);
-  assert.equal(ctx, null);
+  // Off on an active session injects a countermand (Task 5) instead of nothing.
+  assert.match(ctx, /SCROOGE OFF/);
 });
 
 // Codex surfaces the hook's block reason, so the stats trigger is intercepted
@@ -152,8 +153,11 @@ test('Codex skill-link stats trigger supports --share', () => {
 
 test('Claude does not intercept /scrooge-stats — the skill surfaces the figures', () => {
   const cfg = freshConfig();
-  runHook(cfg, '/scrooge ko'); // active mode so a fall-through turn reminds
-  const { result, ctx } = runHook(cfg, '/scrooge-stats', { transcript_path: SESSION_FIXTURE });
+  // Real Claude Code carries the same session_id on every turn; pass it on both
+  // so the activation and the fall-through reminder resolve the same state file.
+  const sid = 'sess-stats';
+  runHook(cfg, '/scrooge ko', { session_id: sid }); // active mode so a fall-through turn reminds
+  const { result, ctx } = runHook(cfg, '/scrooge-stats', { session_id: sid, transcript_path: SESSION_FIXTURE });
 
   // No block: the prompt passes through to the registered skill instead, which
   // runs the stats script and prints a normal, user-visible message.
@@ -207,12 +211,12 @@ test('the reminder is localized for ko (G2)', () => {
   assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/);
 });
 
-test('/scrooge off clears state and injects nothing', () => {
+test('/scrooge off clears state and injects a countermand', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge');
   const { state, ctx } = runHook(cfg, '/scrooge off');
   assert.equal(state, null);
-  assert.equal(ctx, null);
+  assert.match(ctx, /SCROOGE OFF/); // active → countermand (Task 5)
 });
 
 test('an inactive session injects nothing on a plain prompt', () => {
@@ -220,4 +224,42 @@ test('an inactive session injects nothing on a plain prompt', () => {
   const { state, ctx } = runHook(cfg, 'just a normal question');
   assert.equal(state, null);
   assert.equal(ctx, null);
+});
+
+// Session-scope (Task 5): each session keeps its own state file, so an off in
+// one session never clears another's. session_id rides in the hook payload.
+function statePathFor(configDir, sid) {
+  return path.join(configDir, sid ? `.scrooge-active-${sid}` : '.scrooge-active');
+}
+
+test('session-scope: /scrooge off in one session does not clear another', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessA' });
+  runHook(cfg, '/scrooge en lite', { session_id: 'sessB' });
+  assert.deepEqual(readState(statePathFor(cfg, 'sessA')), { lang: 'ko', dial: 'full' });
+  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'lite' });
+  runHook(cfg, '/scrooge off', { session_id: 'sessA' });
+  assert.equal(readState(statePathFor(cfg, 'sessA')), null);
+  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'lite' }); // untouched
+});
+
+test('session-scope: off on an active session injects a localized countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessC' });
+  const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessC' });
+  assert.match(ctx, /SCROOGE OFF/);
+  assert.match(ctx, /평소 register|일반 문체/); // ko-localized
+});
+
+test('session-scope: off on an inactive session injects nothing', () => {
+  const cfg = freshConfig();
+  const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessD' });
+  assert.equal(ctx, null);
+  assert.equal(readState(statePathFor(cfg, 'sessD')), null);
+});
+
+test('session-scope: a sessionless payload falls back to the global state path', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko'); // no session_id → global
+  assert.deepEqual(readState(statePathFor(cfg, null)), { lang: 'ko', dial: 'full' });
 });

@@ -31,6 +31,7 @@ import {
   writeState,
   clearState,
   getStatePath,
+  deriveSessionKey,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
 
@@ -128,6 +129,17 @@ function buildFullInjection(lang, dial, ruleBody) {
   );
 }
 
+// Deactivation countermand. Clearing the state file stops future reminders, but
+// the model may still be mid-conversation in the compressed register — so on the
+// off turn we actively tell it to return to normal prose. Localized to the
+// register that was active when off fired.
+function buildCountermand(lang) {
+  if (lang === 'ko') {
+    return 'SCROOGE OFF — 압축 모드 해제. 이번 턴부터 평소 register(일반 문체)로 복귀.';
+  }
+  return 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.';
+}
+
 function parseStatsCommand(prompt) {
   const trimmed = (prompt || '').trim();
   const patterns = [
@@ -166,15 +178,14 @@ function emit(additionalContext) {
   );
 }
 
-let input = '';
-process.stdin.on('data', (chunk) => {
-  input += chunk;
-});
-process.stdin.on('end', () => {
+function handlePayload(data) {
   try {
-    const data = JSON.parse(input || '{}');
     const prompt = data.prompt || '';
-    const statePath = getStatePath();
+    // Session-scoped state: each Claude Code session keeps its own state file so
+    // a `/scrooge off` in one session never clears another's. Sessionless hosts
+    // (no session_id / transcript_path) resolve to the legacy global path.
+    const sessionKey = deriveSessionKey(data);
+    const statePath = getStatePath(sessionKey);
 
     // /scrooge-stats and Codex skill-link forms — under Codex, intercept, run
     // the stats script, and block the prompt, returning its output as the
@@ -207,8 +218,13 @@ process.stdin.on('end', () => {
     const cmd = parseCommand(prompt) || parseNaturalActivation(prompt);
 
     if (cmd && cmd.action === 'off') {
+      // Read the active register before clearing so the countermand can be
+      // localized. Only inject when a mode was actually active — an off on an
+      // inactive session is a no-op with nothing to counter.
+      const prior = readState(statePath);
       clearState(statePath);
-      return; // deactivated — inject nothing
+      if (prior) emit(buildCountermand(prior.lang));
+      return;
     }
 
     if (cmd && cmd.action === 'set') {
@@ -232,4 +248,31 @@ process.stdin.on('end', () => {
   } catch (e) {
     // Silent fail — never break prompt submission.
   }
-});
+}
+
+// Read the hook's JSON payload from stdin, then dispatch.
+function main() {
+  let input = '';
+  process.stdin.on('data', (chunk) => {
+    input += chunk;
+  });
+  process.stdin.on('end', () => {
+    let data;
+    try {
+      data = JSON.parse(input || '{}');
+    } catch (e) {
+      return; // malformed payload — never break prompt submission
+    }
+    handlePayload(data);
+  });
+}
+
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) main();
+
+// Exported for reuse by the SessionStart hook, which re-injects the same full
+// rule for an already-active session. Importing this module does NOT run the
+// stdin handler — main() is gated on isMain — so the import has no side effects.
+export { resolveRepoRoot, resolveRulePath, readRuleBody, buildFullInjection };

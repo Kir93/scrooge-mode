@@ -17,6 +17,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/scrooge-session-start.js\"",
+            "timeout": 5,
+            "statusMessage": "Restoring scrooge mode..."
+          }
+        ]
+      }
     ]
   }
 }

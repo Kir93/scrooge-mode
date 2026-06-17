@@ -36,8 +36,46 @@ function claudeDir() {
   return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
-export function getStatePath() {
-  return path.join(claudeDir(), '.scrooge-active');
+// Filesystem-safe session key. The key lands in a predictable filename
+// (`.scrooge-active-<key>`), so an attacker-controlled session_id must never
+// carry path separators or `..`. Strip everything outside [A-Za-z0-9_-] (drops
+// `/`, `.`, whitespace), cap the length, and return null when nothing remains —
+// callers then fall back to the global (sessionless) path.
+export function sanitizeSessionKey(raw) {
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+// Canonical session key shared by every surface (activate, SessionStart,
+// statusline, stats). Claude Code names the transcript `<session_id>.jsonl`, so
+// session_id and the transcript stem are the same value — either source yields
+// the same key, keeping all surfaces pointed at one state file. Returns null on
+// a sessionless host (skill-only), which selects the global fallback path.
+export function deriveSessionKey(payload = {}) {
+  const fromId = sanitizeSessionKey(payload.session_id);
+  if (fromId) return fromId;
+  if (typeof payload.transcript_path === 'string') {
+    return sanitizeSessionKey(path.basename(payload.transcript_path, '.jsonl'));
+  }
+  return null;
+}
+
+// State file path. With a sessionKey it is per-session
+// (`.scrooge-active-<key>`, glob-cleanable as `.scrooge-active-*`); without one
+// it is the legacy global `.scrooge-active`, kept as the sessionless fallback.
+//
+// Migration of the pre-session-scope global state is "ignore" (per spec
+// "무시/정리"): a session that was active before the upgrade resolves to its
+// (absent) per-session file and is treated as inactive for one turn — the user
+// re-issues `/scrooge` once. We deliberately do NOT promote the global value into
+// sessions, because this same path doubles as the live sessionless fallback, so
+// promoting would leak one session's state into every fresh session — the exact
+// isolation bug this task fixes. Per-session files are bounded by the SessionStart
+// TTL sweep; the shared global is left for sessionless hosts.
+export function getStatePath(sessionKey) {
+  const base = sessionKey ? `.scrooge-active-${sessionKey}` : '.scrooge-active';
+  return path.join(claudeDir(), base);
 }
 
 export function getSuffixPath() {
@@ -79,7 +117,9 @@ function resolveSafeDir(dir) {
 
 // Symlink-safe atomic write (temp + rename, 0600, O_NOFOLLOW|O_EXCL).
 // The target file must never be a symlink — that is the clobber vector.
-function safeWriteFile(targetPath, content) {
+// Exported so the lifetime ledger (lib/ledger.js) writes its history file through
+// the same hardened path as the state/suffix files (same predictable-path risk).
+export function safeWriteFile(targetPath, content) {
   const debug = process.env.SCROOGE_DEBUG === '1';
   try {
     const realDir = resolveSafeDir(path.dirname(targetPath));
@@ -136,7 +176,8 @@ function safeWriteFile(targetPath, content) {
 }
 
 // Symlink-safe, size-capped read. Returns the raw string or null on any anomaly.
-function safeReadFile(targetPath, maxBytes) {
+// Exported for the lifetime ledger (lib/ledger.js); callers pass their own cap.
+export function safeReadFile(targetPath, maxBytes) {
   try {
     let st;
     try {

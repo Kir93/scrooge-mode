@@ -16,6 +16,9 @@ import {
   writeState,
   clearState,
   isValidState,
+  sanitizeSessionKey,
+  deriveSessionKey,
+  getStatePath,
 } from '../hooks/scrooge-config.js';
 
 const tmpDirs = [];
@@ -106,4 +109,32 @@ test('isValidState enforces the whitelist', () => {
   assert.equal(isValidState({ lang: 'jp', dial: 'lite' }), false);
   assert.equal(isValidState(null), false);
   assert.equal(isValidState('string'), false);
+});
+
+// Session-scope (Task 5): the session key lands in a predictable filename, so it
+// must never carry path separators or `..` — otherwise a hostile session_id
+// could redirect the state write outside the config dir.
+test('sanitizeSessionKey strips path traversal and unsafe characters', () => {
+  assert.equal(sanitizeSessionKey('../../etc/passwd'), 'etcpasswd');
+  assert.equal(sanitizeSessionKey('a/b/c'), 'abc');
+  assert.equal(sanitizeSessionKey('valid-UUID_123'), 'valid-UUID_123');
+  assert.equal(sanitizeSessionKey('/////'), null);
+  assert.equal(sanitizeSessionKey(''), null);
+  assert.equal(sanitizeSessionKey(null), null);
+});
+
+test('deriveSessionKey prefers session_id, falls back to the transcript stem', () => {
+  assert.equal(deriveSessionKey({ session_id: 'sessA' }), 'sessA');
+  assert.equal(deriveSessionKey({ transcript_path: '/p/abc.jsonl' }), 'abc');
+  // A traversal attempt in either source is sanitized, never honored.
+  assert.equal(deriveSessionKey({ session_id: '../evil' }), 'evil');
+  assert.equal(deriveSessionKey({}), null);
+});
+
+test('getStatePath stays inside the config dir for any key', () => {
+  assert.match(getStatePath('sessA'), /\.scrooge-active-sessA$/);
+  assert.match(getStatePath(), /\.scrooge-active$/); // sessionless → global fallback
+  const escaped = getStatePath(sanitizeSessionKey('../../escape'));
+  assert.match(escaped, /\.scrooge-active-escape$/);
+  assert.equal(escaped.includes('..'), false);
 });
