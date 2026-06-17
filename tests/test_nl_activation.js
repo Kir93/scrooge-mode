@@ -71,6 +71,28 @@ test('(d) no-intent sentences do not activate', () => {
   }
 });
 
+test('(h) meta-questions about scrooge mode do not toggle (no-op)', () => {
+  // The maintainer hits these while dogfooding this repo: asking ABOUT the mode
+  // must not turn it on or off. Covers the off-cue trap ("끄는 로직"/"mode off"),
+  // the bare-mode activate trap ("스크루지 모드 버그"), and how-it-works questions.
+  for (const p of [
+    '스크루지 모드 끄는 로직 설명해줘',
+    'explain scrooge mode off',
+    '스크루지 모드 버그',
+    '스크루지 모드 어떻게 동작해?',
+    'how does scrooge mode work',
+  ]) {
+    assert.equal(parseNaturalActivation(p), null, p);
+  }
+});
+
+test('(h) a style directive still activates even with a meta cue present', () => {
+  // Guard against over-suppression: "answer like scrooge, explaining X" is a real
+  // activation, not a question about the mode — the style directive is exempt.
+  assert.deepEqual(parseNaturalActivation('스크루지처럼 설명해줘'), { action: 'set', lang: 'ko', dial: 'full' });
+  assert.deepEqual(parseNaturalActivation('talk like scrooge and explain this'), { action: 'set', lang: 'en', dial: 'full' });
+});
+
 test('(d) "압축 모드" / "토큰 아껴" without the name do not activate (W1)', () => {
   for (const p of ['이미지 압축 모드로 저장해줘', '파일 압축 모드 설정', '이 API 토큰 아껴 쓰자', '압축 모드 해제했어']) {
     assert.equal(parseNaturalActivation(p), null, p);
@@ -125,12 +147,12 @@ test('NL activation through the hook persists state + injects the full rule', ()
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/);
 });
 
-test('NL off through the hook clears state', () => {
+test('NL off through the hook clears state and injects a countermand', () => {
   const cfg = freshConfig();
   runHook(cfg, 'talk like scrooge'); // en/full active
   const { state, ctx } = runHook(cfg, 'stop scrooge');
   assert.equal(state, null);
-  assert.equal(ctx, null);
+  assert.match(ctx, /SCROOGE OFF/); // active → countermand (Task 5)
 });
 
 test('(e) a valid slash command wins over NL text in the same prompt (SC 3.3)', () => {

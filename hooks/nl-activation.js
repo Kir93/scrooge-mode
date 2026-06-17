@@ -48,10 +48,32 @@ const EN_OFF = /\b(?:stop|disable|turn\s+off|deactivate)\s+scrooge\b|\bscrooge(?
 const KO_NEGATE = /지\s*마|지마|말고|말아|마세요|마라|않/;
 const EN_NEGATE = /\b(?:don'?t|do\s+not|never)\b/i;
 
+// Meta-question guard: a prompt that asks ABOUT scrooge mode — its logic, a bug,
+// how it works — names scrooge alongside a question cue but is not a command.
+// "스크루지 모드 끄는 로직 설명해줘" / "explain scrooge mode off" / "스크루지 모드 버그"
+// previously toggled the mode; here they are suppressed (no-op). The cue list is
+// kept disjoint from the activation/off phrases so it never cancels a real command
+// (답/부탁/꺼/끄기/enable/off carry no meta cue). EN cues are word-bounded so they
+// don't fire on substrings ("how" inside "show").
+const SCROOGE_NAME = /스크루지|scrooge/i;
+const META_CUE =
+  /설명|로직|버그|동작|작동|어떻게|원리|의미|무엇|무슨|\b(?:explain|logic|bug|debug|how|what|why|mean(?:s|ing)?)\b/i;
+// Unambiguous style directives stay activations even when a meta cue is present:
+// "스크루지처럼 설명해줘" / "talk like scrooge and explain this" want the ANSWER in
+// scrooge style, so they are exempt from the meta guard (avoids the false-negative
+// of suppressing a genuine activation).
+const STRONG_STYLE =
+  /스크루지\s*(?:처럼|로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))|\btalk\s+like\s+(?:a\s+)?scrooge\b|\bbe\s+(?:a\s+)?token\s+miser\b/i;
+
 // Parse natural-language activation intent from a plain prompt.
 export function parseNaturalActivation(prompt) {
   const text = String(prompt || '');
   if (!text) return null;
+
+  // A meta-question about scrooge mode is neither activation nor deactivation.
+  if (SCROOGE_NAME.test(text) && META_CUE.test(text) && !STRONG_STYLE.test(text)) {
+    return null;
+  }
 
   const koOff = KO_OFF.test(text);
   const enOff = EN_OFF.test(text);
