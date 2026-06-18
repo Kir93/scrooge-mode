@@ -15,6 +15,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  claudeAction,
+  claudeUpdatePlan,
   codexHookHash,
   detectMatch,
   mergeCodexHookConfig,
@@ -105,6 +107,51 @@ test('main() fires when invoked through a bin symlink (CLI-guard regression)', {
   assert.match(r.stdout, /Supported agents/); // proves main() ran via the symlink
 });
 
+// ── Claude re-run = update (Task: update-path) ───────────────────────────────
+// `installClaude` probes `claude plugin list` and routes the result through these
+// two pure helpers, so the install-vs-update decision and the emitted command
+// sequence are testable without spawning the live `claude` CLI.
+
+test('claudeAction: an installed plugin updates, not skips', () => {
+  assert.equal(claudeAction({ force: false }, true), 'update');
+});
+
+test('claudeAction: an absent plugin installs fresh', () => {
+  assert.equal(claudeAction({ force: false }, false), 'install');
+});
+
+test('claudeAction: --force always reinstalls (never update)', () => {
+  // --force keeps "always reinstall" meaning — the bypass for any future
+  // version-skip optimization, so it must not collapse into the update path.
+  assert.equal(claudeAction({ force: true }, true), 'install');
+  assert.equal(claudeAction({ force: true }, false), 'install');
+});
+
+test('claudeUpdatePlan (latest): marketplace update → plugin update', () => {
+  // No --tag → refresh-in-place via the native CLI (verified in `claude plugin
+  // --help`): refresh the catalog, then apply the newest. No uninstall→install.
+  assert.deepEqual(claudeUpdatePlan({}), [
+    ['claude', ['plugin', 'marketplace', 'update', 'scrooge']],
+    ['claude', ['plugin', 'update', 'scrooge@scrooge']],
+  ]);
+});
+
+test('claudeUpdatePlan (--tag): re-points the marketplace then reinstalls', () => {
+  // `marketplace update` refreshes from the existing source and cannot re-pin, so
+  // a tag pin removes + re-adds the marketplace at REPO#ref, then installs.
+  assert.deepEqual(claudeUpdatePlan({ tag: 'v0.7.0' }), [
+    ['claude', ['plugin', 'marketplace', 'remove', 'scrooge']],
+    ['claude', ['plugin', 'marketplace', 'add', 'Kir93/scrooge-mode#v0.7.0']],
+    ['claude', ['plugin', 'install', 'scrooge@scrooge']],
+  ]);
+});
+
+test('claudeUpdatePlan: latest plan resolves repoSpec to bare REPO (no ref)', () => {
+  // Goal 4: no --tag = latest. The latest plan never carries a #ref anywhere.
+  const flat = claudeUpdatePlan({}).flatMap(([, args]) => args);
+  assert.ok(!flat.some((a) => a.includes('#')), 'no pinned ref in the latest plan');
+});
+
 test('mergeCodexHookConfig inserts user hook before hook state', () => {
   const before = [
     'model = "gpt-5"',
@@ -181,6 +228,20 @@ test('mergeCodexHookConfig removes legacy nested scrooge hooks and stale hook st
   assert.doesNotMatch(after, /user_prompt_submit:1:0/);
   assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:0:0"\]/);
   assert.match(after, new RegExp(`trusted_hash = "${codexHookHash(command)}"`));
+});
+
+test('mergeCodexHookConfig is idempotent across a re-run (update-path Codex guard)', () => {
+  // Re-run = update: the installer re-applies the Codex hook merge every time
+  // (and `installCodexPayload` re-copies hooks/rules/lib/registry, a stdlib
+  // overwrite). A second merge over already-merged config must be a stable no-op,
+  // or re-running would accrete duplicate UserPromptSubmit hooks.
+  const command = 'node "/home/me/.codex/scrooge/codex-activate.mjs"';
+  const key = '/home/me/.codex/config.toml';
+  const once = mergeCodexHookConfig('model = "gpt-5"\n', command, key);
+  const twice = mergeCodexHookConfig(once, command, key);
+  assert.equal(twice, once, 're-applying the merge must be a stable no-op');
+  assert.equal((twice.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 1);
+  assert.match(twice, /codex-activate\.mjs/);
 });
 
 test('removeCodexHookConfig removes only scrooge hook blocks', () => {

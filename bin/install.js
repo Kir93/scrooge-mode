@@ -233,19 +233,62 @@ function removeStateFiles(dir, opts) {
   }
 }
 
+// Re-run on an already-installed plugin is an update, not a skip ("safe to
+// re-run"). Both legs use the native CLI verified present in `claude plugin
+// --help`. No --tag (latest): `marketplace update` refreshes the catalog from
+// the marketplace's existing source, then `plugin update` applies the newest —
+// no uninstall→install, so plugin enabled/disabled state and running-session
+// hooks are left intact. `marketplace update` refreshes from the *existing*
+// source and cannot re-pin, so a `--tag` pin re-points the marketplace (remove +
+// add at the ref) and reinstalls. Pure planner → the command sequence is
+// unit-testable without the live `claude` CLI.
+export function claudeUpdatePlan(opts) {
+  const target = `${PLUGIN}@${PLUGIN}`;
+  if (opts.tag) {
+    return [
+      ['claude', ['plugin', 'marketplace', 'remove', PLUGIN]],
+      ['claude', ['plugin', 'marketplace', 'add', repoSpec(opts)]],
+      ['claude', ['plugin', 'install', target]],
+    ];
+  }
+  return [
+    ['claude', ['plugin', 'marketplace', 'update', PLUGIN]],
+    ['claude', ['plugin', 'update', target]],
+  ];
+}
+
+// Decide the Claude action from install state. --force keeps its "always
+// reinstall" meaning (the bypass for a future version-skip optimization); an
+// already-installed plugin without --force updates; anything else is a fresh
+// install.
+export function claudeAction(opts, installed) {
+  if (opts.force) return 'install';
+  return installed ? 'update' : 'install';
+}
+
+function scroogePluginInstalled() {
+  const r = capture('claude', ['plugin', 'list']);
+  return (r.status || 0) === 0 && /scrooge/i.test(r.stdout || '');
+}
+
 function installClaude(opts, results) {
   results.detected++;
   process.stdout.write('→ Claude Code detected\n');
 
-  if (!opts.force) {
-    const r = capture('claude', ['plugin', 'list']);
-    if (r.status === 0 && /scrooge/i.test(r.stdout || '')) {
-      process.stdout.write('  scrooge plugin already installed (use --force to reinstall)\n\n');
-      results.skipped.push(['claude', 'already installed']);
-      wireStatusline(opts, results);
-      return;
+  const installed = opts.force ? false : scroogePluginInstalled();
+  if (claudeAction(opts, installed) === 'update') {
+    process.stdout.write(`  scrooge plugin already installed — ${opts.tag ? `re-pinning to ${opts.tag}` : 'updating to latest'}\n`);
+    let ok = true;
+    for (const [cmd, args] of claudeUpdatePlan(opts)) {
+      if ((run(cmd, args, opts.dryRun).status || 0) !== 0) ok = false;
     }
+    if (ok) results.updated.push('claude');
+    else results.failed.push(['claude', 'claude plugin update failed']);
+    wireStatusline(opts, results);
+    process.stdout.write('\n');
+    return;
   }
+
   const r1 = run('claude', ['plugin', 'marketplace', 'add', repoSpec(opts)], opts.dryRun);
   const r2 = run('claude', ['plugin', 'install', `${PLUGIN}@${PLUGIN}`], opts.dryRun);
   if ((r1.status || 0) === 0 && (r2.status || 0) === 0) results.installed.push('claude');
@@ -651,7 +694,7 @@ function main() {
     return;
   }
 
-  const results = { detected: 0, installed: [], skipped: [], failed: [], removed: [] };
+  const results = { detected: 0, installed: [], updated: [], skipped: [], failed: [], removed: [] };
 
   if (opts.uninstall) { uninstall(opts, results); return; }
 
@@ -676,10 +719,13 @@ function main() {
   // this run or already present). If the plugin install failed, leave the leak: it
   // is the one /scrooge surface left, and removing it would strand Claude entirely.
   const claudePluginPresent =
-    results.installed.includes('claude') || results.skipped.some(([id]) => id === 'claude');
+    results.installed.includes('claude') ||
+    results.updated.includes('claude') ||
+    results.skipped.some(([id]) => id === 'claude');
   if (claudePluginPresent) pruneClaudeSkillLeak(opts, results);
 
   process.stdout.write(`\nDone. detected ${results.detected}, installed [${results.installed.join(', ')}]`);
+  if (results.updated.length) process.stdout.write(`, updated [${results.updated.join(', ')}]`);
   if (results.skipped.length) process.stdout.write(`, skipped ${results.skipped.length}`);
   if (results.failed.length) process.stdout.write(`, failed [${results.failed.map((f) => f[0]).join(', ')}]`);
   process.stdout.write('\n');
