@@ -1,0 +1,62 @@
+<svg viewBox="0 0 760 276" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl dsc">
+<title id="ttl">Scrooge median output tokens vs baselines</title>
+<desc id="dsc">Korean N=20: normal 3186, terse 2597, caveman 1203, scrooge 972 (-70%). English N=21: normal 3578, terse 2509, caveman 1264, scrooge 969 (-73%). claude-opus-4-8, paired median.</desc>
+<style>@media (prefers-color-scheme:dark){.t{fill:#e6edf3}.m{fill:#8b949e}.card{fill:#0d1117;stroke:#30363d}.grid{stroke:#21262d}.bar{fill:#454d59}.hi{fill:#2ea043}}</style>
+<g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12">
+<rect class="card" x="1" y="1" width="758" height="274" rx="16" fill="#ffffff" stroke="#e5e7eb"/>
+<text class="m" x="28" y="30" fill="#6b7280" font-size="12">Median output tokens per turn · claude-opus-4-8 · paired median</text>
+<line class="grid" x1="28" y1="42" x2="732" y2="42" stroke="#e9ecef"/>
+
+<text class="t" x="28" y="66" fill="#1f2937" font-size="15" font-weight="500">Korean</text>
+<text class="hi" x="372" y="66" fill="#1f9d57" font-size="14" font-weight="600" text-anchor="end">−70% vs normal</text>
+<text class="m" x="28" y="84" fill="#6b7280" font-size="11">N = 20</text>
+
+<text class="t" x="28" y="108" fill="#1f2937">normal</text>
+<rect class="base" x="110" y="96" width="156" height="16" rx="3" fill="#e15c4a"/>
+<text class="t" x="272" y="108" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">3186</text>
+<text class="m" x="306" y="108" fill="#6b7280" font-size="11">baseline</text>
+
+<text class="t" x="28" y="142" fill="#1f2937">terse</text>
+<rect class="bar" x="110" y="130" width="127" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="243" y="142" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">2597</text>
+
+<text class="t" x="28" y="176" fill="#1f2937">caveman</text>
+<rect class="bar" x="110" y="164" width="59" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="175" y="176" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">1203</text>
+
+<text class="t" x="28" y="210" fill="#1f2937">scrooge</text>
+<rect class="hi" x="110" y="198" width="48" height="16" rx="3" fill="#1f9d57"/>
+<text class="t" x="164" y="210" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">972</text>
+<text class="hi" x="200" y="210" fill="#1f9d57" font-weight="600">−70%</text>
+
+<text class="t" x="396" y="66" fill="#1f2937" font-size="15" font-weight="500">English</text>
+<text class="hi" x="732" y="66" fill="#1f9d57" font-size="14" font-weight="600" text-anchor="end">−73% vs normal</text>
+<text class="m" x="396" y="84" fill="#6b7280" font-size="11">N = 21</text>
+
+<text class="t" x="396" y="108" fill="#1f2937">normal</text>
+<rect class="base" x="478" y="96" width="175" height="16" rx="3" fill="#e15c4a"/>
+<text class="t" x="659" y="108" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">3578</text>
+<text class="m" x="695" y="108" fill="#6b7280" font-size="11">baseline</text>
+
+<text class="t" x="396" y="142" fill="#1f2937">terse</text>
+<rect class="bar" x="478" y="130" width="123" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="607" y="142" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">2509</text>
+
+<text class="t" x="396" y="176" fill="#1f2937">caveman</text>
+<rect class="bar" x="478" y="164" width="62" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="546" y="176" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">1264</text>
+
+<text class="t" x="396" y="210" fill="#1f2937">scrooge</text>
+<rect class="hi" x="478" y="198" width="47" height="16" rx="3" fill="#1f9d57"/>
+<text class="t" x="531" y="210" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">969</text>
+<text class="hi" x="563" y="210" fill="#1f9d57" font-weight="600">−73%</text>
+
+<line class="grid" x1="28" y1="232" x2="732" y2="232" stroke="#e9ecef"/>
+<rect class="base" x="28" y="247" width="10" height="10" rx="2" fill="#e15c4a"/>
+<text class="m" x="44" y="256" fill="#6b7280" font-size="11">normal — verbose baseline</text>
+<rect class="bar" x="232" y="247" width="10" height="10" rx="2" fill="#9aa7b8"/>
+<text class="m" x="248" y="256" fill="#6b7280" font-size="11">terse · caveman — controls</text>
+<rect class="hi" x="446" y="247" width="10" height="10" rx="2" fill="#1f9d57"/>
+<text class="m" x="462" y="256" fill="#6b7280" font-size="11">scrooge — shipped register (ko/full · en/full)</text>
+</g>
+</svg>
