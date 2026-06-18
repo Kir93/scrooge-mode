@@ -35,6 +35,10 @@ AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 sk
 
 **`~70% KO · ~73% EN · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`, N=20–21 paired median.
 
+<p align="center">
+  <a href="#벤치마크"><img src="assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
+</p>
+
 ## 데모
 
 같은 프롬프트, 같은 Claude 모델, 실제 벤치마크 출력. 프롬프트·응답 모두 한국어 — `ko/full` register의 의도된 데모. 영문 프롬프트 코퍼스는 [`benchmarks/prompts/en.txt`](./benchmarks/prompts/en.txt).
@@ -98,6 +102,8 @@ npx -y github:Kir93/scrooge-mode
 npx -y github:Kir93/scrooge-mode#v0.6.1
 ```
 
+**업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용.
+
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
 **활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
@@ -131,6 +137,8 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 **왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — 언어 추가는 규칙 파일 1개 + `registry.json` 항목 1줄, rule-engine 수술 없음.
 
 ## 벤치마크
+
+[![턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)](assets/benchmark.svg)](./benchmarks/)
 
 **`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/).
 

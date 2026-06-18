@@ -129,6 +129,27 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## Update
+
+Re-running the installer updates every detected agent in place — Scrooge is safe to re-run.
+
+```bash
+npx -y github:Kir93/scrooge-mode
+```
+
+On **Claude Code** the installer no longer skips an already-installed plugin. It refreshes the marketplace catalog and updates the plugin to the latest version:
+
+```bash
+claude plugin marketplace update scrooge
+claude plugin update scrooge@scrooge
+```
+
+`claude plugin update` applies on the next Claude Code restart, so restart your session afterward.
+
+For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
+
+To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
+
 ## Verify
 
 After install, start the target agent and activate Scrooge:

@@ -35,6 +35,10 @@ KO-first bilingual (KO/EN) output-compression skill for AI coding agents — ful
 
 **`~70% KO · ~73% EN · output-only · honorifics stripped`** — `claude-opus-4-8`, N=20–21 paired median.
 
+<p align="center">
+  <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
+</p>
+
 ## Demo
 
 Same prompt, same Claude model, actual benchmark output. The prompt is Korean and the responses are Korean — this is a deliberate demo of the `ko/full` register, Scrooge's first-class target. See [`benchmarks/prompts/en.txt`](./benchmarks/prompts/en.txt) for the English-prompt corpus.
@@ -100,6 +104,8 @@ Pin a released version for reproducible installs (swap the tag for the release y
 npx -y github:Kir93/scrooge-mode#v0.6.1
 ```
 
+**Update.** Re-running the quick-start updates every detected host in place — Scrooge is safe to re-run. On Claude Code the installer now refreshes the marketplace and runs `claude plugin update` (restart Claude to apply) instead of skipping; Codex and skill-only hosts overwrite their payload on re-run. To pin a specific version instead of latest, use the same `--tag`/`#ref` as above.
+
 Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
 **Activate.** `/scrooge ko full` (or `/scrooge en lite`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
@@ -133,6 +139,8 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 **Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so adding a language is one rule file + one `registry.json` entry — no rule-engine surgery.
 
 ## Benchmarks
+
+[![Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)](assets/benchmark.svg)](./benchmarks/)
 
 Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
 

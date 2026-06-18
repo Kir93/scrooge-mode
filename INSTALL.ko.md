@@ -129,6 +129,27 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## Update
+
+installer를 다시 실행하면 감지된 전 에이전트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전.
+
+```bash
+npx -y github:Kir93/scrooge-mode
+```
+
+**Claude Code**는 이제 이미 설치된 plugin을 skip하지 않음. marketplace catalog를 새로고침하고 plugin을 최신 버전으로 업데이트:
+
+```bash
+claude plugin marketplace update scrooge
+claude plugin update scrooge@scrooge
+```
+
+`claude plugin update`는 다음 Claude Code 재시작 때 적용되므로 이후 세션을 재시작.
+
+**Codex**는 재실행 시 hook payload(hooks, rules, lib, registry)를 overwrite하고 `~/.codex/config.toml` hook을 멱등 재머지함. **다른 skills 에이전트**(Cursor, Windsurf, Cline, Continue, Gemini CLI)는 재실행 시 `scrooge` skill이 overwrite됨. 어느 쪽이든 자동으로 최신을 받음.
+
+latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
+
 ## Verify
 
 설치 후 대상 agent에서 Scrooge 활성화:
