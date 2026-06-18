@@ -140,8 +140,6 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 
 ## Benchmarks
 
-[![Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)](assets/benchmark.svg)](./benchmarks/)
-
 Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
 
 **Measurement conditions** (read before quoting the numbers):

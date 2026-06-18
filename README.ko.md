@@ -138,8 +138,6 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 ## 벤치마크
 
-[![턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)](assets/benchmark.svg)](./benchmarks/)
-
 **`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/).
 
 **측정 조건** (숫자 인용 전 반드시 읽을 것):
