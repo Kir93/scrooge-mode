@@ -1,0 +1,17 @@
+{
+  // markdownlint-cli2 wrapper config. Rule tuning lives in `.markdownlint.jsonc`
+  // (auto-merged by markdownlint-cli2); this file only scopes which files run.
+  //
+  // `gitignore: true` — lint the product, not local/generated files. Without it,
+  // `npx markdownlint-cli2 "**/*.md"` descends into gitignored paths like the
+  // local `.claude/` config (personal commands + an ai-config symlink), which are
+  // not part of this package and produce pre-existing noise.
+  "gitignore": true,
+  // The `benchmarks/examples/*-release-notes.*.md` files are tracked but are
+  // verbatim `claude --print` benchmark outputs kept byte-for-byte — the
+  // compressed (`scrooge`) samples even drop the blank lines around headings,
+  // which is the compression itself, not a lint bug. Linting model output would be
+  // meaningless, so they are ignored. The authored `examples/README.md` is not
+  // matched by this glob and stays linted.
+  "ignores": ["benchmarks/examples/*-release-notes.*.md"]
+}

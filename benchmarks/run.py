@@ -176,7 +176,8 @@ NORMAL_BASELINE_SYSTEM = (
 )
 
 
-def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None) -> list[str]:
+def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
+              disallow_tools: bool = False) -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -188,6 +189,14 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None) -> list[
       arms differ only in their register text.
     - `--`: separator so prompts beginning with `-` or `--` (e.g. caveman's
       YAML frontmatter `---`) are not mis-parsed as options.
+
+    `disallow_tools` denies the file-mutating tools (`Write`/`Edit`/
+    `NotebookEdit`/`Bash`). This matters for **document-generation** corpora: with
+    tools available the model may write the doc to a file (tool_use) and emit only
+    a one-line "wrote X.md" summary as prose, which collapses the prose-only token
+    count and makes the arm look artificially compressed. Denying file tools forces
+    every arm to emit the document inline, so the prose-only headline measures the
+    register, not a tool-use decision. Leave off for conversational corpora.
 
     `--bare` is NOT used: it disables OAuth/keychain auth and requires
     ANTHROPIC_API_KEY, which contradicts the subscription-only design.
@@ -201,6 +210,8 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None) -> list[
     cmd = ["claude", "--print", "--system-prompt", system]
     if model:
         cmd += ["--model", model]
+    if disallow_tools:
+        cmd += ["--disallowedTools", "Write", "Edit", "NotebookEdit", "Bash"]
     cmd += ["--", prompt]
     return cmd
 
@@ -384,7 +395,8 @@ def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
 
 def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             cwd: Path, dry_run: bool, timeout: int, model: Optional[str] = None,
-            isolation_verified: Optional[bool] = None) -> RunResult:
+            isolation_verified: Optional[bool] = None,
+            disallow_tools: bool = False) -> RunResult:
     session_dir = cwd_session_dir(cwd)
     before = newest_session_file(session_dir)
     before_mtime = before.stat().st_mtime if before else 0
@@ -410,7 +422,7 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          total_output_tokens=fake_tokens, raw_output_tokens=fake_tokens,
                          turns=1, isolation_verified=isolation_verified)
 
-    cmd = build_cmd(rule_text, prompt, model)
+    cmd = build_cmd(rule_text, prompt, model, disallow_tools)
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
     except subprocess.TimeoutExpired:
@@ -700,6 +712,11 @@ def main() -> int:
     ap.add_argument("--allow-contaminated", action="store_true",
                     help="Continue even if caveman activation channels are detected pre-run. "
                          "Off by default: a clean run aborts on any finding.")
+    ap.add_argument("--disallow-tools", action="store_true",
+                    help="Deny file-mutating tools (Write/Edit/NotebookEdit/Bash) so every arm "
+                         "emits its answer inline. Use for document-generation corpora: otherwise "
+                         "the model may write the doc to a file and emit only a 'wrote X.md' line, "
+                         "collapsing the prose-only token count and faking compression.")
     args = ap.parse_args()
 
     if not args.dry_run and shutil.which("claude") is None:
@@ -747,7 +764,8 @@ def main() -> int:
         return idx, run_one(arm_label, rule_text, prompt, pid, run,
                             cwd=call_cwd, dry_run=args.dry_run,
                             timeout=args.timeout, model=args.model,
-                            isolation_verified=isolation_verified)
+                            isolation_verified=isolation_verified,
+                            disallow_tools=args.disallow_tools)
 
     def write_result(idx, result):
         out.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")
@@ -805,6 +823,18 @@ def main() -> int:
                     for fut in concurrent.futures.as_completed(futures):
                         idx, result = fut.result()
                         write_result(idx, result)
+    # Remove the empty per-call cwd dirs created for parallel isolation. Only
+    # the call-NNNN dirs we made, and only when empty (rmdir fails otherwise),
+    # so any call that left debug output behind is preserved. resume is
+    # unaffected: it keys off the output JSONL (load_success_keys), not these
+    # dirs, which mkdir recreates each run.
+    if args.workers > 1:
+        for d in sorted(cwd_base.glob("call-*")):
+            if d.is_dir() and d.name[len("call-"):].isdigit():
+                try:
+                    d.rmdir()
+                except OSError:
+                    pass
     return 0
 
 
