@@ -187,6 +187,23 @@ Writes: INSERT/UPDATE/DELETE must maintain index pages, maybe split/rebalance B-
 Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-heavy tables.
 ```
 
+### Document generation
+
+The tables above measure conversational replies. Scrooge's doc-compression rule (the `## Boundaries` "docs / prose artifacts" clause) also targets **generated documents** — READMEs, specs, API references, release notes, runbooks. Measured on a separate held-out corpus ([`prompts/{ko,en}-docgen.txt`](./benchmarks/prompts/ko-docgen.txt) — 12 document-generation tasks that pin the facts to include, so every arm conveys the _same information_), run inline-only (`--disallow-tools`, so the model emits the document as prose instead of writing it to a file):
+
+| Lang | `normal` | `terse` | `scrooge` | Median per-prompt savings | scrooge < `normal` |
+| ---- | -------: | ------: | --------: | ------------------------: | :----------------: |
+| Korean (N=10)  | 3554 | 2460 | **1420** | **~48%** | 10 / 10 |
+| English (N=11) | 2772 | 1504 |  **852** | **~55%** | 11 / 11 |
+
+Median output tokens per arm; the savings column is the **median of each prompt's reduction** (dividing the two median-token columns gives a higher 60% KO / 69% EN — they land on different prompts under the heavy-tailed spread, so the per-prompt median is the representative figure). scrooge was smaller than the verbose baseline on **every** prompt, and beat the `terse` "answer concisely" control on 9/10 (KO) and 11/11 (EN) — so the win is the register, not generic brevity. The savings come from dropping meta-prologues ("릴리스 노트입니다…"), closing "want me to also reformat this?" offers, and per-item over-explanation, while keeping the document body intact: every fact, code block, and step. Before/after pairs and the full per-prompt token tables behind these numbers are committed under [`benchmarks/examples/`](./benchmarks/examples/) ([`docgen-results.md`](./benchmarks/examples/docgen-results.md); e.g. Korean release notes, `normal` 1839 → `scrooge` 776 tokens, same six changes).
+
+These doc-generation numbers are **noisier than the conversational headline** — treat them as estimates:
+
+- **Single run, high variance.** Document length varies a lot run-to-run; per-prompt savings here ranged from 7% (a dense feature spec — mostly required content) to 92% (a verbose baseline). The stable signal is the per-prompt win-rate, not the exact percentage.
+- **Conservative.** A few `normal`/`terse` prompts were dropped from the paired set because their documents were too long to finish within the timeout — i.e. the most verbose baselines are _excluded_, not counted.
+- **Clean baseline.** Unlike the conversational headline, this run additionally neutralizes the host `CLAUDE.md` and forces inline output, so the baseline reflects a default assistant rather than one shaped by the local `CLAUDE.md` or a file-writing tool. (The per-machine `settings.json` hooks/plugins still load, but apply equally to every arm.) Full methodology in [`benchmarks/README.md`](./benchmarks/README.md).
+
 ## Mechanics
 
 1. `/scrooge [lang] [dial]` activates a mode. Tokens compose on two independent axes — `/scrooge ko`, `/scrooge full`, `/scrooge ko lite`, etc.

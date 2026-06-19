@@ -125,6 +125,44 @@ python3 benchmarks/run.py \
   --output benchmarks/results-en.jsonl
 ```
 
+## Document-generation corpus
+
+`prompts/{ko,en}-docgen.txt` is a separate held-out corpus for the **doc-compression**
+register (the `## Boundaries` "docs / prose artifacts" clause), distinct from the
+conversational `prompts/{ko,en}.txt`. Each line asks the model to *produce a document*
+(README section, spec, API reference, release notes, runbook…) with the facts pinned in
+the prompt, so `normal` and `scrooge` convey the same information and only the register
+varies. Two flags matter for a valid doc-gen measurement:
+
+- **`--disallow-tools`** (required). With file tools available, the model may write the
+  document to a file (a `Write` tool_use) and emit only a one-line "wrote `X.md`" summary
+  as prose — which collapses the prose-only token count and *fakes* compression. This flag
+  denies `Write`/`Edit`/`NotebookEdit`/`Bash` so every arm emits the document inline, where
+  the prose-token headline actually measures the register.
+- **Neutralize the host `CLAUDE.md`.** Unlike the conversational corpus, doc prompts make
+  the model echo the host `CLAUDE.md` (a "respond in language X" directive, a workflow
+  framework, etc.) into the verbose arms, inflating the baseline. The published doc-gen run
+  moved `~/.claude/CLAUDE.md` aside and ran from a clean `--cwd` so the baseline is a stock
+  assistant. The harness does not automate this (it only isolates the register hooks);
+  arrange it around the run.
+
+```bash
+python3 benchmarks/run.py \
+  --prompts benchmarks/prompts/ko-docgen.txt \
+  --arms normal,terse,scrooge:ko/full \
+  --disallow-tools \
+  --runs 1 --workers 4 --timeout 600 \
+  --model claude-opus-4-8 --resume \
+  --cwd /tmp/scrooge-clean \
+  --output benchmarks/results-ko-docgen.jsonl
+```
+
+Doc outputs are heavy-tailed (one prompt's `normal` reply can run 10k+ tokens while another
+is 800), so per-cell numbers are noisier than the conversational headline and a few of the
+longest baselines drop on timeout. Report the **per-prompt win-rate and median** rather than
+the mean, and treat the percentage as an estimate. Committed before/after samples live in
+[`examples/`](./examples/).
+
 ## Codex secondary benchmark
 
 Use Codex while Claude quota is tight, but keep the result separate from the

@@ -87,6 +87,7 @@ Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 - 실질 rule 변경은 `ko`/`en`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
 - `rules/**` rename/move는 같은 PR에서 `registry.json` 수정.
 - Safety auto-clarity는 모든 dial에 유지.
+- Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지(`test_doc_boundaries.js` 존재 검사는 `ko`/`en` 하드코딩이라 신규 언어 rule 파일은 자동 보증 안 됨 — 이 불변식이 가드).
 
 ## Adding a Language
 

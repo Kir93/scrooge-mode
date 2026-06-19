@@ -35,7 +35,7 @@ Touch only what you must; clean up only your own orphans. Don't "improve" adjace
 
 ### 4. Goal-driven execution
 
-Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape) plus:
+Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape, doc-compression boundary) plus:
 
 - **markdownlint clean**: `npx markdownlint-cli2 "**/*.md"` (honors `.markdownlint.jsonc`).
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.

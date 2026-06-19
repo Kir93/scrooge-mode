@@ -172,6 +172,23 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 `scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과.
 
+### 문서 생성
+
+위 표는 대화형 답변 측정. Scrooge의 문서 압축 규칙(`## Boundaries`의 "docs / prose artifacts" 항목)은 **생성 문서** — README·명세·API 레퍼런스·릴리스 노트·런북 — 도 대상으로 함. 별도 held-out corpus([`prompts/{ko,en}-docgen.txt`](./benchmarks/prompts/ko-docgen.txt) — 포함할 사실을 고정해 모든 arm이 _같은 정보_를 전달하는 문서 생성 과제 12개)로, inline 전용(`--disallow-tools` — 모델이 문서를 파일로 쓰지 않고 prose로 출력)으로 측정:
+
+| 언어 | `normal` | `terse` | `scrooge` | prompt당 절감 중앙값 | scrooge < `normal` |
+| ---- | -------: | ------: | --------: | -------------------: | :----------------: |
+| 한국어 (N=10)  | 3554 | 2460 | **1420** | **~48%** | 10 / 10 |
+| 영어 (N=11)    | 2772 | 1504 |  **852** | **~55%** | 11 / 11 |
+
+arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중앙값** — 표의 두 중앙값 토큰을 나누면 더 큰 60%(KO)/69%(EN)가 나오는데, heavy-tail 분포라 normal·scrooge 중앙값이 서로 다른 프롬프트에 떨어지기 때문(prompt당 중앙값이 대표값). scrooge는 **모든** 프롬프트에서 verbose baseline보다 작았고, `terse`("간결하게 답해") control도 9/10(KO)·11/11(EN)로 능가 — 절감은 register 자체이지 일반 brevity 아님. 절감은 메타 프롤로그("릴리스 노트입니다…")·종결 제안("원하시면 다른 형식으로도…")·항목별 과설명 제거에서 나오며, 문서 본문(모든 사실·코드 블록·절차)은 보존. before/after 쌍과 수치 근거인 per-prompt 토큰 표는 [`benchmarks/examples/`](./benchmarks/examples/)에 커밋([`docgen-results.md`](./benchmarks/examples/docgen-results.md); 예: 한국어 릴리스 노트, `normal` 1839 → `scrooge` 776 tokens, 동일 6개 변경).
+
+이 문서 생성 수치는 **대화형 헤드라인보다 noisy** — 추정치로 취급:
+
+- **단일 실행, 분산 큼.** 문서 길이는 run마다 크게 변동 — 여기서 prompt당 절감은 7%(밀도 높은 기능 명세 — 대부분 필수 내용)부터 92%(장황한 baseline)까지. 안정적 신호는 exact %가 아니라 prompt당 win-rate.
+- **보수적.** 일부 `normal`/`terse` 프롬프트는 문서가 너무 길어 timeout 내 미완료라 paired set에서 제외 — 즉 _가장 장황한_ baseline이 빠진 것.
+- **Clean baseline.** 대화형 헤드라인과 달리 host `CLAUDE.md`까지 중립화하고 inline 출력을 강제 — baseline이 로컬 `CLAUDE.md`나 파일쓰기 tool에 영향받지 않은 기본 assistant. (per-machine `settings.json` hook/plugin은 로드되나 모든 arm에 동일 적용.) 전체 방법론은 [`benchmarks/README.md`](./benchmarks/README.md).
+
 ## 메커니즘
 
 1. `/scrooge [lang] [dial]` 명령으로 모드 활성화. 토큰은 2개 독립 축으로 조합 — `/scrooge ko`, `/scrooge full`, `/scrooge ko lite` 등.

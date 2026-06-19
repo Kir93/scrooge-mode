@@ -87,6 +87,7 @@ Use [CLAUDE.md Conventions](CLAUDE.md#conventions) as the source of truth. In sh
 - Substantive rule changes stay mirrored across `ko`/`en` and `lite`/`full`, or the PR explains why parity is intentionally not changed.
 - Renaming or moving `rules/**` requires the matching `registry.json` edit in the same PR.
 - Safety auto-clarity must remain in every dial.
+- The docs / prose compression boundary and its Docs escape must remain in every dial (the `test_doc_boundaries.js` presence check is hardcoded to `ko`/`en`, so a new language's rule files are not auto-guarded — this invariant is the guard).
 
 ## Adding a Language
 
