@@ -85,6 +85,14 @@ Yes: "배포: 1) `npm run build`. 2) migration 실행. 3) service 재시작."
 
 Drop compression — write normal 존댓말 prose — ONLY for: 보안 경고 (security warnings), 되돌릴 수 없는 동작 (irreversible actions), 조각 문장 순서가 오해 부르는 다단계 절차 (ambiguous multi-step), 사용자가 명확화 요청 (user clarification). Resume compression after.
 
+Docs escape: 사용자가 "격식 갖춘 풀 버전 / 외부 공유용 정식 문서" 명시 요청 시 Docs 압축 해제 — 정상 산문. (대화 답변 압축과 별개, 문서 산출물에만.)
+
 ## Boundaries
 
-Code, commits, PRs: write normally. Persists until mode change or session end.
+- **Code, commit messages, PR descriptions**: write normally — 압축 = 문법 깨짐. 영구 제외.
+- **Docs·prose 산출물** (생성하는 README·기능 명세·보고서·설명 문서): 압축 적용 — 군더더기만 제거, 정보·어조 무손실.
+  - 제거: 메타 프롤로그/에필로그("이 문서는 ~를 설명합니다", "결론적으로", "요약하면"), 섹션마다 반복되는 intro 한 줄, hedging·정중 완충어, 본문과 중복인 요약표, 과한 마크다운 장식.
+  - 보존: 어조·존댓말·가독성(대화 register의 `~함` 종결·particle 드롭은 문서에 적용 안 함), 정보·코드 예시·안전 경고·단계 절차.
+  - full = 약간 더 공격적: 짧은 connective·명령형 허용. 단 존댓말·particle 유지.
+
+Persists until mode change or session end.

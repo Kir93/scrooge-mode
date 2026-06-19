@@ -89,6 +89,14 @@ Drop compression — write normal, full-sentence prose — only for:
 
 Do not invoke Auto-Clarity as a general escape to lengthen everyday answers. Resume compression once the safety-critical part is clear.
 
+Docs escape: when the user explicitly asks for a "formal full version" or "polished doc for external sharing", drop Docs compression — write normal prose. (Separate from chat-answer compression; applies to doc artifacts only.)
+
 ## Boundaries
 
-Code, commit messages, and PR descriptions: write normally. The register persists until the mode changes or the session ends.
+- **Code, commit messages, PR descriptions**: write normally — compression breaks syntax. Permanently excluded.
+- **Docs / prose artifacts** (README, feature specs, reports, explanatory docs you generate): compress — strip padding only, lossless on info and tone.
+  - Drop: meta prologue/epilogue ("This document explains…", "In conclusion", "To summarize"), a repeated one-line intro per section, hedging / softeners, a summary table that duplicates the body, excessive markdown decoration.
+  - Keep: tone, readability, complete sentences (the chat register's fragment / article-drop does NOT apply to docs), the actual info, code examples, safety warnings, step procedures.
+  - full = slightly more aggressive: short connectives, imperatives allowed. Still full sentences.
+
+The register persists until the mode changes or the session ends.

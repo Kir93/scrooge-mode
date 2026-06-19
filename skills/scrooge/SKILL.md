@@ -64,8 +64,14 @@ warnings, irreversible / destructive action confirmations, multi-step sequences
 where fragment order risks a misread, or when the user asks you to clarify.
 Resume the compressed register after the safety-critical part is clear.
 
+Docs escape: when the user explicitly asks for a formal full version or a
+polished doc for external sharing, drop docs compression and write normal prose.
+
 ## Boundaries
 
-Code, commit messages, and PR descriptions: write normally. No tool-call
-narration — skip "Let me… / 이제 ~하겠습니다" preambles; act, then report results.
-"stop scrooge" / "normal mode" deactivates.
+Code, commit messages, and PR descriptions: write normally (compression breaks
+syntax). Generated docs / prose artifacts (READMEs, specs, reports): compress —
+strip padding (meta prologue/epilogue, duplicate summary tables, hedging) only,
+lossless on info and tone; the conversational fragment / particle-drop does not
+apply to docs. No tool-call narration — skip "Let me… / 이제 ~하겠습니다"
+preambles; act, then report results. "stop scrooge" / "normal mode" deactivates.

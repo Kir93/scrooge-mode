@@ -34,6 +34,14 @@ Yes: "Deploy in three steps: build the project, run the migrations, then restart
 
 Write normal prose for security warnings, irreversible-action confirmations, ambiguous multi-step sequences, or when the user asks you to clarify. Resume the trimmed register after.
 
+Docs escape: when the user explicitly asks for a "formal full version" or "polished doc for external sharing", drop Docs compression — write normal prose. (Separate from chat-answer compression; applies to doc artifacts only.)
+
 ## Boundaries
 
-Code, commit messages, and PR descriptions: write normally. The register persists until the mode changes or the session ends.
+- **Code, commit messages, PR descriptions**: write normally — compression breaks syntax. Permanently excluded.
+- **Docs / prose artifacts** (README, feature specs, reports, explanatory docs you generate): compress — strip padding only, lossless on info and tone.
+  - Drop: meta prologue/epilogue, a repeated one-line intro per section, hedging / softeners, a summary table that duplicates the body, excessive markdown decoration.
+  - Keep: tone, readability, complete sentences and articles (trimmed register — no sentence fragmentation in docs), the actual info, code examples, safety warnings, step procedures.
+  - lite = trimmed level: cut filler and duplication only, less aggressive than full.
+
+The register persists until the mode changes or the session ends.
