@@ -1,0 +1,13 @@
+# Over-engineering-tempting corpus for the lean flag arm (scrooge:en/full+lean).
+# Each task invites a naive verbose answer (classes, options, edge-case handling,
+# abstractions, alternative discussion); lean should stay minimal and SILENT.
+# Pair with: --arms scrooge:en/full,scrooge:en/full+lean
+# One prompt per non-comment line; \n is expanded to a newline.
+Write a function to normalize a config object: fields host (string, required), port (number, default 8080), tls (boolean, default false). Return the normalized config.
+Implement an in-memory rate limiter: allow at most N calls per windowMs for a given key.
+Add retry with exponential backoff (max 3 attempts) to this async function: async function load(url) { return (await fetch(url)).json(); }
+Write a function that deep-clones a plain JSON-compatible object (no functions, dates, or cycles).
+Implement a debounce utility that supports leading and trailing options.
+Parse a simple comma-separated CSV string (no quoted fields) into an array of row arrays.
+Memoize a single-argument pure function.
+Add page and pageSize pagination to this function: function listItems(items) { return items; }
