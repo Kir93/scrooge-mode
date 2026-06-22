@@ -190,9 +190,13 @@ function buildReminder(lang, dial, flags = []) {
   );
 }
 
-function buildFullInjection(lang, dial, ruleBody) {
+function buildFullInjection(lang, dial, ruleBody, flags = []) {
+  // Surface active flags in the header so the model's activation confirmation names
+  // them (e.g. "ko/full + lean"), not just lang/dial — the fragments are in ruleBody
+  // but the salient mode line is what the confirmation echoes.
+  const mode = `${lang}/${dial}${flags.length ? ` + ${flags.join('+')}` : ''}`;
   return (
-    `SCROOGE MODE ACTIVE — ${lang}/${dial}. Apply this register to every ` +
+    `SCROOGE MODE ACTIVE — ${mode}. Apply this register to every ` +
     `response until the mode changes or the session ends:\n\n${ruleBody}`
   );
 }
@@ -338,7 +342,7 @@ function handlePayload(data) {
       const body = assembleRuleBody(root, next.lang, next.dial, next.flags);
       emit(
         body
-          ? buildFullInjection(next.lang, next.dial, body)
+          ? buildFullInjection(next.lang, next.dial, body, next.flags)
           : buildReminder(next.lang, next.dial, next.flags)
       );
       return;

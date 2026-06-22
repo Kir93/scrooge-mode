@@ -20,6 +20,7 @@ import {
   deriveSessionKey,
   readVersionMarker,
   writeVersionMarker,
+  defaultFlags,
 } from './scrooge-config.js';
 import {
   resolveRepoRoot,
@@ -105,6 +106,19 @@ function buildUpgradeNotice({ from, to }) {
   );
 }
 
+// Active-session upgrade note: an existing user's saved default predates a flag
+// that is now on by default (e.g. lean shipped in v0.11.0 while their default was
+// {flags:[]}), so they were re-seeded WITHOUT it and would never know. On a version
+// bump, point them at the re-run; the inactive-session re-activation notice never
+// covers this case.
+function buildNewFlagNotice({ from, to }, missing) {
+  return (
+    `Scrooge update (v${from} → v${to}): the flag(s) ${missing.join(', ')} are now ON ` +
+    `by default, but this session's saved setup predates them. Tell the user, in their ` +
+    'language: re-run `/scrooge` to apply the new default, or keep the current setup.'
+  );
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -140,7 +154,13 @@ function handlePayload(data) {
     // Re-inject base rule + active flag fragments, matching the activation turn
     // so a resumed session restores the same register (flags included).
     const body = assembleRuleBody(root, state.lang, state.dial, state.flags);
-    if (body) emit(buildFullInjection(state.lang, state.dial, body));
+    if (!body) return;
+    let ctx = buildFullInjection(state.lang, state.dial, body, state.flags);
+    // On a version bump, if a now-default flag is missing from this session's saved
+    // setup, append a one-time note so the user knows to re-run to pick it up.
+    const missing = upgraded ? defaultFlags().filter((f) => !state.flags.includes(f)) : [];
+    if (missing.length) ctx += '\n\n' + buildNewFlagNotice(upgraded, missing);
+    emit(ctx);
   } catch (e) {
     // Silent fail — never break session start.
   }

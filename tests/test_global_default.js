@@ -187,3 +187,28 @@ test('upgrade but the session auto-activates from the default → full rule, not
   assert.equal(/was updated/.test(ctx), false); // active users get no re-activate nag
   assert.equal(readVersionMarker(versionFile(cfg)), PKG_VERSION);
 });
+
+test('SessionStart injection header surfaces active flags (ko/full + lean)', () => {
+  const cfg = freshConfig();
+  writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, defaultFile(cfg));
+  const ctx = runSessionStart(cfg, 'sessA'); // seeds → active ko/full+lean
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full \+ lean/); // confirmation names lean
+});
+
+test('upgrade + active session missing a now-default flag → re-run note', () => {
+  const cfg = freshConfig();
+  writeVersionMarker('0.0.0-old', versionFile(cfg));
+  writeState({ lang: 'ko', dial: 'full', flags: [] }, defaultFile(cfg)); // stale default, no lean
+  // Direct spawn with no SCROOGE_DEFAULT_FLAGS so defaultFlags() = ['lean'].
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+  delete env.SCROOGE_DEFAULT_FLAGS;
+  const r = spawnSync(process.execPath, [SESSION_START_HOOK], {
+    input: JSON.stringify({ session_id: 'sessA' }),
+    encoding: 'utf8',
+    env,
+  });
+  assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/); // still active (without lean)
+  assert.match(ctx, /lean are now ON by default/); // …plus the re-run note
+});
