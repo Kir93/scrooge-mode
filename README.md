@@ -126,13 +126,14 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 
 | Component                | What                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en` × `lite`/`full`. Persists per session.                                                                 |
-| `/scrooge off`           | Clear state, return to normal prose.                                                                                                             |
+| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions.                                                                 |
+| `/scrooge … [flag]`      | Opt-in flags orthogonal to the dial: `lean` (minimal code output) · `ctx` (context economy) · `max` (all). `nolean`/`noctx` turn one off; `SCROOGE_DEFAULT_FLAGS` seeds defaults. Off by default — the safe output-only register stays the baseline. |
+| `/scrooge off`           | Clear state + the global default (global off), return to normal prose.                                                                                                             |
 | Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Both languages, every dial. |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1. Adding a language = one new rule file + one registry entry.                                         |
-| `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Runs the hook-backed session parser; never asks the model to estimate token usage.                 |
+| `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Reports measured input + output tokens from the session JSONL; never asks the model to estimate.    |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
 
@@ -209,7 +210,11 @@ These doc-generation numbers are **noisier than the conversational headline** �
 1. `/scrooge [lang] [dial]` activates a mode. Tokens compose on two independent axes — `/scrooge ko`, `/scrooge full`, `/scrooge ko lite`, etc.
 2. The `UserPromptSubmit` hook parses the command, persists `{lang, dial}` to a state file, looks up the rule via [`registry.json`](registry.json), and injects it as `additionalContext`.
 3. Every subsequent turn reinjects a lightweight reminder so the register does not drift.
-4. `/scrooge off` clears state. Auto-clarity contexts inside the rule itself drop compression for safety-critical replies — security warnings, irreversible-action confirmations, ambiguous multi-step sequences — without the user having to opt out.
+4. `/scrooge off` clears state and the global default (global off — see below). Auto-clarity contexts inside the rule itself drop compression for safety-critical replies — security warnings, irreversible-action confirmations, ambiguous multi-step sequences — without the user having to opt out.
+
+**Global default.** Activating in any session saves the choice as a global default (`~/.claude/.scrooge-default`), so every new session auto-activates with the same lang/dial/flags — set it once, anywhere. The `SessionStart` hook seeds a fresh session from the default and re-injects the full rule. `/scrooge off` clears the default too (global off); a session already running keeps its register until it restarts, so an off in one worktree never yanks a concurrent one.
+
+**Flags (opt-in).** Beyond lang/dial, three behavior flags compose orthogonally: `lean` (minimal code output), `ctx` (context economy), and `max` (all). They are off by default so the safe output-only register stays the baseline; toggle per session with `/scrooge … lean` / `nolean`, or seed defaults via the `SCROOGE_DEFAULT_FLAGS` env var. Each active flag appends its register fragment (`rules/{lang}/fragments/{flag}.md`) to the injected rule.
 
 **Adding a language**:
 

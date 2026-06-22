@@ -129,6 +129,18 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## 기본 플래그 (선택)
+
+`lean`(코드 산출물 최소주의), `ctx`(컨텍스트 절약), `max`(전체)는 opt-in register 플래그 — 기본 off. 세션 단위로 `/scrooge … lean`(`nolean`/`noctx`로 해제)로 켜거나, shell 프로필에서 환경변수로 매 세션 기본값 지정:
+
+```bash
+export SCROOGE_DEFAULT_FLAGS=lean,ctx
+```
+
+화이트리스트 플래그(`lean`, `ctx`)만 적용 — 미지 토큰은 무시.
+
+참고: `SCROOGE_DEFAULT_FLAGS`는 `/scrooge` 활성화 시 flags만 seed — 그 자체로 세션을 활성화하진 않음. 모든 새 세션을 자동 활성화하려면 `/scrooge …`를 한 번 실행: lang/dial/flags가 **글로벌 기본값**으로 저장돼 `/scrooge off` 전까지 새 세션을 seed하며, 세션 시작 시 이 기본값이 env 변수보다 우선.
+
 ## Update
 
 installer를 다시 실행하면 감지된 전 에이전트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전.
@@ -145,6 +157,8 @@ claude plugin update scrooge@scrooge
 ```
 
 `claude plugin update`는 다음 Claude Code 재시작 때 적용되므로 이후 세션을 재시작.
+
+업데이트 후 첫 새 세션에서 재활성화 방법을 1회 안내함 — 버전 변경이 활성화를 리셋할 수 있기 때문. `/scrooge ko full`를 한 번 실행하면 글로벌 기본값이 이후 모든 세션을 `/scrooge off` 전까지 활성 유지.
 
 **Codex**는 재실행 시 hook payload(hooks, rules, lib, registry)를 overwrite하고 `~/.codex/config.toml` hook을 멱등 재머지함. **다른 skills 에이전트**(Cursor, Windsurf, Cline, Continue, Gemini CLI)는 재실행 시 `scrooge` skill이 overwrite됨. 어느 쪽이든 자동으로 최신을 받음.
 

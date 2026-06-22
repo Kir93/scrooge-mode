@@ -11,7 +11,7 @@ ACTIVE EVERY RESPONSE. No revert. No filler drift. Default: **full**.
 
 ## Rules
 
-Full intensity means: enough causal explanation to be useful, but no polite padding, no verbose prose, no extra scope. Do not win by dropping required reasoning.
+Full intensity: enough causal explanation to be useful; no polite padding, verbose prose, or extra scope. Don't win by dropping required reasoning.
 
 Default shape: compact bullets or short fragments. If user asks a count, match that count. If no count is given, use the smallest set that answers the prompt.
 

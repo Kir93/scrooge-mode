@@ -1,0 +1,10 @@
+# lean flag arm(scrooge:LANG/DIAL+lean)용 코드 생성 corpus.
+# 코드 산출물 최소주의 측정: 같은 과제에 base register vs base+lean 비교.
+# 페어링: --arms scrooge:ko/full,scrooge:ko/full+lean   --compare scrooge:ko/full,scrooge:ko/full+lean
+# 비주석 한 줄당 프롬프트 하나; \n은 줄바꿈으로 확장.
+콜백을 N밀리초 디바운스하는 JavaScript 함수를 작성해줘.
+함수를 지수 백오프로 최대 3회 재시도하는 Python 래퍼를 구현해줘.
+`unknown`을 `{ id: string; name: string }`로 좁히는 TypeScript 타입 가드를 작성해줘.
+정렬된 두 정수 배열을 하나의 정렬된 배열로 병합하는 함수를 추가해줘.
+prop의 이전 값을 반환하는 React 훅 `usePrevious`를 작성해줘.
+용량이 생성 시 고정되는 LRU 캐시를 get/put과 함께 Python으로 구현해줘.

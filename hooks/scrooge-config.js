@@ -22,12 +22,40 @@ import os from 'node:os';
 
 export const VALID_LANGS = ['ko', 'en'];
 export const VALID_DIALS = ['lite', 'full'];
-export const DEFAULT_STATE = { lang: 'en', dial: 'full' };
+// Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
+// this set is dropped (never persisted, never injected). Empty by default so the
+// safe output-only register stays the baseline — lean/ctx are opt-in.
+export const VALID_FLAGS = ['lean', 'ctx'];
+export const DEFAULT_STATE = { lang: 'en', dial: 'full', flags: [] };
 
-// Longest legitimate state payload is ~30 bytes ({"lang":"ko","dial":"full"}).
-// The suffix is a short pre-rendered badge string ("⛏ ~12.3k saved (est)").
+// Parse a comma-separated flag list (e.g. SCROOGE_DEFAULT_FLAGS) into a
+// whitelisted, deduped array in VALID_FLAGS order. Unknown tokens are dropped so
+// a typo or an injected value never reaches the state file.
+export function parseFlagList(raw) {
+  if (typeof raw !== 'string') return [];
+  const present = new Set(
+    raw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  return VALID_FLAGS.filter((f) => present.has(f));
+}
+
+// Activation-default flags from the environment. Empty unless
+// SCROOGE_DEFAULT_FLAGS names whitelisted flags.
+export function defaultFlags() {
+  return parseFlagList(process.env.SCROOGE_DEFAULT_FLAGS);
+}
+
+// Longest legitimate state payload is ~55 bytes
+// ({"lang":"ko","dial":"full","flags":["lean","ctx"]}). The suffix is a short
+// pre-rendered badge string ("⛏ ~12.3k saved (est)"). 256 keeps ample headroom
+// for the flags array without widening the symlink-clobber read window.
 const MAX_STATE_BYTES = 256;
 const MAX_SUFFIX_BYTES = 128;
+// Version marker is a short semver-ish string ("0.9.0", "1.0.0-rc.1").
+const MAX_VERSION_BYTES = 32;
 
 const O_NOFOLLOW =
   typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
@@ -78,16 +106,39 @@ export function getStatePath(sessionKey) {
   return path.join(claudeDir(), base);
 }
 
+// Global activation default (`~/.claude/.scrooge-default`). Same {lang,dial,flags}
+// schema as the session state, read/written through the same hardened path.
+// Activation writes it, a fresh session with no per-session state seeds from it
+// (auto-activate everywhere), and `/scrooge off` clears it (global off). NOT
+// session-scoped — one shared default seeds every new session, while live sessions
+// keep their own per-session state (so an off in one session never clobbers a peer).
+export function getDefaultPath() {
+  return path.join(claudeDir(), '.scrooge-default');
+}
+
+// Last-seen installed version marker (`~/.claude/.scrooge-version`). The
+// SessionStart hook compares it against the package version to detect an upgrade
+// and remind a now-inactive prior user how to re-activate.
+export function getVersionPath() {
+  return path.join(claudeDir(), '.scrooge-version');
+}
+
 export function getSuffixPath() {
   return path.join(claudeDir(), '.scrooge-statusline-suffix');
 }
 
 export function isValidState(state) {
+  if (!state || typeof state !== 'object') return false;
+  if (!VALID_LANGS.includes(state.lang) || !VALID_DIALS.includes(state.dial)) {
+    return false;
+  }
+  // flags is optional for backward compat: a legacy {lang,dial} file (no flags)
+  // validates and is normalized to [] by readState. When present it must be an
+  // array of whitelisted tokens — a non-array or any unknown token (e.g. an
+  // injected ['xss']) marks tampering and fails the whole state closed.
+  if (state.flags === undefined) return true;
   return (
-    !!state &&
-    typeof state === 'object' &&
-    VALID_LANGS.includes(state.lang) &&
-    VALID_DIALS.includes(state.dial)
+    Array.isArray(state.flags) && state.flags.every((f) => VALID_FLAGS.includes(f))
   );
 }
 
@@ -211,13 +262,27 @@ export function readState(statePath = getStatePath()) {
   } catch (e) {
     return null;
   }
-  const state = { lang: parsed.lang, dial: parsed.dial };
+  // Preserve flags; a legacy file without them normalizes to []. isValidState
+  // rejects a present-but-invalid flags value (non-array / unknown token), so a
+  // tampered flags field fails closed to null instead of being silently dropped.
+  const state = {
+    lang: parsed.lang,
+    dial: parsed.dial,
+    flags: parsed.flags === undefined ? [] : parsed.flags,
+  };
   return isValidState(state) ? state : null;
 }
 
 export function writeState(state, statePath = getStatePath()) {
   if (!isValidState(state)) return false;
-  return safeWriteFile(statePath, JSON.stringify({ lang: state.lang, dial: state.dial }));
+  return safeWriteFile(
+    statePath,
+    JSON.stringify({
+      lang: state.lang,
+      dial: state.dial,
+      flags: Array.isArray(state.flags) ? state.flags : [],
+    })
+  );
 }
 
 // Remove the state file (deactivate). unlinkSync does not follow symlinks — it
@@ -230,6 +295,20 @@ export function clearState(statePath = getStatePath()) {
   } catch (e) {
     return e.code === 'ENOENT';
   }
+}
+
+// Resolve the active state for a session path: the session's own per-session
+// state, or — when absent — the global default (getDefaultPath), seeded into the
+// session file so per-turn reinjection and `/scrooge off` operate on a real
+// per-session file thereafter. Returns null when neither exists (inactive).
+// Per-session state always wins over the global default.
+export function resolveActiveState(statePath = getStatePath(), defaultPath = getDefaultPath()) {
+  const own = readState(statePath);
+  if (own) return own;
+  const def = readState(defaultPath);
+  if (!def) return null;
+  writeState(def, statePath); // seed so the session is self-contained hereafter
+  return def;
 }
 
 // Strip control bytes (terminal-escape / OSC injection) and cap the byte length.
@@ -249,4 +328,21 @@ export function writeSuffix(text, suffixPath = getSuffixPath()) {
 export function readSuffix(suffixPath = getSuffixPath()) {
   const raw = safeReadFile(suffixPath, MAX_SUFFIX_BYTES);
   return raw === null ? '' : sanitizeSuffix(raw);
+}
+
+// Keep only semver-safe characters so a tampered marker can never carry an
+// injection payload into the upgrade notice. Empty → null.
+function sanitizeVersion(raw) {
+  const v = String(raw).replace(/[^0-9A-Za-z.\-+]/g, '').slice(0, MAX_VERSION_BYTES);
+  return v.length > 0 ? v : null;
+}
+
+export function readVersionMarker(versionPath = getVersionPath()) {
+  const raw = safeReadFile(versionPath, MAX_VERSION_BYTES);
+  return raw === null ? null : sanitizeVersion(raw);
+}
+
+export function writeVersionMarker(version, versionPath = getVersionPath()) {
+  const v = sanitizeVersion(version);
+  return v === null ? false : safeWriteFile(versionPath, v);
 }

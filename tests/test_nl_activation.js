@@ -143,7 +143,7 @@ function runHook(configDir, prompt) {
 test('NL activation through the hook persists state + injects the full rule', () => {
   const cfg = freshConfig();
   const { state, ctx } = runHook(cfg, '스크루지처럼 답해줘');
-  assert.deepEqual(state, { lang: 'ko', dial: 'full' });
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/);
 });
 
@@ -160,7 +160,7 @@ test('(e) a valid slash command wins over NL text in the same prompt (SC 3.3)', 
   // "lite" is a valid slash dial, so parseCommand returns non-null and NL never
   // runs — dial stays lite, not the full an NL trigger would force.
   const { state } = runHook(cfg, '/scrooge lite talk like scrooge');
-  assert.deepEqual(state, { lang: 'en', dial: 'lite' });
+  assert.deepEqual(state, { lang: 'en', dial: 'lite', flags: [] });
 });
 
 test('(f) inactive session + plain prompt injects nothing', () => {

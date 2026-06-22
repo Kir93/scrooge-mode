@@ -1,0 +1,10 @@
+# Code-generation corpus for the lean flag arm (scrooge:LANG/DIAL+lean).
+# Measures code-output minimalism: base register vs base+lean on the same tasks.
+# Pair with: --arms scrooge:en/full,scrooge:en/full+lean   --compare scrooge:en/full,scrooge:en/full+lean
+# One prompt per non-comment line; \n is expanded to a newline.
+Write a JavaScript function that debounces a callback by N milliseconds.
+Implement a retry wrapper in Python that retries a function up to 3 times with exponential backoff.
+Write a TypeScript type guard that narrows `unknown` to `{ id: string; name: string }`.
+Add a function to merge two sorted integer arrays into one sorted array.
+Write a React hook `usePrevious` that returns the previous value of a prop.
+Implement a fixed-capacity LRU cache with get and put in Python.

@@ -129,6 +129,18 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## Default flags (optional)
+
+`lean` (minimal code output), `ctx` (context economy), and `max` (all) are opt-in register flags — off by default. Activate them per session with `/scrooge … lean` (toggle off with `nolean` / `noctx`), or set a default for every session via your shell profile:
+
+```bash
+export SCROOGE_DEFAULT_FLAGS=lean,ctx
+```
+
+Only whitelisted flags (`lean`, `ctx`) are honored; unknown tokens are ignored.
+
+Note: `SCROOGE_DEFAULT_FLAGS` only seeds flags on an explicit `/scrooge` — it never activates a session by itself. To auto-activate every new session, run `/scrooge …` once: it saves a **global default** (lang/dial/flags) that seeds new sessions until `/scrooge off`, and that default wins over the env var at session start.
+
 ## Update
 
 Re-running the installer updates every detected agent in place — Scrooge is safe to re-run.
@@ -145,6 +157,8 @@ claude plugin update scrooge@scrooge
 ```
 
 `claude plugin update` applies on the next Claude Code restart, so restart your session afterward.
+
+After updating, the first new session shows a one-time reminder of how to re-activate — a version change can reset activation. Run `/scrooge ko full` once; the global default then keeps every later session active until `/scrooge off`.
 
 For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
 

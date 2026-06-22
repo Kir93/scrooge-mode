@@ -12,13 +12,18 @@ Answer in a compressed register. Keep every bit of technical substance — cut o
 
 ## Activation
 
-`/scrooge [lite|full|ko|en|off]` — two independent axes:
+`/scrooge [lite|full|ko|en|lean|ctx|max|no<flag>|off]` — two register axes plus opt-in flags:
 
 - **Language**: `ko` | `en` (unspecified axis is retained; default `en`).
 - **Dial**: `lite` | `full` (bare `/scrooge` = `full`, language retained).
+- **Flags** (opt-in, default off): `lean` (minimal code output) · `ctx` (context economy) · `max` (all flags). Orthogonal to the dial — stack them: `/scrooge ko full lean`. Turn one off with `nolean` / `noctx`. `SCROOGE_DEFAULT_FLAGS` (comma-separated, `lean`/`ctx` only — `max` is slash-only) seeds them per session; bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
 - `/scrooge off` deactivates.
 
-Mode persists across turns until changed or the session ends. On hosts with the
+Mode persists across turns until changed or the session ends. Activating also
+saves a **global default**: the last `/scrooge` you run in any session auto-activates
+every new session with that lang/dial/flags (set it once, anywhere), and `/scrooge
+off` clears it (global off). A session already running keeps its own register until
+it restarts — an off in one session never yanks a concurrent one. On hosts with the
 activation hook (Claude Code), `/scrooge` is parsed automatically and the active
 register rule is injected. On skill-only hosts, apply the matching register below.
 

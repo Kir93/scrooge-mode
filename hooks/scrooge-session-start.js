@@ -13,11 +13,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readState, getStatePath, deriveSessionKey } from './scrooge-config.js';
+import {
+  resolveActiveState,
+  getStatePath,
+  getDefaultPath,
+  deriveSessionKey,
+  readVersionMarker,
+  writeVersionMarker,
+} from './scrooge-config.js';
 import {
   resolveRepoRoot,
-  resolveRulePath,
-  readRuleBody,
+  assembleRuleBody,
   buildFullInjection,
 } from './scrooge-activate.js';
 
@@ -48,6 +54,57 @@ function sweepStaleState(now) {
   }
 }
 
+// Current installed version from the package manifest at the repo root.
+function readInstalledVersion(root) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    return typeof pkg.version === 'string' ? pkg.version : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Detect a version change exactly once, updating the stored marker. Returns the
+// previous version when it genuinely changed (a prior marker existed and differs),
+// else null. A fresh install (no marker) records the current version and returns
+// null — there is no prior activation to announce.
+function consumeVersionChange(root) {
+  const current = readInstalledVersion(root);
+  if (!current) return null;
+  const prev = readVersionMarker();
+  if (prev === current) return null;
+  writeVersionMarker(current);
+  return prev ? { from: prev, to: current } : null;
+}
+
+// Evidence the user previously activated Scrooge — a global default or a legacy
+// global state file on disk. A *valid* default would have seeded this session
+// active (so we wouldn't reach the inactive branch); finding the file present on
+// an inactive session means it exists but no longer loads (e.g. a schema-breaking
+// upgrade) — exactly the "your activation was reset" case worth announcing. A user
+// who installed Scrooge but never ran `/scrooge` has neither file, so an upgrade
+// stays silent for them instead of nagging a non-user.
+function hasActivationArtifact() {
+  try {
+    return fs.existsSync(getDefaultPath()) || fs.existsSync(getStatePath());
+  } catch (e) {
+    return false;
+  }
+}
+
+// One-time re-activation hint. A version bump can reset activation (e.g. the
+// session-scope state-model migration silently deactivated prior users), so tell
+// them how to turn Scrooge back on.
+function buildUpgradeNotice({ from, to }) {
+  return (
+    `Scrooge was updated (v${from} → v${to}) and is not active in this session — ` +
+    'a version change can reset activation. Tell the user, in their language, how ' +
+    'to re-activate: run `/scrooge ko full` (pick lang ko/en + dial lite/full). ' +
+    'Re-activating now saves a global default, so every new session stays active ' +
+    'until `/scrooge off`.'
+  );
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -62,14 +119,27 @@ function emit(additionalContext) {
 function handlePayload(data) {
   try {
     sweepStaleState(Date.now());
+    const root = resolveRepoRoot();
 
     const sessionKey = deriveSessionKey(data);
-    const state = readState(getStatePath(sessionKey));
-    if (!state) return; // inactive session — inject nothing
+    // Per-session state, or — for a brand-new session — seed from the global
+    // default so activation persists across sessions ("type once → on everywhere").
+    const state = resolveActiveState(getStatePath(sessionKey));
 
-    const root = resolveRepoRoot();
-    const rulePath = resolveRulePath(root, state.lang, state.dial);
-    const body = rulePath ? readRuleBody(rulePath) : null;
+    // Detect a version upgrade once (records the marker regardless of state).
+    const upgraded = consumeVersionChange(root);
+
+    if (!state) {
+      // Inactive session: announce re-activation only on a version upgrade AND
+      // when prior-activation evidence exists that the upgrade may have stranded —
+      // never to a user who installed Scrooge but never activated it.
+      if (upgraded && hasActivationArtifact()) emit(buildUpgradeNotice(upgraded));
+      return;
+    }
+
+    // Re-inject base rule + active flag fragments, matching the activation turn
+    // so a resumed session restores the same register (flags included).
+    const body = assembleRuleBody(root, state.lang, state.dial, state.flags);
     if (body) emit(buildFullInjection(state.lang, state.dial, body));
   } catch (e) {
     // Silent fail — never break session start.

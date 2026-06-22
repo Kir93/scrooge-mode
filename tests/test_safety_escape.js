@@ -41,6 +41,22 @@ for (const lang of ['ko', 'en']) {
   }
 }
 
+// Layer 1b — flag fragments carry the safety register too: every injected
+// surface must keep security / irreversible actions in normal prose (invariant
+// that holds across output, fragments, and any future surface).
+const FRAGMENT_SAFETY = { en: /security/i, ko: /보안/ };
+for (const lang of ['ko', 'en']) {
+  for (const flag of ['lean', 'ctx']) {
+    test(`fragment ${lang}/${flag} carries the safety register`, () => {
+      const body = fs.readFileSync(
+        path.join(REPO_ROOT, REGISTRY.fragments[lang][flag]),
+        'utf8'
+      );
+      assert.match(body, FRAGMENT_SAFETY[lang], `${lang}/${flag} missing safety register`);
+    });
+  }
+}
+
 // Layer 2 — activating full injects the escape contract into the model context.
 const tmpDirs = [];
 after(() => {
@@ -66,13 +82,13 @@ function injectionFor(prompt, expected) {
 }
 
 test('en/full activation injects the Auto-Clarity escape clause (G7)', () => {
-  const ctx = injectionFor('/scrooge en full', { lang: 'en', dial: 'full' });
+  const ctx = injectionFor('/scrooge en full', { lang: 'en', dial: 'full', flags: [] });
   assert.match(ctx, /Auto-Clarity/);
   for (const token of ESCAPE_TOKENS.en) assert.match(ctx, token);
 });
 
 test('ko/full activation injects the Auto-Clarity escape clause (G7)', () => {
-  const ctx = injectionFor('/scrooge ko full', { lang: 'ko', dial: 'full' });
+  const ctx = injectionFor('/scrooge ko full', { lang: 'ko', dial: 'full', flags: [] });
   assert.match(ctx, /Auto-Clarity/);
   for (const token of ESCAPE_TOKENS.ko) assert.match(ctx, token);
 });

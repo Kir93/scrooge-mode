@@ -12,6 +12,9 @@ Arm syntax (comma-separated to --arms):
   normal                       — no rule injection (baseline).
   terse                        — generic "answer concisely" control arm.
   scrooge:LANG/DIAL            — inject rules/LANG/DIAL.md (e.g. scrooge:ko/full).
+  scrooge:LANG/DIAL+FLAG       — base rule + flag fragment(s), mirroring the hook's
+                                 assembleRuleBody (e.g. scrooge:ko/full+lean). Stack
+                                 with `+`: scrooge:en/full+lean+ctx.
   caveman:LEVEL                — inject caveman SKILL.md filtered to LEVEL (best-effort path search).
   file:PATH                    — inject the file at PATH verbatim.
   NAME=PATH                    — inject PATH, labelled NAME (e.g. caveman=~/.claude/.../caveman.md).
@@ -60,11 +63,17 @@ def resolve_arm(spec: str) -> tuple[str, str]:
         return label, _read_text(Path(path).expanduser())
     if spec.startswith("scrooge:"):
         rest = spec.split(":", 1)[1]
-        if "/" not in rest:
+        # Optional `+flag` suffixes append register fragments, mirroring the hook's
+        # assembleRuleBody (base rule + active flag fragments). e.g.
+        # scrooge:ko/full+lean measures the lean code-output register against base.
+        dial_spec, *flags = rest.split("+")
+        if "/" not in dial_spec:
             raise ValueError(f"scrooge arm needs LANG/DIAL, got {spec!r}")
-        lang, dial = rest.split("/", 1)
-        path = RULES_DIR / lang / f"{dial}.md"
-        return spec, _read_text(path)
+        lang, dial = dial_spec.split("/", 1)
+        text = _read_text(RULES_DIR / lang / f"{dial}.md")
+        for flag in flags:
+            text += "\n\n" + _read_text(RULES_DIR / lang / "fragments" / f"{flag}.md")
+        return spec, text
     if spec.startswith("caveman:"):
         level = spec.split(":", 1)[1]
         path = _find_caveman_rule(level)
@@ -412,6 +421,8 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             ratio = 0.55 + (prompt_id * 13 % 15) / 100.0
         elif "lite" in arm:
             ratio = 0.75 + (prompt_id * 11 % 12) / 100.0
+        if "+lean" in arm:
+            ratio *= 0.85  # lean trims code output further (smoke-test illustration)
         fake_tokens = max(40, int(base * ratio))
         fake_text = f"[dry-run] {arm} prompt={prompt_id} run={run}"
         return RunResult(arm=arm, prompt_id=prompt_id, run=run,

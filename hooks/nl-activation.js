@@ -21,6 +21,10 @@
 // same set/off branches:
 //   { action: 'set', lang, dial: 'full' } | { action: 'off' } | null
 // null = no natural-language intent this turn (leave state untouched).
+//
+// Flags (lean/ctx/max) are slash-only — NL never sets them. An NL activation
+// therefore keeps the session's existing flags, or seeds SCROOGE_DEFAULT_FLAGS on
+// a fresh session, via the set-merge default path in scrooge-activate.js.
 
 // Activation triggers: the "scrooge" name plus an explicit action cue. The bare
 // phrases "압축 모드" / "토큰 아껴" are intentionally NOT triggers — without the

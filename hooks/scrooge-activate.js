@@ -26,11 +26,15 @@ import { execFileSync } from 'node:child_process';
 import {
   VALID_LANGS,
   VALID_DIALS,
+  VALID_FLAGS,
   DEFAULT_STATE,
+  defaultFlags,
   readState,
   writeState,
   clearState,
+  resolveActiveState,
   getStatePath,
+  getDefaultPath,
   deriveSessionKey,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
@@ -54,15 +58,42 @@ function resolveRepoRoot() {
   return path.join(HERE, '..'); // default; rule read may fail → reminder fallback
 }
 
-function resolveRulePath(repoRoot, lang, dial) {
+function loadRegistry(repoRoot) {
   try {
-    const reg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'registry.json'), 'utf8'));
-    const rel = reg && reg[lang] && reg[lang][dial];
-    if (typeof rel !== 'string') return null;
-    return path.join(repoRoot, rel);
+    return JSON.parse(fs.readFileSync(path.join(repoRoot, 'registry.json'), 'utf8'));
   } catch (e) {
     return null;
   }
+}
+
+function resolveRulePath(repoRoot, lang, dial) {
+  const reg = loadRegistry(repoRoot);
+  const rel = reg && reg[lang] && reg[lang][dial];
+  return typeof rel === 'string' ? path.join(repoRoot, rel) : null;
+}
+
+// Assemble the injected register body: base rule + each active flag's fragment,
+// joined in order. Reads the registry once. Fragments are OPTIONAL — a flag with
+// no registry mapping (e.g. set before its fragment file exists) or an unreadable
+// fragment is skipped, so injection degrades to the base rule instead of failing.
+// Fragment mapping shape is top-level `fragments[lang][flag]`, so the base
+// `reg[lang][dial]` lookup and its lang→dial consumers stay intact.
+function assembleRuleBody(repoRoot, lang, dial, flags = []) {
+  const reg = loadRegistry(repoRoot);
+  if (!reg) return null;
+  const baseRel = reg[lang] && reg[lang][dial];
+  if (typeof baseRel !== 'string') return null;
+  const base = readRuleBody(path.join(repoRoot, baseRel));
+  if (!base) return null;
+  const fragMap = (reg.fragments && reg.fragments[lang]) || {};
+  const parts = [base];
+  for (const flag of flags) {
+    const rel = fragMap[flag];
+    if (typeof rel !== 'string') continue;
+    const frag = readRuleBody(path.join(repoRoot, rel));
+    if (frag) parts.push(frag);
+  }
+  return parts.join('\n\n');
 }
 
 function readRuleBody(rulePath) {
@@ -77,8 +108,10 @@ function readRuleBody(rulePath) {
 }
 
 // Parse a /scrooge command from the prompt.
-// Returns { action: 'off' } | { action: 'set', lang?, dial?, bare } | null.
-// null means "no recognized command this turn" (including unknown args — leave
+// Returns { action: 'off' }
+//       | { action: 'set', lang?, dial?, addFlags, removeFlags, preset, bare }
+//       | null.
+// null means "no recognized command this turn" (every token unknown — leave
 // state untouched, matching caveman's no-silent-overwrite behavior).
 function parseCommand(prompt) {
   // `:scrooge` covers the plugin-namespaced invocation form (/scrooge:scrooge),
@@ -95,11 +128,44 @@ function parseCommand(prompt) {
   if (args.some((a) => OFF_TOKENS.has(a))) return { action: 'off' };
   const lang = args.find((a) => VALID_LANGS.includes(a));
   const dial = args.find((a) => VALID_DIALS.includes(a));
-  if (!lang && !dial) return null; // unknown args — no state change
-  return { action: 'set', lang, dial, bare: false };
+  // Flags are an additive axis orthogonal to lang/dial: `lean`/`ctx` turn one on,
+  // `nolean`/`noctx` turn one off, `max` is the preset for all flags. Unknown
+  // tokens are ignored (not an error), mirroring the lang/dial scan above.
+  const addFlags = [];
+  const removeFlags = [];
+  let preset = false;
+  for (const a of args) {
+    if (a === 'max') preset = true;
+    else if (VALID_FLAGS.includes(a)) addFlags.push(a);
+    else if (a.startsWith('no') && VALID_FLAGS.includes(a.slice(2))) {
+      removeFlags.push(a.slice(2));
+    }
+  }
+  // Every token unknown on every axis → no state change (e.g. `/scrooge bogus`).
+  if (!lang && !dial && !preset && addFlags.length === 0 && removeFlags.length === 0) {
+    return null;
+  }
+  return { action: 'set', lang, dial, addFlags, removeFlags, preset, bare: false };
 }
 
-function buildReminder(lang, dial) {
+// Compact per-flag behavior label for the high-frequency per-turn reminder. Each
+// label mirrors its fragment heading; an unmapped flag degrades to its bare name.
+// Keep ko/en in sync (bilingual parity).
+const FLAG_HINT = {
+  ko: { lean: 'lean(최소 코드)', ctx: 'ctx(컨텍스트 절약)' },
+  en: { lean: 'lean (minimal code)', ctx: 'ctx (context economy)' },
+};
+
+function flagHints(lang, flags) {
+  const map = FLAG_HINT[lang] || {};
+  return flags.map((f) => map[f] || f);
+}
+
+// Per-turn reminder (the high-frequency injection). Each active flag is named
+// with a compact behavior hint (flagHints) so the flag's intent — not just its
+// label — survives context drift; the flag's FULL register still lives in its
+// fragment, injected on the activation/SessionStart turn, not repeated here.
+function buildReminder(lang, dial, flags = []) {
   if (lang === 'ko') {
     const body =
       dial === 'full'
@@ -108,7 +174,8 @@ function buildReminder(lang, dial) {
     return (
       `SCROOGE 활성 (ko/${dial}). ` +
       body +
-      'code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.'
+      'code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.' +
+      (flags.length ? ` flag: ${flagHints('ko', flags).join('·')} 활성.` : '')
     );
   }
   const body =
@@ -118,7 +185,8 @@ function buildReminder(lang, dial) {
   return (
     `SCROOGE active (en/${dial}). ` +
     body +
-    'Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.'
+    'Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.' +
+    (flags.length ? ` Flags: ${flagHints('en', flags).join(', ')} active.` : '')
   );
 }
 
@@ -218,33 +286,69 @@ function handlePayload(data) {
     const cmd = parseCommand(prompt) || parseNaturalActivation(prompt);
 
     if (cmd && cmd.action === 'off') {
-      // Read the active register before clearing so the countermand can be
-      // localized. Only inject when a mode was actually active — an off on an
-      // inactive session is a no-op with nothing to counter.
-      const prior = readState(statePath);
+      // Read the effective register (per-session, else the global default) before
+      // clearing so the countermand can be localized. `/scrooge off` is a GLOBAL
+      // off: it clears this session AND the global default so no future session
+      // auto-activates. Peer sessions keep their own per-session files (off never
+      // touches them), so a concurrent worktree session is not yanked mid-run.
+      // Only inject when a mode was actually active — nothing to counter otherwise.
+      const prior = readState(statePath) || readState(getDefaultPath());
       clearState(statePath);
+      // Accepted race: a concurrent activation in another session can write a new
+      // default between the read above and this clear, which then removes it (the
+      // global default fails to update). Rare and self-healing — re-run `/scrooge`.
+      // A lock on this per-prompt hot path would cost more than the benign outcome.
+      clearState(getDefaultPath());
       if (prior) emit(buildCountermand(prior.lang));
       return;
     }
 
     if (cmd && cmd.action === 'set') {
-      const base = readState(statePath) || DEFAULT_STATE;
+      // Base for the merge: the session's own state, else the global default
+      // (so a change in a default-seeded session keeps the default's lang/flags),
+      // else a fresh state whose flags come from SCROOGE_DEFAULT_FLAGS.
+      const base =
+        readState(statePath) ||
+        readState(getDefaultPath()) ||
+        { ...DEFAULT_STATE, flags: defaultFlags() };
       const lang = cmd.bare ? base.lang : cmd.lang || base.lang;
       const dial = cmd.bare ? 'full' : cmd.dial || base.dial;
-      const next = { lang, dial };
+      // Bare /scrooge is a reset-to-default gesture (dial→full), so flags reset
+      // to the env default too — a stray bare toggle never leaves stale flags.
+      // Any explicit arg takes the additive merge below and preserves flags.
+      let flags;
+      if (cmd.bare) {
+        flags = defaultFlags();
+      } else {
+        const set = new Set(base.flags || []);
+        if (cmd.preset) for (const f of VALID_FLAGS) set.add(f);
+        for (const f of cmd.addFlags || []) set.add(f);
+        for (const f of cmd.removeFlags || []) set.delete(f);
+        flags = VALID_FLAGS.filter((f) => set.has(f));
+      }
+      const next = { lang, dial, flags };
       writeState(next, statePath);
+      // Register the activation as the GLOBAL default so every new session
+      // auto-activates with it (the "type once anywhere → on everywhere" gesture).
+      // `/scrooge off` clears it again. The last /scrooge run anywhere wins.
+      writeState(next, getDefaultPath());
 
-      // Activation/change turn → inject the full rule body.
+      // Activation/change turn → inject the full rule body + active fragments.
       const root = resolveRepoRoot();
-      const rulePath = resolveRulePath(root, next.lang, next.dial);
-      const body = rulePath ? readRuleBody(rulePath) : null;
-      emit(body ? buildFullInjection(next.lang, next.dial, body) : buildReminder(next.lang, next.dial));
+      const body = assembleRuleBody(root, next.lang, next.dial, next.flags);
+      emit(
+        body
+          ? buildFullInjection(next.lang, next.dial, body)
+          : buildReminder(next.lang, next.dial, next.flags)
+      );
       return;
     }
 
-    // No command this turn — reinforce the active mode with a reminder.
-    const state = readState(statePath);
-    if (state) emit(buildReminder(state.lang, state.dial));
+    // No command this turn — reinforce the active mode with a reminder. Resolve
+    // through the global default so a session that never explicitly activated
+    // (but a default exists) still gets seeded + reminded.
+    const state = resolveActiveState(statePath);
+    if (state) emit(buildReminder(state.lang, state.dial, state.flags));
   } catch (e) {
     // Silent fail — never break prompt submission.
   }
@@ -275,4 +379,4 @@ if (isMain) main();
 // Exported for reuse by the SessionStart hook, which re-injects the same full
 // rule for an already-active session. Importing this module does NOT run the
 // stdin handler — main() is gated on isMain — so the import has no side effects.
-export { resolveRepoRoot, resolveRulePath, readRuleBody, buildFullInjection };
+export { resolveRepoRoot, resolveRulePath, readRuleBody, buildFullInjection, assembleRuleBody };

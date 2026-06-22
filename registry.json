@@ -6,5 +6,15 @@
   "en": {
     "lite": "rules/en/lite.md",
     "full": "rules/en/full.md"
+  },
+  "fragments": {
+    "ko": {
+      "lean": "rules/ko/fragments/lean.md",
+      "ctx": "rules/ko/fragments/ctx.md"
+    },
+    "en": {
+      "lean": "rules/en/fragments/lean.md",
+      "ctx": "rules/en/fragments/ctx.md"
+    }
   }
 }

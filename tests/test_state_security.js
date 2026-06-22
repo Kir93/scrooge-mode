@@ -19,6 +19,7 @@ import {
   sanitizeSessionKey,
   deriveSessionKey,
   getStatePath,
+  readVersionMarker,
 } from '../hooks/scrooge-config.js';
 
 const tmpDirs = [];
@@ -34,7 +35,8 @@ after(() => {
 test('readState returns whitelisted state for a valid file', () => {
   const p = path.join(tmpDir(), 'state');
   fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'lite' }));
-  assert.deepEqual(readState(p), { lang: 'ko', dial: 'lite' });
+  // A legacy {lang,dial} file normalizes to flags:[] (backward compat).
+  assert.deepEqual(readState(p), { lang: 'ko', dial: 'lite', flags: [] });
 });
 
 test('readState refuses to follow a symlink (no exfil)', {
@@ -74,7 +76,7 @@ test('readState returns null for a missing file', () => {
 test('writeState round-trips a valid state', () => {
   const p = path.join(tmpDir(), 'state');
   assert.equal(writeState({ lang: 'en', dial: 'full' }, p), true);
-  assert.deepEqual(readState(p), { lang: 'en', dial: 'full' });
+  assert.deepEqual(readState(p), { lang: 'en', dial: 'full', flags: [] });
 });
 
 test('writeState rejects an invalid state without writing', () => {
@@ -137,4 +139,31 @@ test('getStatePath stays inside the config dir for any key', () => {
   const escaped = getStatePath(sanitizeSessionKey('../../escape'));
   assert.match(escaped, /\.scrooge-active-escape$/);
   assert.equal(escaped.includes('..'), false);
+});
+
+// Flags (lean-flags): the flags array is whitelist-validated on read, so a
+// tampered state file can't smuggle an arbitrary token into the injected context.
+test('readState rejects a non-whitelist flag, failing the whole state closed', () => {
+  const p = path.join(tmpDir(), 'state');
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full', flags: ['xss'] }));
+  assert.equal(readState(p), null);
+});
+
+test('readState rejects a non-array flags value (tamper)', () => {
+  const p = path.join(tmpDir(), 'state');
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full', flags: 'lean' }));
+  assert.equal(readState(p), null);
+});
+
+// The version marker feeds the upgrade re-activation notice (model context), so a
+// tampered marker must not carry control / terminal-escape bytes through — same
+// posture as the statusline suffix.
+test('readVersionMarker strips control/escape bytes from a tampered marker', () => {
+  const p = path.join(tmpDir(), 'version');
+  const evil = '1.0.0' + String.fromCharCode(27) + '[31m' + String.fromCharCode(7) + 'evil';
+  fs.writeFileSync(p, evil);
+  const v = readVersionMarker(p);
+  assert.match(v, /^[0-9A-Za-z.\-+]*$/); // only semver-safe chars survive
+  assert.equal(v.includes(String.fromCharCode(27)), false); // ESC stripped
+  assert.equal(v.includes(String.fromCharCode(7)), false); // BEL stripped
 });
