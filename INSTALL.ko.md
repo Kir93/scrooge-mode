@@ -131,17 +131,17 @@ Windows PowerShell:
 
 ## 플래그 (lean 기본 on)
 
-`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜어 ~21% 더 깎되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). `ctx`(컨텍스트 절약)은 **opt-in**. 기본값 변경:
+`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜어 ~21% 더 깎되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). 기본값 변경:
 
-- 세션 단위: `/scrooge … nolean`(lean 해제) 또는 `/scrooge … ctx`(ctx 추가).
+- 세션 단위: `/scrooge … nolean`(lean 해제).
 - shell 프로필로 전역:
 
 ```bash
-export SCROOGE_DEFAULT_FLAGS=lean,ctx   # ctx 추가
+export SCROOGE_DEFAULT_FLAGS=lean       # lean on (기본값)
 export SCROOGE_DEFAULT_FLAGS=           # 전체 해제
 ```
 
-`lean`/`ctx`만 적용 — 미지 토큰은 무시. `max`는 둘 다 켜는 slash 전용 preset. (`/scrooge …` 활성화는 **글로벌 기본값**도 저장해 `/scrooge off` 전까지 새 세션을 자동 활성화.)
+`lean`만 적용 — 미지 토큰은 무시. (`/scrooge …` 활성화는 **글로벌 기본값**도 저장해 `/scrooge off` 전까지 새 세션을 자동 활성화.)
 
 ## Update
 

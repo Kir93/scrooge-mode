@@ -1,4 +1,4 @@
-// G-flags — lean/ctx flag axis: parsing, additive merge, preset, env defaults,
+// G-flags — lean flag axis: parsing, additive merge, env defaults,
 // state validation, and registry fragment assembly.
 //
 // Covers spec Success Criteria 1-6 and 8. Unit tests hit the scrooge-config
@@ -56,7 +56,7 @@ function runHook(configDir, prompt, env = {}) {
 
 test('parseFlagList keeps whitelisted tokens, drops unknowns, dedups in order', () => {
   assert.deepEqual(parseFlagList('lean,bogus'), ['lean']); // unknown dropped
-  assert.deepEqual(parseFlagList('ctx, lean'), ['lean', 'ctx']); // VALID_FLAGS order + trim
+  assert.deepEqual(parseFlagList('ctx, lean'), ['lean']); // ctx removed → dropped as unknown
   assert.deepEqual(parseFlagList('lean,lean'), ['lean']); // dedup
   assert.deepEqual(parseFlagList(''), []);
   assert.deepEqual(parseFlagList(null), []);
@@ -66,23 +66,23 @@ test('defaultFlags: lean ON by default when unset, env overrides (incl. empty = 
   const prev = process.env.SCROOGE_DEFAULT_FLAGS;
   try {
     delete process.env.SCROOGE_DEFAULT_FLAGS;
-    assert.deepEqual(defaultFlags(), ['lean']); // unset → lean on, ctx opt-in
+    assert.deepEqual(defaultFlags(), ['lean']); // unset → lean on
     process.env.SCROOGE_DEFAULT_FLAGS = '';
     assert.deepEqual(defaultFlags(), []); // explicit empty → opt out of all
-    process.env.SCROOGE_DEFAULT_FLAGS = 'lean,ctx';
-    assert.deepEqual(defaultFlags(), ['lean', 'ctx']); // explicit opt-in of both
+    process.env.SCROOGE_DEFAULT_FLAGS = 'lean';
+    assert.deepEqual(defaultFlags(), ['lean']); // explicit opt-in
     process.env.SCROOGE_DEFAULT_FLAGS = 'ctx,nope';
-    assert.deepEqual(defaultFlags(), ['ctx']); // explicit subset, unknown dropped
+    assert.deepEqual(defaultFlags(), []); // all unknown (ctx removed) → empty
   } finally {
     if (prev === undefined) delete process.env.SCROOGE_DEFAULT_FLAGS;
     else process.env.SCROOGE_DEFAULT_FLAGS = prev;
   }
 });
 
-test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON (ctx opt-in)', () => {
+test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON', () => {
   const cfg = freshConfig();
   // Spawn directly (not the env-pinned helper) so the child sees no env override
-  // and exercises the real on-by-default policy (lean on, ctx off).
+  // and exercises the real on-by-default policy (lean on).
   const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
   delete env.SCROOGE_DEFAULT_FLAGS;
   const r = spawnSync(process.execPath, [HOOK], {
@@ -101,7 +101,7 @@ test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON (ctx opt-in
 // ── Unit: state validation + round-trip ─────────────────────────────────────
 
 test('isValidState accepts whitelisted flags, rejects unknown / non-array', () => {
-  assert.equal(isValidState({ lang: 'ko', dial: 'full', flags: ['lean', 'ctx'] }), true);
+  assert.equal(isValidState({ lang: 'ko', dial: 'full', flags: ['lean'] }), true);
   assert.equal(isValidState({ lang: 'ko', dial: 'full', flags: [] }), true);
   assert.equal(isValidState({ lang: 'ko', dial: 'full' }), true); // legacy: flags optional
   assert.equal(isValidState({ lang: 'ko', dial: 'full', flags: ['xss'] }), false);
@@ -121,10 +121,10 @@ test('writeState/readState round-trip flags; legacy file normalizes to []', () =
 // ── Unit: assembleRuleBody (registry fragment assembly + graceful skip) ──────
 
 test('assembleRuleBody appends active fragments after the base register', () => {
-  const body = assembleRuleBody(REPO_ROOT, 'ko', 'full', ['lean', 'ctx']);
+  const body = assembleRuleBody(REPO_ROOT, 'ko', 'full', ['lean']);
   assert.match(body, /Auto-Clarity/); // base rule
   assert.match(body, /Flag: lean/);
-  assert.match(body, /Flag: ctx/);
+  assert.equal(/Flag: ctx/.test(body), false); // ctx fragment removed
 });
 
 test('assembleRuleBody skips a fragment whose file is missing (graceful, no throw)', () => {
@@ -149,18 +149,11 @@ test('SC1: /scrooge ko full lean records the flag and injects the lean fragment'
   assert.match(ctx, /Flag: lean/);
 });
 
-test('SC2: /scrooge ko max turns on every flag', () => {
-  const { state, ctx } = runHook(freshConfig(), '/scrooge ko max');
-  assert.deepEqual(state.flags, ['lean', 'ctx']);
-  assert.match(ctx, /Flag: lean/);
-  assert.match(ctx, /Flag: ctx/);
-});
-
-test('SC3: /scrooge nolean drops lean and keeps lang/dial/ctx', () => {
+test('SC3: /scrooge nolean drops lean, keeps lang/dial', () => {
   const cfg = freshConfig();
-  runHook(cfg, '/scrooge ko full lean ctx');
+  runHook(cfg, '/scrooge ko full lean');
   const { state } = runHook(cfg, '/scrooge nolean');
-  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: ['ctx'] });
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
 });
 
 test('flag-only /scrooge lean adds the flag without touching lang/dial', () => {
@@ -185,8 +178,8 @@ test('bare /scrooge resets flags to the env default (reset gesture)', () => {
 });
 
 test('SC6: SCROOGE_DEFAULT_FLAGS seeds flags on a fresh activation', () => {
-  const { state } = runHook(freshConfig(), '/scrooge ko', { SCROOGE_DEFAULT_FLAGS: 'ctx' });
-  assert.deepEqual(state.flags, ['ctx']);
+  const { state } = runHook(freshConfig(), '/scrooge ko', { SCROOGE_DEFAULT_FLAGS: 'lean' });
+  assert.deepEqual(state.flags, ['lean']);
 });
 
 // The per-turn reminder carries each active flag's behavior hint, not just its
@@ -201,7 +194,7 @@ test('the per-turn reminder carries each active flag behavior hint (ko)', () => 
 
 test('the per-turn reminder carries the flag behavior hint (en)', () => {
   const cfg = freshConfig();
-  runHook(cfg, '/scrooge en ctx');
+  runHook(cfg, '/scrooge en lean');
   const { ctx } = runHook(cfg, 'explain this function');
-  assert.match(ctx, /Flags: ctx \(context economy\) active/);
+  assert.match(ctx, /Flags: lean \(minimal code\) active/);
 });

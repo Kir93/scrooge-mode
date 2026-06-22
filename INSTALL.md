@@ -131,17 +131,17 @@ Windows PowerShell:
 
 ## Flags (lean on by default)
 
-`lean` (minimal code output) is **on by default** — `/scrooge` cuts ~21% more by trimming over-engineering and narration, never correctness (its fragment pins the safety floor). `ctx` (context economy) is **opt-in**. To change the defaults:
+`lean` (minimal code output) is **on by default** — `/scrooge` cuts ~21% more by trimming over-engineering and narration, never correctness (its fragment pins the safety floor). To change the default:
 
-- Per session: `/scrooge … nolean` (drop lean) or `/scrooge … ctx` (add ctx).
+- Per session: `/scrooge … nolean` (drop lean).
 - Globally via your shell profile:
 
 ```bash
-export SCROOGE_DEFAULT_FLAGS=lean,ctx   # add ctx
+export SCROOGE_DEFAULT_FLAGS=lean       # lean on (the default)
 export SCROOGE_DEFAULT_FLAGS=           # disable all flags
 ```
 
-Only `lean`/`ctx` are honored; unknown tokens are ignored. `max` is a slash-only preset for both. (Activating with `/scrooge …` also saves a **global default** that auto-activates new sessions until `/scrooge off`.)
+Only `lean` is honored; unknown tokens are ignored. (Activating with `/scrooge …` also saves a **global default** that auto-activates new sessions until `/scrooge off`.)
 
 ## Update
 

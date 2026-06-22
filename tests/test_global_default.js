@@ -80,10 +80,10 @@ test('resolveActiveState: seeds the session file from the global default when ab
   const cfg = freshConfig();
   const sp = stateFile(cfg, 'y');
   const dp = defaultFile(cfg);
-  writeState({ lang: 'ko', dial: 'full', flags: ['ctx'] }, dp);
+  writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, dp);
   assert.equal(readState(sp), null); // not seeded yet
-  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'ko', dial: 'full', flags: ['ctx'] });
-  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: ['ctx'] }); // seeded
+  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'ko', dial: 'full', flags: ['lean'] });
+  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: ['lean'] }); // seeded
 });
 
 test('resolveActiveState: null when neither per-session state nor default exists', () => {

@@ -9,12 +9,10 @@
   },
   "fragments": {
     "ko": {
-      "lean": "rules/ko/fragments/lean.md",
-      "ctx": "rules/ko/fragments/ctx.md"
+      "lean": "rules/ko/fragments/lean.md"
     },
     "en": {
-      "lean": "rules/en/fragments/lean.md",
-      "ctx": "rules/en/fragments/ctx.md"
+      "lean": "rules/en/fragments/lean.md"
     }
   }
 }

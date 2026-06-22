@@ -46,7 +46,7 @@ for (const lang of ['ko', 'en']) {
 // that holds across output, fragments, and any future surface).
 const FRAGMENT_SAFETY = { en: /security/i, ko: /보안/ };
 for (const lang of ['ko', 'en']) {
-  for (const flag of ['lean', 'ctx']) {
+  for (const flag of ['lean']) {
     test(`fragment ${lang}/${flag} carries the safety register`, () => {
       const body = fs.readFileSync(
         path.join(REPO_ROOT, REGISTRY.fragments[lang][flag]),

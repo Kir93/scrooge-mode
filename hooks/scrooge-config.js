@@ -23,14 +23,11 @@ import os from 'node:os';
 export const VALID_LANGS = ['ko', 'en'];
 export const VALID_DIALS = ['lite', 'full'];
 // Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
-// this set is dropped (never persisted, never injected). Empty by default so the
-// safe output-only register stays the baseline — lean/ctx are opt-in.
-export const VALID_FLAGS = ['lean', 'ctx'];
+// this set is dropped (never persisted, never injected). `lean` is the lone flag.
+export const VALID_FLAGS = ['lean'];
 // `lean` is ON by default — measured ~21% output reduction by cutting bloat
 // (over-engineering, alternative-narration), never correctness (its fragment pins
-// the safety floor). `ctx` is NOT defaulted on: it showed no measured benefit on
-// tested tasks and its fragment injection costs input tokens, so it stays opt-in.
-// Opt out of lean with `nolean` / SCROOGE_DEFAULT_FLAGS; opt into ctx with `ctx`.
+// the safety floor). Opt out with `nolean` / SCROOGE_DEFAULT_FLAGS.
 export const DEFAULT_ON_FLAGS = ['lean'];
 export const DEFAULT_STATE = { lang: 'en', dial: 'full', flags: [...DEFAULT_ON_FLAGS] };
 
@@ -57,8 +54,8 @@ export function defaultFlags() {
   return parseFlagList(raw);
 }
 
-// Longest legitimate state payload is ~55 bytes
-// ({"lang":"ko","dial":"full","flags":["lean","ctx"]}). The suffix is a short
+// Longest legitimate state payload is ~45 bytes
+// ({"lang":"ko","dial":"full","flags":["lean"]}). The suffix is a short
 // pre-rendered badge string ("⛏ ~12.3k saved (est)"). 256 keeps ample headroom
 // for the flags array without widening the symlink-clobber read window.
 const MAX_STATE_BYTES = 256;

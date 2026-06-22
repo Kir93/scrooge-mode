@@ -109,7 +109,7 @@ function readRuleBody(rulePath) {
 
 // Parse a /scrooge command from the prompt.
 // Returns { action: 'off' }
-//       | { action: 'set', lang?, dial?, addFlags, removeFlags, preset, bare }
+//       | { action: 'set', lang?, dial?, addFlags, removeFlags, bare }
 //       | null.
 // null means "no recognized command this turn" (every token unknown — leave
 // state untouched, matching caveman's no-silent-overwrite behavior).
@@ -128,32 +128,30 @@ function parseCommand(prompt) {
   if (args.some((a) => OFF_TOKENS.has(a))) return { action: 'off' };
   const lang = args.find((a) => VALID_LANGS.includes(a));
   const dial = args.find((a) => VALID_DIALS.includes(a));
-  // Flags are an additive axis orthogonal to lang/dial: `lean`/`ctx` turn one on,
-  // `nolean`/`noctx` turn one off, `max` is the preset for all flags. Unknown
-  // tokens are ignored (not an error), mirroring the lang/dial scan above.
+  // Flags are an additive axis orthogonal to lang/dial: `lean` turns it on,
+  // `nolean` turns it off. Unknown tokens are ignored (not an error),
+  // mirroring the lang/dial scan above.
   const addFlags = [];
   const removeFlags = [];
-  let preset = false;
   for (const a of args) {
-    if (a === 'max') preset = true;
-    else if (VALID_FLAGS.includes(a)) addFlags.push(a);
+    if (VALID_FLAGS.includes(a)) addFlags.push(a);
     else if (a.startsWith('no') && VALID_FLAGS.includes(a.slice(2))) {
       removeFlags.push(a.slice(2));
     }
   }
   // Every token unknown on every axis → no state change (e.g. `/scrooge bogus`).
-  if (!lang && !dial && !preset && addFlags.length === 0 && removeFlags.length === 0) {
+  if (!lang && !dial && addFlags.length === 0 && removeFlags.length === 0) {
     return null;
   }
-  return { action: 'set', lang, dial, addFlags, removeFlags, preset, bare: false };
+  return { action: 'set', lang, dial, addFlags, removeFlags, bare: false };
 }
 
 // Compact per-flag behavior label for the high-frequency per-turn reminder. Each
 // label mirrors its fragment heading; an unmapped flag degrades to its bare name.
 // Keep ko/en in sync (bilingual parity).
 const FLAG_HINT = {
-  ko: { lean: 'lean(최소 코드)', ctx: 'ctx(컨텍스트 절약)' },
-  en: { lean: 'lean (minimal code)', ctx: 'ctx (context economy)' },
+  ko: { lean: 'lean(최소 코드)' },
+  en: { lean: 'lean (minimal code)' },
 };
 
 function flagHints(lang, flags) {
@@ -325,7 +323,6 @@ function handlePayload(data) {
         flags = defaultFlags();
       } else {
         const set = new Set(base.flags || []);
-        if (cmd.preset) for (const f of VALID_FLAGS) set.add(f);
         for (const f of cmd.addFlags || []) set.add(f);
         for (const f of cmd.removeFlags || []) set.delete(f);
         flags = VALID_FLAGS.filter((f) => set.has(f));
