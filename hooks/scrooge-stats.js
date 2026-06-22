@@ -79,6 +79,7 @@ function formatLedger(ledger, since) {
 
 // Pure formatter — split from main() so tests can pass synthetic inputs.
 function formatStats({
+  inputTokens = 0,
   outputTokens,
   proseOutputTokens = 0,
   toolUseOutputTokens = 0,
@@ -125,6 +126,7 @@ function formatStats({
     (file ? `Session:  ${shortPath(file)}\n` : '') +
     `Mode:     ${modeLabel}\n` +
     `Turns:    ${turns}\n${SEP}\n` +
+    `Input tokens:          ${inputTokens.toLocaleString()} (measured)\n` +
     `Output tokens:         ${outputTokens.toLocaleString()}\n` +
     `  prose:               ${proseOutputTokens.toLocaleString()}\n` +
     `  tool_use:            ${toolUseOutputTokens.toLocaleString()}\n` +

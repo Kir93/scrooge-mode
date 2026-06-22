@@ -230,6 +230,32 @@ test('parseCodexSession degrades to EMPTY_SUMMARY for a missing file', () => {
   assert.deepEqual(parseCodexSession('/whatever'), { ...EMPTY_SUMMARY });
 });
 
+test('parseClaudeSession aggregates input_tokens with the same id dedup as output', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-input-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'input-session.jsonl');
+  const line = (id, input, output) =>
+    JSON.stringify({
+      type: 'assistant',
+      message: {
+        id,
+        model: 'claude-opus-4-8',
+        usage: { input_tokens: input, output_tokens: output, cache_read_input_tokens: 0 },
+      },
+    });
+  // id "a" repeats across content-block lines (deduped → counted once); "b" once.
+  fs.writeFileSync(file, [line('a', 100, 30), line('a', 100, 30), line('b', 200, 40)].join('\n'));
+  const s = parseClaudeSession(file);
+  assert.equal(s.inputTokens, 300); // 100 (deduped) + 200, not 400
+  assert.equal(s.outputTokens, 70);
+  assert.equal(s.turns, 2);
+});
+
+test('EMPTY_SUMMARY carries inputTokens and unreadable input degrades to it', () => {
+  assert.equal(EMPTY_SUMMARY.inputTokens, 0);
+  assert.equal(parseClaudeSession('/no/such/file').inputTokens, 0);
+});
+
 test('readSession honors an explicit sessionFile over discovery', () => {
   const r = readSession({ sessionFile: FIXTURE });
   assert.equal(r.agent, 'claude');
