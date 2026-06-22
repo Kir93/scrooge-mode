@@ -195,7 +195,7 @@ test('SessionStart injection header surfaces active flags (ko/full + lean)', () 
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full \+ lean/); // confirmation names lean
 });
 
-test('upgrade + active session missing a now-default flag → re-run note', () => {
+test('upgrade + active session missing a now-default flag → auto-applied + FYI note', () => {
   const cfg = freshConfig();
   writeVersionMarker('0.0.0-old', versionFile(cfg));
   writeState({ lang: 'ko', dial: 'full', flags: [] }, defaultFile(cfg)); // stale default, no lean
@@ -209,6 +209,9 @@ test('upgrade + active session missing a now-default flag → re-run note', () =
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
-  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/); // still active (without lean)
-  assert.match(ctx, /lean are now ON by default/); // …plus the re-run note
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full \+ lean/); // lean auto-applied to the injection
+  assert.match(ctx, /lean is now ON by default and applied/); // FYI note (not "re-run")
+  // …and persisted to BOTH the session state and the saved default:
+  assert.deepEqual(readState(stateFile(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: ['lean'] });
+  assert.deepEqual(readState(defaultFile(cfg)), { lang: 'ko', dial: 'full', flags: ['lean'] });
 });

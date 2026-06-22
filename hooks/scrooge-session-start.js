@@ -14,7 +14,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  VALID_FLAGS,
   resolveActiveState,
+  readState,
+  writeState,
   getStatePath,
   getDefaultPath,
   deriveSessionKey,
@@ -106,16 +109,30 @@ function buildUpgradeNotice({ from, to }) {
   );
 }
 
-// Active-session upgrade note: an existing user's saved default predates a flag
-// that is now on by default (e.g. lean shipped in v0.11.0 while their default was
-// {flags:[]}), so they were re-seeded WITHOUT it and would never know. On a version
-// bump, point them at the re-run; the inactive-session re-activation notice never
-// covers this case.
-function buildNewFlagNotice({ from, to }, missing) {
+// On a version upgrade, fold any newly-default-on flags (defaultFlags(), env-aware)
+// into both the session state and the saved global default, so an existing user
+// picks up new defaults (e.g. lean) automatically — re-running `/scrooge ko` would
+// NOT, since it preserves the saved flags. Gated on the version bump (once), so a
+// prior explicit opt-out is re-applied at most once. SCROOGE_DEFAULT_FLAGS=''
+// (global opt-out) → defaultFlags() empty → no-op. Returns the newly-added flags.
+function applyNewDefaultFlags(statePath, state) {
+  const added = defaultFlags().filter((f) => !state.flags.includes(f));
+  if (!added.length) return null;
+  state.flags = VALID_FLAGS.filter((f) => state.flags.includes(f) || added.includes(f));
+  writeState(state, statePath);
+  const def = readState(getDefaultPath());
+  if (def) writeState({ ...def, flags: state.flags }, getDefaultPath());
+  return added;
+}
+
+// FYI note after auto-applying new default flags — tells the user their default
+// behavior changed (and how to opt back out), without asking them to re-run.
+function buildAppliedNotice({ from, to }, added) {
+  const v = added.length > 1 ? 'are' : 'is';
   return (
-    `Scrooge update (v${from} → v${to}): the flag(s) ${missing.join(', ')} are now ON ` +
-    `by default, but this session's saved setup predates them. Tell the user, in their ` +
-    'language: re-run `/scrooge` to apply the new default, or keep the current setup.'
+    `Scrooge update (v${from} → v${to}): ${added.join(', ')} ${v} now ON by default and ` +
+    `applied to this session. Briefly tell the user, in their language, that this is now ` +
+    `active (opt out with \`/scrooge no${added[0]}\` if unwanted).`
   );
 }
 
@@ -151,15 +168,17 @@ function handlePayload(data) {
       return;
     }
 
+    // On a version bump, auto-apply any newly-default-on flags to this active
+    // session + the saved default (B), so existing users pick them up without
+    // re-running. Must run before assembleRuleBody so the new fragment is injected.
+    const applied = upgraded ? applyNewDefaultFlags(getStatePath(sessionKey), state) : null;
+
     // Re-inject base rule + active flag fragments, matching the activation turn
     // so a resumed session restores the same register (flags included).
     const body = assembleRuleBody(root, state.lang, state.dial, state.flags);
     if (!body) return;
     let ctx = buildFullInjection(state.lang, state.dial, body, state.flags);
-    // On a version bump, if a now-default flag is missing from this session's saved
-    // setup, append a one-time note so the user knows to re-run to pick it up.
-    const missing = upgraded ? defaultFlags().filter((f) => !state.flags.includes(f)) : [];
-    if (missing.length) ctx += '\n\n' + buildNewFlagNotice(upgraded, missing);
+    if (applied) ctx += '\n\n' + buildAppliedNotice(upgraded, applied);
     emit(ctx);
   } catch (e) {
     // Silent fail — never break session start.
