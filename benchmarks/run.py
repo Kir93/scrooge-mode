@@ -578,9 +578,12 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
         targets.append((claude / "settings.json",
                         Path(f"/tmp/scrooge-bench-settings.json.{pid}.bak")))
     # Register activation-state files. Moving these silences register hooks
-    # (scrooge injects nothing without .scrooge-active; caveman consults its flag)
-    # without disturbing settings.json or plugin enablement.
-    state_files = [claude / ".scrooge-active", claude / ".caveman-active"]
+    # (scrooge injects nothing without .scrooge-active / .scrooge-default; caveman
+    # consults its flag) without disturbing settings.json or plugin enablement.
+    # .scrooge-default is the global activation default: a fresh session's
+    # SessionStart seeds from it, so it must move aside too or it re-activates the
+    # register inside the benchmark child and contaminates the run.
+    state_files = [claude / ".scrooge-active", claude / ".scrooge-default", claude / ".caveman-active"]
     state_files += sorted(claude.glob(".scrooge-active-*"))
     for sf in state_files:
         safe = re.sub(r"[^A-Za-z0-9.]+", "-", sf.name)
@@ -664,7 +667,11 @@ def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
     home = Path.home()
     findings: list[tuple[str, str]] = []
 
-    scrooge_states = [home / ".claude" / ".scrooge-active", cwd / ".scrooge-active"]
+    scrooge_states = [
+        home / ".claude" / ".scrooge-active",
+        home / ".claude" / ".scrooge-default",
+        cwd / ".scrooge-active",
+    ]
     scrooge_states += sorted((home / ".claude").glob(".scrooge-active-*"))
     for st in scrooge_states:
         if st.exists():
