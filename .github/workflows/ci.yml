@@ -39,20 +39,31 @@ jobs:
           const reachable = new Set();
           const errors = [];
 
+          function checkRulePath(label, rulePath) {
+            const normalized = String(rulePath).trim();
+            if (!normalized.startsWith('rules/')) {
+              errors.push(`${label} points outside rules/: ${normalized}`);
+              return;
+            }
+            if (!existsSync(normalized) || !statSync(normalized).isFile()) {
+              errors.push(`${label} missing file: ${normalized}`);
+              return;
+            }
+            reachable.add(path.normalize(normalized));
+          }
+
           for (const [lang, dials] of Object.entries(registry)) {
+            // `fragments` nests one level deeper: fragments[lang][flag] = path.
+            if (lang === 'fragments') {
+              for (const [fragLang, flags] of Object.entries(dials)) {
+                for (const [flag, rulePath] of Object.entries(flags)) {
+                  checkRulePath(`fragments.${fragLang}.${flag}`, rulePath);
+                }
+              }
+              continue;
+            }
             for (const [dial, rulePath] of Object.entries(dials)) {
-              const normalized = String(rulePath).trim();
-              if (!normalized.startsWith('rules/')) {
-                errors.push(`${lang}.${dial} points outside rules/: ${normalized}`);
-                continue;
-              }
-
-              if (!existsSync(normalized) || !statSync(normalized).isFile()) {
-                errors.push(`${lang}.${dial} missing file: ${normalized}`);
-                continue;
-              }
-
-              reachable.add(path.normalize(normalized));
+              checkRulePath(`${lang}.${dial}`, rulePath);
             }
           }
 
