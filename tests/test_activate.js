@@ -64,6 +64,9 @@ function runHook(configDir, prompt, extra = {}, envOverrides = {}) {
       ...process.env,
       CLAUDE_CONFIG_DIR: configDir,
       CLAUDE_PLUGIN_ROOT: REPO_ROOT,
+      // Pin flags off here so lang/dial mechanics stay deterministic regardless of
+      // the on-by-default flag policy; default-on is covered by test_flags.js.
+      SCROOGE_DEFAULT_FLAGS: '',
       ...envOverrides,
     },
   });

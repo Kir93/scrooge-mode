@@ -125,7 +125,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | 구성                     | 설명                                                                                      |
 | ------------------------ | ----------------------------------------------------------------------------------------- |
 | `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en` × `lite`/`full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. |
-| `/scrooge … [flag]`      | dial과 직교인 opt-in 플래그: `lean`(코드 산출물 최소주의) · `ctx`(컨텍스트 절약) · `max`(전체). `nolean`/`noctx`로 개별 해제, `SCROOGE_DEFAULT_FLAGS`로 기본값 지정. 기본 off — 안전한 출력 전용 register가 baseline. |
+| `/scrooge … [flag]`      | dial과 직교인 행동 플래그: `lean`(코드 산출물 최소주의)은 **기본 on**(코드 ~21%↓), `ctx`(컨텍스트 절약)은 **opt-in**. `nolean`/`ctx`(세션) 또는 `SCROOGE_DEFAULT_FLAGS`(전역)로 토글. `max`=둘 다. |
 | `/scrooge off`           | 상태 + 글로벌 기본값 해제(전역 off), 일반 prose 복귀.                                     |
 | 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
@@ -199,7 +199,7 @@ arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중�
 
 **글로벌 기본값.** 아무 세션에서 활성화하면 그 선택이 글로벌 기본값(`~/.claude/.scrooge-default`)으로 저장돼, 모든 새 세션이 같은 lang/dial/flags로 자동 활성 — 한 번만, 어디서든. `SessionStart` hook이 새 세션을 기본값으로 seed하고 full rule을 재주입. `/scrooge off`는 기본값도 삭제(전역 off); 이미 떠 있는 세션은 재시작 전까지 register 유지 — 한 worktree의 off가 동시 세션을 끊지 않음.
 
-**플래그 (opt-in).** lang/dial 외에 행동 플래그 3개가 직교 조합 — `lean`(코드 산출물 최소주의), `ctx`(컨텍스트 절약), `max`(전체). 기본 off라 안전한 출력 전용 register가 baseline; 세션 단위로 `/scrooge … lean` / `nolean`로 토글하거나 `SCROOGE_DEFAULT_FLAGS` 환경변수로 기본값 지정. 활성 플래그는 각자의 register fragment(`rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
+**플래그.** lang/dial 외에 행동 플래그 2개가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜어 ~21% 더 깎되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `ctx`(컨텍스트 절약)은 **opt-in**. 세션 단위 `/scrooge … nolean` / `ctx` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글; `max`는 둘 다 켬. 활성 플래그는 각자의 register fragment(`rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
 
 **언어 추가**:
 

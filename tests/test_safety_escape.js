@@ -72,7 +72,7 @@ function injectionFor(prompt, expected) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '' },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   // The full rule body should reach the model, and state should be active.

@@ -52,7 +52,7 @@ function runHook(hook, payload, configDir, env = {}) {
   const r = spawnSync(process.execPath, [hook], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, ...env },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '', ...env },
   });
   assert.equal(r.status, 0, `${path.basename(hook)} exited ${r.status}: ${r.stderr}`);
   return r.stdout.trim()

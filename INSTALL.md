@@ -129,17 +129,19 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
-## Default flags (optional)
+## Flags (lean on by default)
 
-`lean` (minimal code output), `ctx` (context economy), and `max` (all) are opt-in register flags — off by default. Activate them per session with `/scrooge … lean` (toggle off with `nolean` / `noctx`), or set a default for every session via your shell profile:
+`lean` (minimal code output) is **on by default** — `/scrooge` cuts ~21% more by trimming over-engineering and narration, never correctness (its fragment pins the safety floor). `ctx` (context economy) is **opt-in**. To change the defaults:
+
+- Per session: `/scrooge … nolean` (drop lean) or `/scrooge … ctx` (add ctx).
+- Globally via your shell profile:
 
 ```bash
-export SCROOGE_DEFAULT_FLAGS=lean,ctx
+export SCROOGE_DEFAULT_FLAGS=lean,ctx   # add ctx
+export SCROOGE_DEFAULT_FLAGS=           # disable all flags
 ```
 
-Only whitelisted flags (`lean`, `ctx`) are honored; unknown tokens are ignored.
-
-Note: `SCROOGE_DEFAULT_FLAGS` only seeds flags on an explicit `/scrooge` — it never activates a session by itself. To auto-activate every new session, run `/scrooge …` once: it saves a **global default** (lang/dial/flags) that seeds new sessions until `/scrooge off`, and that default wins over the env var at session start.
+Only `lean`/`ctx` are honored; unknown tokens are ignored. `max` is a slash-only preset for both. (Activating with `/scrooge …` also saves a **global default** that auto-activates new sessions until `/scrooge off`.)
 
 ## Update
 

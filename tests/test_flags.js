@@ -43,7 +43,7 @@ function runHook(configDir, prompt, env = {}) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt, session_id: 'flags' }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, ...env },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '', ...env },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   const ctx = r.stdout.trim()
@@ -62,17 +62,40 @@ test('parseFlagList keeps whitelisted tokens, drops unknowns, dedups in order', 
   assert.deepEqual(parseFlagList(null), []);
 });
 
-test('defaultFlags reads SCROOGE_DEFAULT_FLAGS through the whitelist', () => {
+test('defaultFlags: lean ON by default when unset, env overrides (incl. empty = off)', () => {
   const prev = process.env.SCROOGE_DEFAULT_FLAGS;
   try {
-    process.env.SCROOGE_DEFAULT_FLAGS = 'ctx,nope';
-    assert.deepEqual(defaultFlags(), ['ctx']);
     delete process.env.SCROOGE_DEFAULT_FLAGS;
-    assert.deepEqual(defaultFlags(), []);
+    assert.deepEqual(defaultFlags(), ['lean']); // unset → lean on, ctx opt-in
+    process.env.SCROOGE_DEFAULT_FLAGS = '';
+    assert.deepEqual(defaultFlags(), []); // explicit empty → opt out of all
+    process.env.SCROOGE_DEFAULT_FLAGS = 'lean,ctx';
+    assert.deepEqual(defaultFlags(), ['lean', 'ctx']); // explicit opt-in of both
+    process.env.SCROOGE_DEFAULT_FLAGS = 'ctx,nope';
+    assert.deepEqual(defaultFlags(), ['ctx']); // explicit subset, unknown dropped
   } finally {
     if (prev === undefined) delete process.env.SCROOGE_DEFAULT_FLAGS;
     else process.env.SCROOGE_DEFAULT_FLAGS = prev;
   }
+});
+
+test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON (ctx opt-in)', () => {
+  const cfg = freshConfig();
+  // Spawn directly (not the env-pinned helper) so the child sees no env override
+  // and exercises the real on-by-default policy (lean on, ctx off).
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+  delete env.SCROOGE_DEFAULT_FLAGS;
+  const r = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ prompt: '/scrooge ko', session_id: 'flags' }),
+    encoding: 'utf8',
+    env,
+  });
+  assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
+  assert.deepEqual(readState(path.join(cfg, '.scrooge-active-flags')), {
+    lang: 'ko',
+    dial: 'full',
+    flags: ['lean'],
+  });
 });
 
 // ── Unit: state validation + round-trip ─────────────────────────────────────

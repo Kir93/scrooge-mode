@@ -12,11 +12,11 @@ Answer in a compressed register. Keep every bit of technical substance — cut o
 
 ## Activation
 
-`/scrooge [lite|full|ko|en|lean|ctx|max|no<flag>|off]` — two register axes plus opt-in flags:
+`/scrooge [lite|full|ko|en|lean|ctx|max|no<flag>|off]` — two register axes plus flags (`lean` on by default, `ctx` opt-in):
 
 - **Language**: `ko` | `en` (unspecified axis is retained; default `en`).
 - **Dial**: `lite` | `full` (bare `/scrooge` = `full`, language retained).
-- **Flags** (opt-in, default off): `lean` (minimal code output) · `ctx` (context economy) · `max` (all flags). Orthogonal to the dial — stack them: `/scrooge ko full lean`. Turn one off with `nolean` / `noctx`. `SCROOGE_DEFAULT_FLAGS` (comma-separated, `lean`/`ctx` only — `max` is slash-only) seeds them per session; bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
+- **Flags** — `lean` (minimal code output) is **on by default** (~21% less code; cuts bloat, not substance); `ctx` (context economy) is **opt-in**; `max` enables both. Orthogonal to the dial. Drop lean with `nolean`, add ctx with `ctx` (per session), or set `SCROOGE_DEFAULT_FLAGS` globally (comma-separated `lean`/`ctx`; an empty value disables all — `max` is slash-only). Bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
 - `/scrooge off` deactivates.
 
 Mode persists across turns until changed or the session ends. Activating also
