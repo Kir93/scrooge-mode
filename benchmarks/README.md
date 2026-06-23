@@ -163,6 +163,97 @@ longest baselines drop on timeout. Report the **per-prompt win-rate and median**
 the mean, and treat the percentage as an estimate. Committed before/after samples live in
 [`examples/`](./examples/).
 
+## Fidelity bench (verified equivalence)
+
+`benchmarks/fidelity/` answers a different question than the savings table: *is the
+compressed answer the **same answer**?* It scores, offline, whether a `scrooge`
+answer asserts the same technical claims as its `normal` baseline, and produces a
+reproducible headline — **"X% claim-equivalent at Y% output saved"**. caveman and
+ponytail *assume* fidelity; this measures it.
+
+The **headline gate is claim-equivalence** (the model judgment). The deterministic
+checks are **informational signals** alongside it — they are noisy when comparing
+two *independent* generations (same prompt, different register), so they do not gate
+the register headline. They become a hard gate only for edit-relationship surfaces
+(e.g. memory-compress, where the candidate IS a compression of the same source).
+
+- **Model judgment (headline)** — `fidelity/judge.py` calls a **separate**
+  `claude --print` to rate claim-set equivalence (writer/evaluator separation:
+  scrooge wrote the candidate, a fresh impartial Claude grades it). This is the
+  "same answer?" verdict the headline reports.
+- **Deterministic signals** — `fidelity/checks.js` (pure JS, covered by `npm test`
+  via `tests/test_fidelity.js`, zero-dep):
+  - *No code corruption* — every verbatim span the CANDIDATE emits (fenced code
+    lines, inline code, URLs) must be byte-exact traceable to the baseline. A
+    mangled flag or hallucinated path is corruption; **dropping** a baseline example
+    is normal compression, not corruption, and does not fail. Only spans the
+    baseline marked up (backticks/fences) are in scope.
+  - *Safety preserved* — each baseline **security / irreversible-action** warning
+    sentence must have a near-equivalent sentence in the candidate (token coverage +
+    negation polarity, so an inverted "없→있" warning fails). The broad confirm
+    category (주의/확인) was removed — it over-fired on ordinary technical prose.
+  - `strictPass` (no corruption AND safety AND equivalent) is the **edit-surface
+    gate** for memory-compress-style work, reported but not the register headline.
+
+Honesty constraints: **offline bench only** — never a runtime per-reply receipt
+(that re-adds tokens/latency to the channel scrooge compresses). **Subscription
+CLI, no paid API key** — judge calls consume subscription usage, not metered cash.
+The judge runs inside `run.py`'s `host_isolation` and the run aborts if the
+pre-flight finds an active register hook (unless `--allow-contaminated`), so a host
+scrooge/caveman hook cannot silently bias the judge. To bound judge noise, pin
+`--model` and raise `--judge-runs` (each pair judged N times → majority verdict,
+median score; a tie abstains to HOLD). The number is still an estimate, not a
+fixed contract — model sampling is nondeterministic even pinned. Judge the
+**held-out** report corpus (`prompts/{ko,en}-report.txt`), never the dev corpus the
+rules were tuned on.
+
+```bash
+# 0. canary (no quota) — the deterministic core runs in `npm test`.
+npm test   # includes tests/test_fidelity.js
+
+# 0b. pipeline smoke (no quota) — deterministic checks over a results file.
+python3 benchmarks/fidelity/run.py \
+  --results benchmarks/results-ko-report.jsonl \
+  --candidate-arm scrooge:ko/full \
+  --output benchmarks/fidelity/results-ko-fidelity.jsonl \
+  --dry-run
+
+# 1. generate paired outputs over the report corpus (subscription usage).
+python3 benchmarks/run.py \
+  --prompts benchmarks/prompts/ko-report.txt \
+  --arms normal,scrooge:ko/full \
+  --model claude-opus-4-8 --resume \
+  --output benchmarks/results-ko-report.jsonl
+
+# 2. judge fidelity (subscription usage; foreground, --resume after any limit).
+#    --judge-runs 3 = majority verdict over 3 judge calls per pair (3x usage).
+python3 benchmarks/fidelity/run.py \
+  --results benchmarks/results-ko-report.jsonl \
+  --candidate-arm scrooge:ko/full \
+  --model claude-opus-4-8 --judge-runs 3 --resume \
+  --output benchmarks/fidelity/results-ko-fidelity.jsonl
+```
+
+Publish convention: the **headline is the claim-equivalence rate + median savings**
+("X% equivalent at Y% saved") with the **judged/total ratio** (HOLD/errored pairs
+are excluded from the equivalence denominator, so a low ratio means a partial set —
+the harness flags it). Report the no-corruption and safety rates as **informational
+signals**, not the headline — a savings number without an equivalence number is the
+caveman/ponytail gap this bench closes. The percentage is an estimate (judge noise,
+prompt variance), not a contract; raise `--judge-runs` / pair count for a tighter
+figure.
+
+Known limits (deterministic signals): the no-corruption and safety rates are NOISY
+on independent generations (different register answers legitimately use different
+code/words), which is why they are informational, not the gate — for a hard gate use
+`strictPass` on an edit-relationship surface. Code/paths are only checked when the
+baseline marked them up (backticks/fences); indentation-only edits inside a fenced
+block are normalized (line trim); a URL with a changed tracking query reads as
+different; safety polarity uses a fixed negation set + token coverage, not a parser,
+so unusual phrasing can mis-score (the LLM judge backstops it); the per-call judge
+transcript is not separately contamination-scanned (the pre-flight + host_isolation
+are the defense). Fidelity result JSONL is gitignored like other `results-*` files.
+
 ## Codex secondary benchmark
 
 Use Codex while Claude quota is tight, but keep the result separate from the
