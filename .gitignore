@@ -24,6 +24,7 @@ node_modules/
 # Benchmark results (per-machine, not part of the repo)
 benchmarks/results-*.jsonl
 benchmarks/results-*.md
+benchmarks/fidelity/results-*.jsonl
 
 # `skills` CLI install artifacts. If someone runs `npx skills add` (or our
 # installer's curl|bash one-liner) from inside this repo, the skills ecosystem
