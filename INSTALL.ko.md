@@ -143,6 +143,23 @@ export SCROOGE_DEFAULT_FLAGS=           # 전체 해제
 
 `lean`만 적용 — 미지 토큰은 무시. (`/scrooge …` 활성화는 **글로벌 기본값**도 저장해 `/scrooge off` 전까지 새 세션을 자동 활성화.)
 
+## Memory Compress (선택 CLI)
+
+`hooks/scrooge-memory.js`는 memory 파일(CLAUDE.md·AGENTS.md·notes)을 input 토큰 적게 압축하되 code·URL·path를 byte-exact 보존하는 on-demand CLI. 모델이 산문을 줄이면, 이 CLI가 그 변경의 결정적 가드 역할:
+
+> 측정 예시: 이 repo의 이미 압축된(dogfood) `CLAUDE.md`에서 input 토큰 ~8% 절감, byte-exact 보존 검증됨 — verbose/누적된 memory 파일은 더 많이 줄므로 이는 하한.
+
+```bash
+# 1) dry run — 압축본이 protected span을 전부 보존하는가?
+node "<scrooge>/hooks/scrooge-memory.js" verify <original> <candidate>
+# 2) input 절감을 /scrooge-stats가 보고하는 같은 honest bill에 기록
+node "<scrooge>/hooks/scrooge-memory.js" record <original> <candidate> --session <id>
+```
+
+`verify`는 code block·URL·path가 하나라도 빠지면 non-zero exit; `record`는 손상 압축에 절감 기록을 거부한다. `<scrooge>`는 설치 경로(Claude Code 플러그인: 플러그인 루트).
+
+**메모리 파일을 제자리에서 덮어쓰는 작업은 되돌릴 수 없습니다 — 실행 취소가 없습니다.** 먼저 `verify`를 실행하고 변경 내용(diff)을 검토한 다음에만 원본을 덮어쓰세요(또는 압축본을 새 경로에 저장하고 원본을 그대로 두세요). `verify`가 non-zero로 끝나면 절대 덮어쓰지 마세요.
+
 ## Update
 
 installer를 다시 실행하면 감지된 전 에이전트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전.

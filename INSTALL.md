@@ -143,6 +143,23 @@ export SCROOGE_DEFAULT_FLAGS=           # disable all flags
 
 Only `lean` is honored; unknown tokens are ignored. (Activating with `/scrooge …` also saves a **global default** that auto-activates new sessions until `/scrooge off`.)
 
+## Memory Compress (optional CLI)
+
+`hooks/scrooge-memory.js` is an on-demand CLI that compresses a memory file (CLAUDE.md, AGENTS.md, notes) to fewer input tokens while keeping all code, URLs, and paths byte-exact. The model rewrites the prose tighter; this CLI is the deterministic guard around the change:
+
+> Measured example: on this repo's already-tight (dogfooded) `CLAUDE.md`, ~8% input tokens saved with byte-exact preservation verified — a lower bound, since verbose/accumulated memory files compress more.
+
+```bash
+# 1) dry run — does the compressed candidate preserve every protected span?
+node "<scrooge>/hooks/scrooge-memory.js" verify <original> <candidate>
+# 2) record the input saving on the same honest bill /scrooge-stats reports
+node "<scrooge>/hooks/scrooge-memory.js" record <original> <candidate> --session <id>
+```
+
+`verify` exits non-zero if any code block, URL, or path was dropped; `record` refuses to book a saving for a corrupting compress. `<scrooge>` is your install path (Claude Code plugin: the plugin root).
+
+**Overwriting a memory file in place is irreversible — there is no undo.** Run `verify` first, review the diff, and only then overwrite the original (or write the compressed copy to a new path and keep the original). Never overwrite on a non-zero `verify`.
+
 ## Update
 
 Re-running the installer updates every detected agent in place — Scrooge is safe to re-run.
