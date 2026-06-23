@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { readState, writeSuffix, getStatePath, deriveSessionKey } from './scrooge-config.js';
 import { readSession } from '../lib/session-log.js';
 import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
+import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
 
 // Per-(lang, dial) mean output-token compression ratio vs the uncompressed
 // baseline, from the README benchmark (N=24, claude-opus-4-7, register-only
@@ -62,6 +63,31 @@ function shortPath(p) {
   return p.length > 48 ? '...' + p.slice(-48) : p;
 }
 
+// Rough char→token estimate (~4 chars/token). No tokenizer dependency — that
+// would be a heavy dep for a rough receipt; everything derived from it is
+// labelled "(est)", the same honesty discipline as SAVINGS_RATIO.
+function estimateTokens(text) {
+  return text ? Math.ceil(text.length / 4) : 0;
+}
+
+// Static self-injection overhead: the token cost of the register Scrooge injects
+// for (lang, dial, flags), measured from the actual rule body length. This is a
+// STATIC measure of injected context — never a runtime counterfactual (ADR-003 /
+// lean-flags SC9). Counts the full injected register once per session; the small
+// per-turn reminder is not separately billed. Returns 0 when inactive or the rule
+// body cannot be read (degrades to no overhead rather than a fabricated number).
+function selfOverheadTokens(state) {
+  if (!state) return 0;
+  try {
+    const root = resolveRepoRoot();
+    const body = assembleRuleBody(root, state.lang, state.dial, state.flags);
+    if (!body) return 0;
+    return estimateTokens(buildFullInjection(state.lang, state.dial, body, state.flags));
+  } catch (e) {
+    return 0;
+  }
+}
+
 // Lifetime ledger block — accumulated savings across sessions, or a `--since`
 // window. Empty when the ledger has no sessions yet.
 function formatLedger(ledger, since) {
@@ -71,8 +97,23 @@ function formatLedger(ledger, since) {
     `${SEP}\n${label} (ledger):\n` +
     `Sessions:              ${ledger.sessions.toLocaleString()}\n` +
     `Output tokens saved:   ${ledger.savedTokens.toLocaleString()} (est, prose-only)\n`;
+  if (ledger.inputSavedTokens > 0) {
+    block += `Input tokens saved:    ${ledger.inputSavedTokens.toLocaleString()} (est)\n`;
+    for (const [source, saved] of Object.entries(ledger.bySource)) {
+      if (saved > 0) block += `  ${source}: ${saved.toLocaleString()}\n`;
+    }
+  }
+  if (ledger.inputOverheadTokens > 0) {
+    block += `Self overhead:         -${ledger.inputOverheadTokens.toLocaleString()} (est, static rule ctx)\n`;
+  }
+  if (ledger.inputSavedTokens > 0 || ledger.inputOverheadTokens > 0) {
+    block += `Net tokens saved:      ${ledger.netSavedTokens.toLocaleString()} (est)\n`;
+  }
+  if (ledger.reasoningTokens > 0) {
+    block += `Reasoning tokens:      ${ledger.reasoningTokens.toLocaleString()} (uncompressed, not a saving)\n`;
+  }
   if (ledger.savedUsd > 0) {
-    block += `Est. value saved:      ~$${ledger.savedUsd.toFixed(2)} (est)\n`;
+    block += `Est. value saved:      ~$${ledger.savedUsd.toFixed(2)} (est, net)\n`;
   }
   return block;
 }
@@ -83,6 +124,8 @@ function formatStats({
   outputTokens,
   proseOutputTokens = 0,
   toolUseOutputTokens = 0,
+  reasoningOutputTokens = 0,
+  inputOverheadTokens = 0,
   cacheReadTokens,
   turns,
   model,
@@ -121,6 +164,14 @@ function formatStats({
       'Measured output tokens shown above; no estimate fabricated.';
   }
 
+  // Self-injection overhead nets against this session's savings: Scrooge adds its
+  // register to the input, so the honest bill subtracts that static cost. Shown
+  // only when active and measurable.
+  const overheadLine =
+    state && inputOverheadTokens > 0
+      ? `Self overhead (input): -${inputOverheadTokens.toLocaleString()} (est, static rule ctx)\n`
+      : '';
+
   return (
     head +
     (file ? `Session:  ${shortPath(file)}\n` : '') +
@@ -130,8 +181,12 @@ function formatStats({
     `Output tokens:         ${outputTokens.toLocaleString()}\n` +
     `  prose:               ${proseOutputTokens.toLocaleString()}\n` +
     `  tool_use:            ${toolUseOutputTokens.toLocaleString()}\n` +
+    (reasoningOutputTokens > 0
+      ? `  reasoning:           ${reasoningOutputTokens.toLocaleString()} (uncompressed)\n`
+      : '') +
     `Cache-read tokens:     ${cacheReadTokens.toLocaleString()}\n${SEP}\n` +
     `${savings}\n` +
+    overheadLine +
     (footer ? footer + '\n' : '') +
     formatLedger(ledger, since)
   );
@@ -195,18 +250,21 @@ function main() {
   // running /scrooge-stats N times in one session overwrites the one entry, never
   // double-counts. Skipped when sessionless or no turns yet.
   const est = state ? deriveEstimate(sess.proseOutputTokens, state.lang, state.dial) : null;
+  const inputOverheadTokens = selfOverheadTokens(state);
   if (sessionKey && sess.turns > 0) {
     upsertSession({
       sessionId: sessionKey,
       model: sess.model,
       proseOutputTokens: sess.proseOutputTokens,
       savedTokens: est ? est.saved : 0,
+      reasoningTokens: sess.reasoningOutputTokens,
+      inputOverheadTokens,
       ts: Date.now(),
     });
   }
   const since = sinceArg ? sinceToEpoch(sinceArg, Date.now()) : null;
   const ledger = aggregateLedger({ since });
-  const view = { ...sess, state, ledger, since: sinceArg };
+  const view = { ...sess, state, ledger, since: sinceArg, inputOverheadTokens };
 
   // Refresh the statusline suffix on every run, tagged "<sessionKey>:<text>" so a
   // statusline in a different (or fresh) session does not render a stale number.
@@ -228,6 +286,7 @@ export {
   formatShare,
   deriveEstimate,
   humanizeTokens,
+  estimateTokens,
   suffixFor,
   SAVINGS_RATIO,
 };

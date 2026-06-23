@@ -149,6 +149,9 @@ test('parseCodexSession reads visible output/cache tokens from cumulative totals
   assert.equal(s.cacheReadTokens, 100);
   assert.equal(s.turns, 2);
   assert.equal(s.model, 'gpt-5-codex');
+  // Reasoning is subtracted from visible output but surfaced separately
+  // (cumulative total = 40) for the honest bill's uncompressed line.
+  assert.equal(s.reasoningOutputTokens, 40);
 });
 
 test('parseCodexSession ignores duplicate cumulative token_count re-emits', (t) => {
@@ -224,6 +227,30 @@ test('parseCodexSession falls back to last_token_usage when totals are absent', 
   assert.equal(s.outputTokens, 120);
   assert.equal(s.cacheReadTokens, 30);
   assert.equal(s.turns, 2);
+  // Fallback path sums per-event reasoning (10 + 0).
+  assert.equal(s.reasoningOutputTokens, 10);
+});
+
+test('parseClaudeSession surfaces reasoning when a host provides it, else 0', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-claude-reasoning-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  // Claude folds thinking into output_tokens, so reasoning is usually absent → 0.
+  assert.equal(parseClaudeSession(FIXTURE).reasoningOutputTokens, 0);
+  // But when a host does carry the field, it is captured (deduped by id like usage).
+  const file = path.join(dir, 'reasoning-session.jsonl');
+  const line = (id, output, reasoning) =>
+    JSON.stringify({
+      type: 'assistant',
+      message: {
+        id,
+        model: 'claude-opus-4-8',
+        usage: { input_tokens: 0, output_tokens: output, reasoning_output_tokens: reasoning, cache_read_input_tokens: 0 },
+      },
+    });
+  fs.writeFileSync(file, [line('a', 100, 25), line('a', 100, 25), line('b', 50, 10)].join('\n'));
+  const s = parseClaudeSession(file);
+  assert.equal(s.reasoningOutputTokens, 35); // 25 (deduped) + 10
+  assert.equal(s.outputTokens, 150);
 });
 
 test('parseCodexSession degrades to EMPTY_SUMMARY for a missing file', () => {
