@@ -36,6 +36,8 @@ import {
   getStatePath,
   getDefaultPath,
   deriveSessionKey,
+  readSuffix,
+  writeSuffix,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
 
@@ -301,6 +303,12 @@ function handlePayload(data) {
       // global default fails to update). Rare and self-healing — re-run `/scrooge`.
       // A lock on this per-prompt hot path would cost more than the benign outcome.
       clearState(getDefaultPath());
+      // One off deactivates every surface, including the statusline. The suffix is
+      // a single global file tagged "<sessionKey>:<text>"; clear it only when THIS
+      // session owns it, so a concurrent session's statusline is not yanked — the
+      // same non-interference the per-session state files keep. (The memory-compress
+      // CLI is on-demand and holds no activation state, so nothing of it goes stale.)
+      if (sessionKey && readSuffix().startsWith(`${sessionKey}:`)) writeSuffix('');
       if (prior) emit(buildCountermand(prior.lang));
       return;
     }
