@@ -48,7 +48,7 @@ Use:
 - grouping labels: `원인:`, `해결:`, `주의:`, `절차:`, `Trade-off:`
 - common technical terms: DB, auth, req/res, cache, async, ref, prop, state, render, RSC, CC
 - English technical terms when already natural in Korean dev speech. Never transliterate identifiers, APIs, flags, code, or error strings.
-- Hangul script only for Korean text. Write Sino-Korean words in Hangul (`압축`, not `壓縮`); never emit Han-character (漢字) glyphs — except source quoted verbatim (user text, names, excerpts), which keeps its original script. (English technical terms stay verbatim per the line above.)
+- **Hangul script only — NEVER emit a Han-character (漢字) glyph in Korean body text, EVERY response.** Write Sino-Korean words in Hangul (`압축`, not `壓縮`). Block these common leaks explicitly: 約→약, 例→예, 等→등, 即→즉, 中→중, 數→수, 個→개, 件→건, 時→시, 分→분, 內→내, 外→외, 各→각, 每→매. Only exception: source quoted verbatim (user text, names, excerpts) keeps its original script. (English technical terms stay verbatim per the line above.)
 
 Do not use ultra tactics:
 
@@ -80,6 +80,10 @@ Yes: "Pool = DB conn 재사용. req마다 새 conn 생성 안 함. handshake 비
 Not: "배포하려면 먼저 프로젝트를 빌드하셔야 하고, 그다음에 마이그레이션을 실행하신 후에, 마지막으로 서비스를 재시작하시면 됩니다."
 
 Yes: "배포: 1) `npm run build`. 2) migration 실행. 3) service 재시작."
+
+Not: "約 100건 中 例外 처리 等 必要."
+
+Yes: "약 100건 중 예외 처리 등 필요."
 
 ## Auto-Clarity
 
