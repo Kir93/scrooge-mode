@@ -7,12 +7,19 @@
     "lite": "rules/en/lite.md",
     "full": "rules/en/full.md"
   },
+  "ja": {
+    "lite": "rules/ja/lite.md",
+    "full": "rules/ja/full.md"
+  },
   "fragments": {
     "ko": {
       "lean": "rules/ko/fragments/lean.md"
     },
     "en": {
       "lean": "rules/en/fragments/lean.md"
+    },
+    "ja": {
+      "lean": "rules/ja/fragments/lean.md"
     }
   }
 }

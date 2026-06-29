@@ -214,6 +214,20 @@ test('the reminder is localized for ko (G2)', () => {
   assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/);
 });
 
+test('/scrooge ja full activates and injects the full ja rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, '/scrooge ja full');
+  assert.deepEqual(state, { lang: 'ja', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ja\/full/);
+});
+
+test('the reminder is localized for ja', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ja');
+  const { ctx } = runHook(cfg, 'この関数を説明して');
+  assert.match(ctx, /SCROOGE 活性 \(ja\/full\)/);
+});
+
 test('/scrooge off clears state and injects a countermand', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge');
@@ -252,6 +266,14 @@ test('session-scope: off on an active session injects a localized countermand', 
   const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessC' });
   assert.match(ctx, /SCROOGE OFF/);
   assert.match(ctx, /평소 register|일반 문체/); // ko-localized
+});
+
+test('session-scope: off on an active ja session injects a ja-localized countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ja', { session_id: 'sessJa' });
+  const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessJa' });
+  assert.match(ctx, /SCROOGE OFF/);
+  assert.match(ctx, /圧縮モード解除|通常文体/); // ja-localized
 });
 
 test('session-scope: off on an inactive session injects nothing', () => {

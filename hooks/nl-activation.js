@@ -35,6 +35,11 @@ const KO_ACTIVATE =
   /스크루지\s*(?:처럼|모드|로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))/;
 const EN_ACTIVATE =
   /\btalk\s+like\s+(?:a\s+)?scrooge\b|\bscrooge\s+mode\b|\bbe\s+(?:a\s+)?token\s+miser\b|\b(?:activate|enable|turn\s+on)\s+scrooge\b/i;
+// Japanese has no inter-word spaces, so `\b` is inert — the trigger anchors on
+// explicit cue strings after the name (みたいに / モード / で答え…) instead of a
+// word boundary. Mirrors KO_ACTIVATE's "name + action cue" shape.
+const JA_ACTIVATE =
+  /スクルージ\s*(?:みたいに|のように|っぽく|モード|で\s*(?:答|話|返答))/;
 
 // Explicit deactivation intent. An optional "모드"/"mode" may sit between the
 // name and the off cue, so "스크루지 모드 꺼" / "scrooge mode off" deactivate
@@ -42,6 +47,8 @@ const EN_ACTIVATE =
 const KO_OFF =
   /스크루지\s*(?:모드\s*)?(?:꺼|끄(?:기|자|줘|는)?|그만|중지|비활성|off)/;
 const EN_OFF = /\b(?:stop|disable|turn\s+off|deactivate)\s+scrooge\b|\bscrooge(?:\s+mode)?\s+off\b/i;
+const JA_OFF =
+  /スクルージ\s*(?:モード\s*)?(?:やめ|止め|停止|オフ|無効|切(?:っ|る)|off)/i;
 
 // Negation guard: a negation anywhere in a short prompt cancels an activation
 // (or deactivation) request. Conservative by design — when negation is present
@@ -51,6 +58,10 @@ const EN_OFF = /\b(?:stop|disable|turn\s+off|deactivate)\s+scrooge\b|\bscrooge(?
 // no-op'd legitimate requests. don't / do not / never are kept.
 const KO_NEGATE = /지\s*마|지마|말고|말아|마세요|마라|않/;
 const EN_NEGATE = /\b(?:don'?t|do\s+not|never)\b/i;
+// Japanese negation: 〜しないで / 〜ないで / 〜するな / 〜せず. "スクルージみたいに
+// しないで" (don't answer like scrooge) and "スクルージやめないで" (don't turn it
+// off → keep it) both no-op via the shared negation guard.
+const JA_NEGATE = /しないで|ないで|するな|しなくて|せず/;
 
 // Meta-question guard: a prompt that asks ABOUT scrooge mode — its logic, a bug,
 // how it works — names scrooge alongside a question cue but is not a command.
@@ -59,15 +70,15 @@ const EN_NEGATE = /\b(?:don'?t|do\s+not|never)\b/i;
 // kept disjoint from the activation/off phrases so it never cancels a real command
 // (답/부탁/꺼/끄기/enable/off carry no meta cue). EN cues are word-bounded so they
 // don't fire on substrings ("how" inside "show").
-const SCROOGE_NAME = /스크루지|scrooge/i;
+const SCROOGE_NAME = /스크루지|scrooge|スクルージ/i;
 const META_CUE =
-  /설명|로직|버그|동작|작동|어떻게|원리|의미|무엇|무슨|\b(?:explain|logic|bug|debug|how|what|why|mean(?:s|ing)?)\b/i;
+  /설명|로직|버그|동작|작동|어떻게|원리|의미|무엇|무슨|説明|ロジック|バグ|仕組み|どうやって|なぜ|どういう|\b(?:explain|logic|bug|debug|how|what|why|mean(?:s|ing)?)\b/i;
 // Unambiguous style directives stay activations even when a meta cue is present:
 // "스크루지처럼 설명해줘" / "talk like scrooge and explain this" want the ANSWER in
 // scrooge style, so they are exempt from the meta guard (avoids the false-negative
 // of suppressing a genuine activation).
 const STRONG_STYLE =
-  /스크루지\s*(?:처럼|로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))|\btalk\s+like\s+(?:a\s+)?scrooge\b|\bbe\s+(?:a\s+)?token\s+miser\b/i;
+  /스크루지\s*(?:처럼|로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))|スクルージ\s*(?:みたいに|のように|っぽく|で\s*(?:答|話|返答))|\btalk\s+like\s+(?:a\s+)?scrooge\b|\bbe\s+(?:a\s+)?token\s+miser\b/i;
 
 // Parse natural-language activation intent from a plain prompt.
 export function parseNaturalActivation(prompt) {
@@ -81,20 +92,28 @@ export function parseNaturalActivation(prompt) {
 
   const koOff = KO_OFF.test(text);
   const enOff = EN_OFF.test(text);
+  const jaOff = JA_OFF.test(text);
   const koActivate = KO_ACTIVATE.test(text);
   const enActivate = EN_ACTIVATE.test(text);
-  const negated = KO_NEGATE.test(text) || EN_NEGATE.test(text);
+  const jaActivate = JA_ACTIVATE.test(text);
+  const negated = KO_NEGATE.test(text) || EN_NEGATE.test(text) || JA_NEGATE.test(text);
 
   // Explicit deactivation — unless negated ("스크루지 끄지 마" / "don't turn off
-  // scrooge"), where the user wants to KEEP the mode, so leave state untouched.
-  if (koOff || enOff) {
+  // scrooge" / "スクルージやめないで"), where the user wants to KEEP the mode, so
+  // leave state untouched.
+  if (koOff || enOff || jaOff) {
     return negated ? null : { action: 'off' };
   }
 
-  // Activation — suppressed by the negation guard ("스크루지처럼 말하지 마").
-  if (koActivate || enActivate) {
+  // Activation — suppressed by the negation guard ("스크루지처럼 말하지 마" /
+  // "スクルージみたいにしないで").
+  if (koActivate || enActivate || jaActivate) {
     if (negated) return null;
-    return { action: 'set', lang: koActivate ? 'ko' : 'en', dial: 'full' };
+    return {
+      action: 'set',
+      lang: koActivate ? 'ko' : enActivate ? 'en' : 'ja',
+      dial: 'full',
+    };
   }
 
   return null;

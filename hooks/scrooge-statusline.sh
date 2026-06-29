@@ -38,7 +38,7 @@ RAW=$(head -c 256 "$STATE" 2>/dev/null | tr -d '\000-\037\177')
 
 # Extract whitelisted values only. The alternation IS the whitelist — anything
 # else yields an empty match and we render nothing.
-LANG_V=$(printf '%s' "$RAW" | grep -oE '"lang"[[:space:]]*:[[:space:]]*"(ko|en)"' | grep -oE '(ko|en)"$' | tr -d '"' | head -1)
+LANG_V=$(printf '%s' "$RAW" | grep -oE '"lang"[[:space:]]*:[[:space:]]*"(ko|en|ja)"' | grep -oE '(ko|en|ja)"$' | tr -d '"' | head -1)
 DIAL_V=$(printf '%s' "$RAW" | grep -oE '"dial"[[:space:]]*:[[:space:]]*"(lite|full)"' | grep -oE '(lite|full)"$' | tr -d '"' | head -1)
 
 { [ -z "$LANG_V" ] || [ -z "$DIAL_V" ]; } && exit 0

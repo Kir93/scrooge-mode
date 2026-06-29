@@ -1,6 +1,6 @@
 # Scrooge — contributor guide
 
-KO-first bilingual (KO/EN) **LLM output-compression skill**. npm `scrooge-mode` (ESM). "Tokens are money; spend them like a miser." This file guides anyone — human or agent — working on the repo. Bias toward caution over speed; trivial edits use judgment.
+KO-first trilingual (KO/EN/JA) **LLM output-compression skill**. npm `scrooge-mode` (ESM). "Tokens are money; spend them like a miser." This file guides anyone — human or agent — working on the repo. Bias toward caution over speed; trivial edits use judgment.
 
 > Personal/machine-local overrides live in `CLAUDE.local.md` (gitignored). Don't put shared guidance there.
 
@@ -12,9 +12,9 @@ KO-first bilingual (KO/EN) **LLM output-compression skill**. npm `scrooge-mode` 
 
 ## Conventions
 
-- **Language**: code, comments, and identifiers in English; user-facing docs are bilingual (KO/EN) — keep both sides in sync.
+- **Language**: code, comments, and identifiers in English; user-facing docs are trilingual (KO/EN/JA — `README.ja.md` is a lightweight landing, not a full mirror) — keep them in sync.
 - **Registry contract**: renaming/moving any `rules/**` file requires the matching `registry.json` path edit in the *same* change. Dynamic loader reads rules via `registry.json[lang][dial]`.
-- **Bilingual + dial parity**: a substantive change to one rule (or `README.md`) mirrors to its counterpart — `ko` ↔ `en`, `lite` ↔ `full`, `README.md` ↔ `README.ko.md` — or flag explicitly why not.
+- **Bilingual + dial parity**: a substantive change to one rule (or `README.md`) mirrors to its counterpart — `ko` ↔ `en` ↔ `ja`, `lite` ↔ `full`, `README.md` ↔ `README.ko.md` — or flag explicitly why not. (`README.ja.md` is the lightweight landing exception, not held to full mirror.)
 - **markdownlint**: respect `.markdownlint.jsonc`. It tunes (not blocks) the linter — don't delete it. Don't pre-disable a rule speculatively; disable only when one actually surfaces noise.
 - **Dogfood**: this is a compression tool — keep docs and prose tight, no filler/hedging. Clarity wins where it conflicts with compression.
 - **Safety register**: rule files must keep security warnings, destructive-action confirmations, and ambiguous multi-step sequences in normal prose (auto-clarity), every dial.

@@ -103,7 +103,7 @@ function buildUpgradeNotice({ from, to }) {
   return (
     `Scrooge was updated (v${from} → v${to}) and is not active in this session — ` +
     'a version change can reset activation. Tell the user, in their language, how ' +
-    'to re-activate: run `/scrooge ko full` (pick lang ko/en + dial lite/full). ' +
+    'to re-activate: run `/scrooge ko full` (pick lang ko/en/ja + dial lite/full). ' +
     'Re-activating now saves a global default, so every new session stays active ' +
     'until `/scrooge off`.'
   );

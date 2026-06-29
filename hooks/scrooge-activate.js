@@ -154,6 +154,7 @@ function parseCommand(prompt) {
 const FLAG_HINT = {
   ko: { lean: 'lean(최소 코드)' },
   en: { lean: 'lean (minimal code)' },
+  ja: { lean: 'lean（最小コード）' },
 };
 
 function flagHints(lang, flags) {
@@ -176,6 +177,18 @@ function buildReminder(lang, dial, flags = []) {
       body +
       'code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.' +
       (flags.length ? ` flag: ${flagHints('ko', flags).join('·')} 활성.` : '')
+    );
+  }
+  if (lang === 'ja') {
+    const body =
+      dial === 'full'
+        ? '体言止め・常体、意味明確時は助詞ドロップ、敬語除去。'
+        : '整えた丁寧体、filler・空のあいさつ・hedging ドロップ、完全文。';
+    return (
+      `SCROOGE 活性 (ja/${dial})。 ` +
+      body +
+      ' code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。' +
+      (flags.length ? ` flag: ${flagHints('ja', flags).join('・')} 活性。` : '')
     );
   }
   const body =
@@ -208,6 +221,9 @@ function buildFullInjection(lang, dial, ruleBody, flags = []) {
 function buildCountermand(lang) {
   if (lang === 'ko') {
     return 'SCROOGE OFF — 압축 모드 해제. 이번 턴부터 평소 register(일반 문체)로 복귀.';
+  }
+  if (lang === 'ja') {
+    return 'SCROOGE OFF — 圧縮モード解除。今ターンから通常の register（通常文体）に復帰。';
   }
   return 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.';
 }

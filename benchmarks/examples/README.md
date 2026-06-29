@@ -28,3 +28,18 @@ also reformat this?" offer, and per-item over-explanation. What it keeps: every 
 of the six changes, the grouping, and the code/upgrade detail. These are single-run
 samples — see [`docgen-results.md`](./docgen-results.md) for the full per-prompt token
 tables and [`../README.md`](../README.md) for corpus-level numbers and variance.
+
+## Conversational sample (JA)
+
+| File | Arm | Output tokens |
+| ---- | --- | ------------: |
+| `ja-foreach-async.normal.md`  | `normal` (baseline) | 1914 |
+| `ja-foreach-async.scrooge.md` | `scrooge:ja/full`   |  555 |
+
+A held-out report-corpus prompt (the `forEach(async …)` sequential-save bug —
+[`../prompts/ja-report.txt`](../prompts/ja-report.txt)), `scrooge:ja/full` vs `normal`:
+**~71% fewer output tokens**, same diagnosis (forEach ignores the async callback's
+Promise → 4 failure modes) and same fix (`for...of` + await vs `Promise.all`).
+Conversational, not doc-generation — shows the JA register (keigo stripping ·
+体言止め · 助詞 drop). Measured **cwd-isolated** so the `normal` baseline answers in
+Japanese, not a host-`CLAUDE.md` "respond in Korean" instruction.

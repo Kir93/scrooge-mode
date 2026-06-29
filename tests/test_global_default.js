@@ -154,6 +154,7 @@ test('upgrade + stranded prior activation (default present but unloadable) → n
   const ctx = runSessionStart(cfg, 'sessA');
   assert.match(ctx, /Scrooge was updated/);
   assert.match(ctx, /\/scrooge ko full/); // tells the user how to re-activate
+  assert.match(ctx, /ko\/en\/ja/); // lists ja as a re-activation lang option (ja-register)
   assert.equal(readVersionMarker(versionFile(cfg)), PKG_VERSION); // marker advanced
 });
 

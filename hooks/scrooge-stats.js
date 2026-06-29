@@ -22,14 +22,17 @@ import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
 
 // Per-(lang, dial) mean output-token compression ratio vs the uncompressed
-// baseline, from the README benchmark (N=24, claude-opus-4-7, register-only
-// isolation): ko/full ~67%, en/full ~65%. Only `full` is measured; `lite` has
-// no benchmark yet, so it is omitted and lite sessions still show "estimate
-// pending" rather than a fabricated number. Register-only isolation means real
-// sessions may differ — hence the "(est)" label on every derived figure.
+// baseline, register-only isolation: ko/full ~67%, en/full ~65% (N=24,
+// claude-opus-4-7); ja/full ~63% (claude-opus-4-8, mean of N=15 tuning 0.567 /
+// N=11 held-out 0.693; measured cwd-isolated so the normal baseline answers in
+// Japanese, not host-CLAUDE.md Korean). Only `full` is measured; `lite` has no
+// benchmark yet, so it is omitted and lite sessions still show "estimate pending"
+// rather than a fabricated number. Register-only isolation means real sessions may
+// differ — hence the "(est)" label on every derived figure.
 const SAVINGS_RATIO = {
   ko: { full: 0.67 },
   en: { full: 0.65 },
+  ja: { full: 0.63 },
 };
 
 const SEP = '──────────────────────────────';

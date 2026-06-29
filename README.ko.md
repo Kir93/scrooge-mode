@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · 한국어
+  <a href="README.md">English</a> · 한국어 · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
@@ -31,9 +31,9 @@
 
 > AI 코딩 에이전트 응답의 출력 토큰을 줄이는 skill — 같은 답, 적은 토큰.
 
-AI 코딩 에이전트용 한국어 1순위 이중언어(KO/EN) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
+AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
-**`~70% KO · ~73% EN · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`, N=20–21 paired median.
+**`~70% KO · ~73% EN · ~70% JA · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`, N=16–21 paired median.
 
 <p align="center">
   <a href="#벤치마크"><img src="assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
@@ -106,7 +106,7 @@ npx -y github:Kir93/scrooge-mode#v0.6.1
 
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
-**활성화.** `/scrooge ko full` (또는 `/scrooge en lite` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
+**활성화.** `/scrooge ko full` (또는 `/scrooge en lite`, `/scrooge ja full` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
 
 ### 호스트 지원
 
@@ -124,10 +124,10 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 | 구성                     | 설명                                                                                      |
 | ------------------------ | ----------------------------------------------------------------------------------------- |
-| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en` × `lite`/`full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. |
+| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en`/`ja` × `lite`/`full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. |
 | `/scrooge … [flag]`      | dial과 직교인 행동 플래그: `lean`(코드 산출물 최소주의)은 **기본 on**(코드 ~21%↓). `nolean`(세션) 또는 `SCROOGE_DEFAULT_FLAGS`(전역)로 토글. |
 | `/scrooge off`           | 상태 + 글로벌 기본값 해제(전역 off), 일반 prose 복귀.                                     |
-| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
+| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 양 언어 · 모든 dial.    |
 | `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄. |
@@ -135,7 +135,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
 
-**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — 언어 추가는 규칙 파일 1개 + `registry.json` 항목 1줄, rule-engine 수술 없음.
+**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — rule 엔진은 `registry.json`에서 모든 언어를 수술 없이 로드함. 일본어는 3번째 언어로 출하 — 영어 번역이 아니라 한국어 메커니즘 사상(keigo 제거 · 体言止め · 助詞 드롭); CJK 토큰 비효율이 압축 타깃으로 자연스러움.
 
 ## 벤치마크
 
@@ -145,7 +145,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 - **N=20–21 프롬프트 × 1회 실행, paired median.** 단일 실행 결과 · 분산 추정 없음(구독 timeout으로 몇 프롬프트 누락). 재실행 시 각 셀이 몇 퍼센트 흔들릴 수 있음. 헤드라인 퍼센트는 1 유효숫자 추정으로 취급(`~70%`이지 "69.5%"가 아님).
 - **Register-clean run.** register hook 둘(scrooge 자체 활성화 hook·caveman)을 측정 동안 중립화해 `normal`/`terse` baseline에 주입 못 하게 함. 토큰은 `message.id` dedup(prose-only 기준). baseline이 호스트 scrooge hook에 몰래 압축된 이전 run은 폐기함.
-- **Held-out cross-check.** 튜닝 corpus와 겹치지 않는 held-out 프롬프트셋(`prompts/{ko,en}-report.txt`)으로 재측정: KO ~71%, EN ~68%(각 N=11). 위 headline과 일치 → savings가 튜닝셋 overfit 아티팩트 아님.
+- **Held-out cross-check.** 튜닝 corpus와 겹치지 않는 held-out 프롬프트셋(`prompts/{ko,en,ja}-report.txt`)으로 재측정: KO ~71%, EN ~68%, JA ~65%(각 N=11). 위 headline과 일치 → savings가 튜닝셋 overfit 아티팩트 아님.
 - **Register-only isolation.** 하네스는 `claude --print --system-prompt <rule>`로 각 arm 실행 — Claude Code 기본 system prompt를 **대체**함. register 효과를 깔끔히 분리하지만, 실제 `/scrooge` 세션은 Claude Code 전체 system prompt 위에 register가 얹히므로 verbose 세션 대비 실측 절감은 헤드라인과 다를 수 있음. 전체 caveat는 [`benchmarks/README.md`](./benchmarks/README.md).
 - **실측 `output_tokens` — tokenizer 추정 아님.** 숫자는 Claude Code 세션 JSONL의 `output_tokens` 필드 — API가 실제 청구한 값.
 
@@ -172,6 +172,20 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | `caveman:full`        |                      1264 |             ~65% |
 
 `scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과.
+
+### 일본어
+
+`scrooge:ja/full`은 한국어 메커니즘을 일본어로 사상 — keigo 제거, 体言止め(명사형 종결), 助詞(조사) 드롭 — 단 한자는 통상 표기 유지(KO의 Hangul-only와 반대). `claude-opus-4-8` 측정.
+
+| Mode                  | 대표 output tokens (N=15) | normal 대비 절감 |
+| --------------------- | ------------------------: | ---------------: |
+| `normal`              |                      2930 |       (baseline) |
+| `terse`               |                      1551 |             ~47% |
+| **`scrooge:ja/full`** |                   **877** |         **~70%** |
+
+`scrooge:ja/full`은 일본어 출력을 verbose default 대비 **~70%** 줄이고, `terse`("간결하게 답해") control도 **+43%**(15/15 우세) 능가 — 절감은 register 자체. held-out 교차검증(`prompts/ja-report.txt`, N=11): **~65%**. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.60, corruption 0, safety 11/11 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose는 보존.
+
+> **측정 주의**: `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`, project `CLAUDE.local.md`)을 격리하고 측정 — prompt 언어(일본어)로 답하게 함. 격리 없으면 host "한국어로 답하라" 지시로 baseline이 한국어로 답해, 다른 토큰 효율 탓에 savings가 부풀려짐.
 
 ### 문서 생성
 

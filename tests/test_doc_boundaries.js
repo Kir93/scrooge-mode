@@ -29,6 +29,7 @@ const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'registry.json'
 const DOCS_BOUNDARY = {
   en: /Docs \/ prose artifacts/,
   ko: /Docs·prose 산출물/,
+  ja: /Docs·prose 生成物/,
 };
 
 // The docs-escape extension lives in Auto-Clarity for every dial (both langs
@@ -36,7 +37,7 @@ const DOCS_BOUNDARY = {
 const DOCS_ESCAPE = /Docs escape/;
 
 // Every lang × dial rule file carries the docs-compression boundary + escape.
-for (const lang of ['ko', 'en']) {
+for (const lang of ['ko', 'en', 'ja']) {
   for (const dial of ['lite', 'full']) {
     test(`rule ${lang}/${dial} carries the Docs/prose compression boundary + escape`, () => {
       const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');

@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export const VALID_LANGS = ['ko', 'en'];
+export const VALID_LANGS = ['ko', 'en', 'ja'];
 export const VALID_DIALS = ['lite', 'full'];
 // Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
 // this set is dropped (never persisted, never injected). `lean` is the lone flag.

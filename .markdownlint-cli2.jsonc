@@ -7,11 +7,16 @@
   // local `.claude/` config (personal commands + an ai-config symlink), which are
   // not part of this package and produce pre-existing noise.
   "gitignore": true,
-  // The `benchmarks/examples/*-release-notes.*.md` files are tracked but are
+  // The `benchmarks/examples/*.{normal,scrooge}.md` files are tracked but are
   // verbatim `claude --print` benchmark outputs kept byte-for-byte — the
-  // compressed (`scrooge`) samples even drop the blank lines around headings,
-  // which is the compression itself, not a lint bug. Linting model output would be
-  // meaningless, so they are ignored. The authored `examples/README.md` is not
-  // matched by this glob and stays linted.
-  "ignores": ["benchmarks/examples/*-release-notes.*.md"]
+  // compressed (`scrooge`) samples even drop the blank lines around headings and
+  // use emphasis where a heading would lint cleaner, which is the compression
+  // itself, not a lint bug. Linting model output would be meaningless, so they are
+  // ignored (release-notes docgen samples + the ja conversational sample). The
+  // authored `examples/README.md` is not matched by these globs and stays linted.
+  "ignores": [
+    "benchmarks/examples/*-release-notes.*.md",
+    "benchmarks/examples/*.normal.md",
+    "benchmarks/examples/*.scrooge.md"
+  ]
 }

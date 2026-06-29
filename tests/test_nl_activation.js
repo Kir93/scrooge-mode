@@ -113,6 +113,38 @@ test('parser is pure — same input, same output, empty/garbage → null', () =>
   assert.equal(parseNaturalActivation('hello world'), null);
 });
 
+// ---- Layer 1b: Japanese fixtures (ja-register) ----
+// Japanese has no inter-word spaces, so the parser anchors on cue strings
+// (みたいに / モード / で答え…) instead of `\b`. These fixtures pin the cue
+// boundaries against false-positives the way the KO/EN fixtures do.
+
+test('(ja) JA activation triggers set ja/full', () => {
+  for (const p of ['スクルージみたいに答えて', 'スクルージモードで話して', 'スクルージっぽく答えて', 'スクルージで返答して']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang: 'ja', dial: 'full' }, p);
+  }
+});
+
+test('(ja) off phrases deactivate', () => {
+  for (const p of ['スクルージモードoff', 'スクルージやめて', 'スクルージモード停止', 'スクルージ無効']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'off' }, p);
+  }
+});
+
+test('(ja) negation guard suppresses activation + negated off is a no-op', () => {
+  assert.equal(parseNaturalActivation('スクルージみたいにしないで'), null);
+  assert.equal(parseNaturalActivation('スクルージやめないで'), null);
+});
+
+test('(ja) no-intent / meta sentences do not toggle', () => {
+  for (const p of ['スクルージの映画見た', 'スクルージモードのバグ説明して', 'スクルージモードどうやって動く']) {
+    assert.equal(parseNaturalActivation(p), null, p);
+  }
+});
+
+test('(ja) a style directive still activates even with a meta cue present', () => {
+  assert.deepEqual(parseNaturalActivation('スクルージみたいに説明して'), { action: 'set', lang: 'ja', dial: 'full' });
+});
+
 // ---- Layer 2: hook integration (black-box) ----
 
 const tmpDirs = [];
@@ -145,6 +177,13 @@ test('NL activation through the hook persists state + injects the full rule', ()
   const { state, ctx } = runHook(cfg, '스크루지처럼 답해줘');
   assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/);
+});
+
+test('(ja) NL activation through the hook persists ja state + injects the full rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, 'スクルージみたいに答えて');
+  assert.deepEqual(state, { lang: 'ja', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ja\/full/);
 });
 
 test('NL off through the hook clears state and injects a countermand', () => {

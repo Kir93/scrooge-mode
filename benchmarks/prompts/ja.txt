@@ -1,0 +1,27 @@
+# Scrooge benchmark — JA prompts
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+
+# --- debug ---
+React コンポーネントがクリックごとに子コンポーネントも一緒に再レンダリングされる問題の原因と解決策を説明して。
+Express ミドルウェアで `req.user` がたまに `undefined` になる、よくある原因を教えて。
+TypeScript で `Cannot find name 'process'` エラーが出る理由と解決法は？
+PostgreSQL クエリが本番でだけ遅くなる一般的な原因を3つ説明して。
+useEffect の cleanup 関数が実行されない状況を説明して。
+
+# --- explain ---
+JavaScript の closure がメモリリークを起こすシナリオを説明して。
+React Server Components と Client Components の違いを要点だけ教えて。
+TCP と UDP の核心的な違いと、それぞれが適した用途を教えて。
+database index が read 性能を上げる原理と write で損をする理由を説明して。
+
+# --- review ---
+次の関数の問題点と改善案を教えて: ```js\nfunction sum(arr) { let s = 0; for (let i = 0; i <= arr.length; i++) s += arr[i]; return s; }\n```
+async 関数で `await Promise.all` の代わりに `for...of` で await を直列呼び出しするコードの性能影響を説明して。
+React で `useEffect(() => { fetchData() }, [])` の中で cleanup なしに setState するパターンの危険性を教えて。
+
+# --- plan ---
+Node.js で作った単一モノリスサービスをサービス分割する時、最初に見るべき測定指標を3つ教えて。
+PostgreSQL で 100GB テーブルに新しいカラムを追加しながらダウンタイム0で進める手順を段階的に説明して。
+Next.js 13 Pages Router プロジェクトを App Router へ段階的に移行する順序を教えて。
+WebSocket ベースのリアルタイム通知システムを設計する時の backpressure 戦略を教えて。
