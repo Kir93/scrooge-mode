@@ -19,8 +19,40 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { repoRootCandidates } from './repo-root.js';
 
-export const VALID_LANGS = ['ko', 'en', 'ja'];
+// Languages are DERIVED from registry.json keys (single source of truth) rather than
+// a hardcoded array: a new language joins VALID_LANGS the moment it has a registry
+// entry, so the slash parser's lang scan and every other VALID_LANGS consumer extend
+// with no edit here. `deriveValidLangs` is pure (keys minus the `fragments` sub-tree)
+// and exported so a test can inject a synthetic registry; the module top-level call
+// below reads the real registry.json once.
+//
+// Security: registry.json is a trusted, shipped repo file — the injection threat model
+// is the attacker-controlled state files under ~/.claude, not the installed package —
+// so deriving the language whitelist from it is safe (the existing sanitize/whitelist
+// I/O hardening below is unchanged). A read/parse failure falls back to the known-good
+// built-in set so the whitelist is never empty.
+export function deriveValidLangs(registryObj) {
+  if (!registryObj || typeof registryObj !== 'object') return [];
+  return Object.keys(registryObj).filter((k) => k !== 'fragments');
+}
+
+function loadRegistryForLangs() {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  for (const c of repoRootCandidates(here)) {
+    try {
+      return JSON.parse(fs.readFileSync(path.join(c, 'registry.json'), 'utf8'));
+    } catch (e) {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
+const DERIVED_LANGS = deriveValidLangs(loadRegistryForLangs());
+export const VALID_LANGS = DERIVED_LANGS.length ? DERIVED_LANGS : ['ko', 'en', 'ja'];
 export const VALID_DIALS = ['lite', 'full'];
 // Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
 // this set is dropped (never persisted, never injected). `lean` is the lone flag.

@@ -36,9 +36,14 @@ fi
 
 RAW=$(head -c 256 "$STATE" 2>/dev/null | tr -d '\000-\037\177')
 
-# Extract whitelisted values only. The alternation IS the whitelist — anything
-# else yields an empty match and we render nothing.
-LANG_V=$(printf '%s' "$RAW" | grep -oE '"lang"[[:space:]]*:[[:space:]]*"(ko|en|ja)"' | grep -oE '(ko|en|ja)"$' | tr -d '"' | head -1)
+# Extract lang/dial values. The lang code is matched by a generic 2–3-letter charset
+# (`[a-z]{2,3}`) rather than a fixed ko|en|ja alternation, so a new language renders
+# its badge with no edit here — the real language whitelist is the JS write path
+# (isValidState/VALID_LANGS derived from registry.json), which only ever persists a
+# valid lang to this file. The dial stays a strict lite|full alternation, and a
+# non-matching lang/dial still yields an empty match → nothing rendered (the exit
+# below). The closing-quote anchor keeps the charset bounded to the exact value.
+LANG_V=$(printf '%s' "$RAW" | grep -oE '"lang"[[:space:]]*:[[:space:]]*"[a-z]{2,3}"' | grep -oE '[a-z]{2,3}"$' | tr -d '"' | head -1)
 DIAL_V=$(printf '%s' "$RAW" | grep -oE '"dial"[[:space:]]*:[[:space:]]*"(lite|full)"' | grep -oE '(lite|full)"$' | tr -d '"' | head -1)
 
 { [ -z "$LANG_V" ] || [ -z "$DIAL_V" ]; } && exit 0

@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   VALID_FLAGS,
+  VALID_LANGS,
   resolveActiveState,
   readState,
   writeState,
@@ -100,10 +101,14 @@ function hasActivationArtifact() {
 // session-scope state-model migration silently deactivated prior users), so tell
 // them how to turn Scrooge back on.
 function buildUpgradeNotice({ from, to }) {
+  // The lang options are listed dynamically from VALID_LANGS (registry-derived), so a
+  // newly-added language appears in the re-activation hint with no edit here.
+  const langs = VALID_LANGS.join('/');
+  const example = VALID_LANGS[0] || 'ko';
   return (
     `Scrooge was updated (v${from} → v${to}) and is not active in this session — ` +
     'a version change can reset activation. Tell the user, in their language, how ' +
-    'to re-activate: run `/scrooge ko full` (pick lang ko/en/ja + dial lite/full). ' +
+    `to re-activate: run \`/scrooge ${example} full\` (pick lang ${langs} + dial lite/full). ` +
     'Re-activating now saves a global default, so every new session stays active ' +
     'until `/scrooge off`.'
   );

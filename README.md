@@ -132,7 +132,7 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 | Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Both languages, every dial. |
-| `registry.json`          | Maps `language × dial → rule file path` 1:1. Adding a language = one new rule file + one registry entry.                                         |
+| `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = one rule file + one registry entry + one `hooks/lang-meta.js` row.    |
 | `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Reports measured input + output tokens from the session JSONL; never asks the model to estimate.    |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
@@ -230,10 +230,10 @@ These doc-generation numbers are **noisier than the conversational headline** �
 
 **Flags.** Beyond lang/dial, a behavior flag composes orthogonally. `lean` (minimal code output) is **on by default** — `/scrooge` cuts ~21% more by trimming over-engineering and narration, never correctness (its fragment pins the safety floor). Toggle per session with `/scrooge … nolean`, or globally via `SCROOGE_DEFAULT_FLAGS` (a comma-separated set, or empty to disable all). Each active flag appends its register fragment (`rules/{lang}/fragments/{flag}.md`) to the injected rule.
 
-**Adding a language**:
+**Adding a language** (registry-driven dispatch — data, not new branches):
 
 1. Author `rules/{lang}/{lite,full}.md`.
-2. Add one entry to [`registry.json`](registry.json):
+2. Add one entry to [`registry.json`](registry.json) — `VALID_LANGS` derives from these keys, so the slash parser and rule loader pick up the language with no code edit:
 
    ```json
    {
@@ -241,7 +241,8 @@ These doc-generation numbers are **noisier than the conversational headline** �
    }
    ```
 
-3. Sample 5 outputs against the QA checklist (see [CONTRIBUTING.md](CONTRIBUTING.md)) and PR.
+3. Add one `LANG_META` row in [`hooks/lang-meta.js`](hooks/lang-meta.js) — `reminder`, `countermand`, `flagHint`, and `nlCue` — which drives the per-turn reminder, the off countermand, and natural-language activation. `test_registry_parity.js` fails if a registry language has no row.
+4. Sample 5 outputs against the QA checklist (see [CONTRIBUTING.md](CONTRIBUTING.md)) and PR.
 
 ## Compared to caveman
 

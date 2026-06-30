@@ -130,7 +130,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 양 언어 · 모든 dial.    |
-| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄. |
+| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄 + `hooks/lang-meta.js` 1행. |
 | `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. |
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
@@ -215,10 +215,10 @@ arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중�
 
 **플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜어 ~21% 더 깎되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
 
-**언어 추가**:
+**언어 추가** (registry-driven dispatch — 분기 추가 아닌 데이터 추가):
 
 1. `rules/{lang}/{lite,full}.md` 규칙 파일 작성.
-2. [`registry.json`](registry.json)에 항목 1개 추가:
+2. [`registry.json`](registry.json)에 항목 1개 추가 — `VALID_LANGS`가 이 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식:
 
    ```json
    {
@@ -226,7 +226,8 @@ arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중�
    }
    ```
 
-3. 5건 sample 출력을 QA checklist ([CONTRIBUTING.md](CONTRIBUTING.md)) 기준 self-check → PR.
+3. [`hooks/lang-meta.js`](hooks/lang-meta.js)에 `LANG_META` 1행 추가 — `reminder`, `countermand`, `flagHint`, `nlCue` — per-turn reminder·off countermand·자연어 활성화 구동. registry 언어에 행이 없으면 `test_registry_parity.js`가 fail.
+4. 5건 sample 출력을 QA checklist ([CONTRIBUTING.md](CONTRIBUTING.md)) 기준 self-check → PR.
 
 ## caveman과 비교
 

@@ -40,6 +40,8 @@ import {
   writeSuffix,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
+import { buildReminder, buildCountermand } from './lang-meta.js';
+import { repoRootCandidates } from './repo-root.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OFF_TOKENS = new Set(['off', 'stop', 'disable']);
@@ -47,10 +49,7 @@ const OFF_TOKENS = new Set(['off', 'stop', 'disable']);
 // Locate the repo root that holds registry.json + rules/. Tries the plugin
 // root env first, then walks up from this hook's directory.
 function resolveRepoRoot() {
-  const candidates = [];
-  if (process.env.CLAUDE_PLUGIN_ROOT) candidates.push(process.env.CLAUDE_PLUGIN_ROOT);
-  for (const rel of ['..', '../..', '../../..']) candidates.push(path.join(HERE, rel));
-  for (const c of candidates) {
+  for (const c of repoRootCandidates(HERE)) {
     try {
       if (fs.existsSync(path.join(c, 'registry.json'))) return c;
     } catch (e) {
@@ -148,60 +147,10 @@ function parseCommand(prompt) {
   return { action: 'set', lang, dial, addFlags, removeFlags, bare: false };
 }
 
-// Compact per-flag behavior label for the high-frequency per-turn reminder. Each
-// label mirrors its fragment heading; an unmapped flag degrades to its bare name.
-// Keep ko/en in sync (bilingual parity).
-const FLAG_HINT = {
-  ko: { lean: 'lean(최소 코드)' },
-  en: { lean: 'lean (minimal code)' },
-  ja: { lean: 'lean（最小コード）' },
-};
-
-function flagHints(lang, flags) {
-  const map = FLAG_HINT[lang] || {};
-  return flags.map((f) => map[f] || f);
-}
-
-// Per-turn reminder (the high-frequency injection). Each active flag is named
-// with a compact behavior hint (flagHints) so the flag's intent — not just its
-// label — survives context drift; the flag's FULL register still lives in its
-// fragment, injected on the activation/SessionStart turn, not repeated here.
-function buildReminder(lang, dial, flags = []) {
-  if (lang === 'ko') {
-    const body =
-      dial === 'full'
-        ? '개조식·음슴체(~함/~됨), 의미 명확 시 조사 드롭, 존대 제거. '
-        : '다듬은 존댓말, filler·빈 인사·hedging 드롭, 완전문. ';
-    return (
-      `SCROOGE 활성 (ko/${dial}). ` +
-      body +
-      'code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.' +
-      (flags.length ? ` flag: ${flagHints('ko', flags).join('·')} 활성.` : '')
-    );
-  }
-  if (lang === 'ja') {
-    const body =
-      dial === 'full'
-        ? '体言止め・常体、意味明確時は助詞ドロップ、敬語除去。'
-        : '整えた丁寧体、filler・空のあいさつ・hedging ドロップ、完全文。';
-    return (
-      `SCROOGE 活性 (ja/${dial})。 ` +
-      body +
-      ' code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。' +
-      (flags.length ? ` flag: ${flagHints('ja', flags).join('・')} 活性。` : '')
-    );
-  }
-  const body =
-    dial === 'full'
-      ? 'Drop articles/filler/pleasantries, fragments OK, short synonyms. '
-      : 'Drop filler/pleasantry/hedging, keep grammar + articles. ';
-  return (
-    `SCROOGE active (en/${dial}). ` +
-    body +
-    'Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.' +
-    (flags.length ? ` Flags: ${flagHints('en', flags).join(', ')} active.` : '')
-  );
-}
+// Per-turn reminder (buildReminder) and off countermand (buildCountermand) are
+// table-driven in lang-meta.js: their per-language strings and the compact per-flag
+// hints (FLAG_HINT) moved into LANG_META, so a new language gets a reminder and a
+// countermand from its table row with no branch here. Imported above.
 
 function buildFullInjection(lang, dial, ruleBody, flags = []) {
   // Surface active flags in the header so the model's activation confirmation names
@@ -212,20 +161,6 @@ function buildFullInjection(lang, dial, ruleBody, flags = []) {
     `SCROOGE MODE ACTIVE — ${mode}. Apply this register to every ` +
     `response until the mode changes or the session ends:\n\n${ruleBody}`
   );
-}
-
-// Deactivation countermand. Clearing the state file stops future reminders, but
-// the model may still be mid-conversation in the compressed register — so on the
-// off turn we actively tell it to return to normal prose. Localized to the
-// register that was active when off fired.
-function buildCountermand(lang) {
-  if (lang === 'ko') {
-    return 'SCROOGE OFF — 압축 모드 해제. 이번 턴부터 평소 register(일반 문체)로 복귀.';
-  }
-  if (lang === 'ja') {
-    return 'SCROOGE OFF — 圧縮モード解除。今ターンから通常の register（通常文体）に復帰。';
-  }
-  return 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.';
 }
 
 function parseStatsCommand(prompt) {

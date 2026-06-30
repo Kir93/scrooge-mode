@@ -87,17 +87,20 @@ Use [CLAUDE.md Conventions](CLAUDE.md#conventions) as the source of truth. In sh
 - Substantive rule changes stay mirrored across `ko`/`en`/`ja` and `lite`/`full`, or the PR explains why parity is intentionally not changed.
 - Renaming or moving `rules/**` requires the matching `registry.json` edit in the same PR.
 - Safety auto-clarity must remain in every dial.
-- The docs / prose compression boundary and its Docs escape must remain in every dial. `test_doc_boundaries.js` and `test_safety_escape.js` iterate `ko`/`en`/`ja`, and `test_registry_parity.js` guards `registry × VALID_LANGS × VALID_DIALS` completeness plus rule reachability — so a new language's rule files are auto-guarded once it joins `VALID_LANGS` and those loops.
+- The docs / prose compression boundary and its Docs escape must remain in every dial. `test_doc_boundaries.js` and `test_safety_escape.js` iterate `ko`/`en`/`ja`, and `test_registry_parity.js` guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness plus rule reachability — so a new language's rule files and activation metadata are auto-guarded once it joins the registry, `LANG_META`, and those loops.
 
 ## Adding a Language
 
-1. Add new rule files at `rules/{lang}/lite.md` and `rules/{lang}/full.md`.
-2. Add `registry.json[lang]` with `lite` and `full` paths.
-3. Generate 5 sample outputs and self-check them against a QA checklist shaped like [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md) when available: register consistency, verbatim code/error/technical terms, safety prose, particle/drop clarity, and honorific policy.
-4. Review README, INSTALL, and CONTRIBUTING mirrors. Update user-facing docs if the new language changes installation, activation, or contribution behavior.
-5. Open a PR with the sample self-check summary and the commands from [Test & Lint](#test--lint).
+Activation is registry-driven dispatch, so a new language is data, not new branches:
 
-The PR-CI registry check catches forgotten registry entries or unreachable rule files automatically.
+1. Add new rule files at `rules/{lang}/lite.md` and `rules/{lang}/full.md`.
+2. Add `registry.json[lang]` with `lite` and `full` paths. `VALID_LANGS` derives from these keys, so the slash parser and rule loader recognize the language with no code edit.
+3. Add one `LANG_META[lang]` row in `hooks/lang-meta.js` — `reminder` (lite/full bodies), `countermand`, `flagHint`, and `nlCue` (activate/off/negate/meta/strong). This drives the per-turn reminder, the off countermand, and natural-language activation; without it the language loads its rule but has no reminder or NL cues. `test_registry_parity.js` fails if a registry language is missing its row.
+4. Generate 5 sample outputs and self-check them against a QA checklist shaped like [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md) when available: register consistency, verbatim code/error/technical terms, safety prose, particle/drop clarity, and honorific policy.
+5. Review README, INSTALL, and CONTRIBUTING mirrors. Update user-facing docs if the new language changes installation, activation, or contribution behavior.
+6. Open a PR with the sample self-check summary and the commands from [Test & Lint](#test--lint).
+
+The registry parity check catches a forgotten registry entry, an unreachable rule file, or a registry language missing its `LANG_META` row automatically.
 
 ## PR Conventions
 

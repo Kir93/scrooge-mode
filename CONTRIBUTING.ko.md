@@ -87,17 +87,20 @@ Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 - 실질 rule 변경은 `ko`/`en`/`ja`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
 - `rules/**` rename/move는 같은 PR에서 `registry.json` 수정.
 - Safety auto-clarity는 모든 dial에 유지.
-- Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지. `test_doc_boundaries.js`·`test_safety_escape.js`가 `ko`/`en`/`ja`를 순회하고, `test_registry_parity.js`가 `registry × VALID_LANGS × VALID_DIALS` 완전성 + rule 도달성을 가드 — 신규 언어는 `VALID_LANGS`와 해당 루프에 합류하면 rule 파일이 자동 보증됨.
+- Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지. `test_doc_boundaries.js`·`test_safety_escape.js`가 `ko`/`en`/`ja`를 순회하고, `test_registry_parity.js`가 `registry ↔ LANG_META ↔ VALID_DIALS` 완전성 + rule 도달성을 가드 — 신규 언어는 registry·`LANG_META`·해당 루프에 합류하면 rule 파일과 활성화 메타가 자동 보증됨.
 
 ## Adding a Language
 
-1. `rules/{lang}/lite.md`, `rules/{lang}/full.md` 신규 작성.
-2. `registry.json[lang]`에 `lite`, `full` path 추가.
-3. sample output 5건 생성 후 [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md)와 같은 QA checklist로 self-check: register 일관, code/error/technical term 원문, safety prose, 조사 드롭 명확성, honorific policy.
-4. README, INSTALL, CONTRIBUTING mirror 검토. 새 언어가 설치/활성화/기여 흐름을 바꾸면 user-facing docs 갱신.
-5. sample self-check 요약과 [Test & Lint](#test--lint) 명령 결과 포함해 PR open.
+활성화는 registry-driven dispatch라 새 언어는 분기 추가가 아니라 데이터 추가:
 
-PR-CI registry check가 registry 누락 또는 unreachable rule file을 자동 catch.
+1. `rules/{lang}/lite.md`, `rules/{lang}/full.md` 신규 작성.
+2. `registry.json[lang]`에 `lite`, `full` path 추가. `VALID_LANGS`가 이 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식.
+3. `hooks/lang-meta.js`에 `LANG_META[lang]` 1행 추가 — `reminder`(lite/full body), `countermand`, `flagHint`, `nlCue`(activate/off/negate/meta/strong). per-turn reminder·off countermand·자연어 활성화를 구동; 없으면 rule은 로드되나 reminder·NL cue 부재. `test_registry_parity.js`가 행 누락 언어를 fail 처리.
+4. sample output 5건 생성 후 [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md)와 같은 QA checklist로 self-check: register 일관, code/error/technical term 원문, safety prose, 조사 드롭 명확성, honorific policy.
+5. README, INSTALL, CONTRIBUTING mirror 검토. 새 언어가 설치/활성화/기여 흐름을 바꾸면 user-facing docs 갱신.
+6. sample self-check 요약과 [Test & Lint](#test--lint) 명령 결과 포함해 PR open.
+
+registry parity check가 registry 누락·unreachable rule file·`LANG_META` 행 누락 언어를 자동 catch.
 
 ## PR Conventions
 
