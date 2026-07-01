@@ -228,6 +228,20 @@ test('the reminder is localized for ja', () => {
   assert.match(ctx, /SCROOGE 活性 \(ja\/full\)/);
 });
 
+test('/scrooge hi full activates and injects the full hi rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, '/scrooge hi full');
+  assert.deepEqual(state, { lang: 'hi', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — hi\/full/);
+});
+
+test('the reminder is localized for hi', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge hi');
+  const { ctx } = runHook(cfg, 'इस function को समझाओ');
+  assert.match(ctx, /SCROOGE सक्रिय \(hi\/full\)/);
+});
+
 test('/scrooge off clears state and injects a countermand', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge');
@@ -274,6 +288,14 @@ test('session-scope: off on an active ja session injects a ja-localized counterm
   const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessJa' });
   assert.match(ctx, /SCROOGE OFF/);
   assert.match(ctx, /圧縮モード解除|通常文体/); // ja-localized
+});
+
+test('session-scope: off on an active hi session injects a hi-localized countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge hi', { session_id: 'sessHi' });
+  const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessHi' });
+  assert.match(ctx, /SCROOGE OFF/);
+  assert.match(ctx, /संपीड़न मोड बंद|सामान्य शैली/); // hi-localized
 });
 
 test('session-scope: off on an inactive session injects nothing', () => {

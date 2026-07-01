@@ -145,6 +145,38 @@ test('(ja) a style directive still activates even with a meta cue present', () =
   assert.deepEqual(parseNaturalActivation('スクルージみたいに説明して'), { action: 'set', lang: 'ja', dial: 'full' });
 });
 
+// ---- Layer 1c: Hindi fixtures (hi-register) ----
+// Devanagari has spaces, but `\b` is ASCII-only and inert on it, so the parser
+// anchors on cue strings after the name (की तरह / जैसे / मोड) — same strategy as
+// the Japanese cues. These pin the cue boundaries against false-positives.
+
+test('(hi) HI activation triggers set hi/full', () => {
+  for (const p of ['स्क्रूज की तरह जवाब दो', 'स्क्रूज मोड', 'स्क्रूज जैसे बात करो', 'स्क्रूज मोड में जवाब दो']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang: 'hi', dial: 'full' }, p);
+  }
+});
+
+test('(hi) off phrases deactivate', () => {
+  for (const p of ['स्क्रूज बंद करो', 'स्क्रूज रोको', 'स्क्रूज मोड बंद', 'स्क्रूज off', 'स्क्रूज अक्षम']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'off' }, p);
+  }
+});
+
+test('(hi) negation guard suppresses activation + negated off is a no-op', () => {
+  assert.equal(parseNaturalActivation('स्क्रूज की तरह मत बोलो'), null);
+  assert.equal(parseNaturalActivation('स्क्रूज बंद मत करो'), null);
+});
+
+test('(hi) no-intent / meta sentences do not toggle', () => {
+  for (const p of ['स्क्रूज की फिल्म देखी', 'स्क्रूज मोड का बग बताओ', 'स्क्रूज मोड कैसे काम करता है']) {
+    assert.equal(parseNaturalActivation(p), null, p);
+  }
+});
+
+test('(hi) a style directive still activates even with a meta cue present', () => {
+  assert.deepEqual(parseNaturalActivation('स्क्रूज की तरह समझाओ'), { action: 'set', lang: 'hi', dial: 'full' });
+});
+
 // ---- Layer 2: hook integration (black-box) ----
 
 const tmpDirs = [];
@@ -184,6 +216,21 @@ test('(ja) NL activation through the hook persists ja state + injects the full r
   const { state, ctx } = runHook(cfg, 'スクルージみたいに答えて');
   assert.deepEqual(state, { lang: 'ja', dial: 'full', flags: [] });
   assert.match(ctx, /SCROOGE MODE ACTIVE — ja\/full/);
+});
+
+test('(hi) NL activation through the hook persists hi state + injects the full rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, 'स्क्रूज की तरह जवाब दो');
+  assert.deepEqual(state, { lang: 'hi', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — hi\/full/);
+});
+
+test('(hi) NL off through the hook clears state and injects a countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, 'स्क्रूज की तरह जवाब दो'); // hi/full active
+  const { state, ctx } = runHook(cfg, 'स्क्रूज बंद करो');
+  assert.equal(state, null);
+  assert.match(ctx, /SCROOGE OFF/);
 });
 
 test('NL off through the hook clears state and injects a countermand', () => {

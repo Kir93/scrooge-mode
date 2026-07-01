@@ -84,10 +84,10 @@ GitHub branch protection should require the `CI / verify` workflow before mergin
 Use [CLAUDE.md Conventions](CLAUDE.md#conventions) as the source of truth. In short:
 
 - User-facing docs stay mirrored across English and Korean. Japanese ships as a lightweight `README.ja.md` landing (value + install + one example), not a full mirror — canonical docs are English/Korean.
-- Substantive rule changes stay mirrored across `ko`/`en`/`ja` and `lite`/`full`, or the PR explains why parity is intentionally not changed.
+- Substantive rule changes stay mirrored across `ko`/`en`/`ja`/`hi` and `lite`/`full`, or the PR explains why parity is intentionally not changed.
 - Renaming or moving `rules/**` requires the matching `registry.json` edit in the same PR.
 - Safety auto-clarity must remain in every dial.
-- The docs / prose compression boundary and its Docs escape must remain in every dial. `test_doc_boundaries.js` and `test_safety_escape.js` iterate `ko`/`en`/`ja`, and `test_registry_parity.js` guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness plus rule reachability — so a new language's rule files and activation metadata are auto-guarded once it joins the registry, `LANG_META`, and those loops.
+- The docs / prose compression boundary and its Docs escape must remain in every dial. `test_doc_boundaries.js` and `test_safety_escape.js` iterate `ko`/`en`/`ja`/`hi`, and `test_registry_parity.js` guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness plus rule reachability — so a new language's rule files and activation metadata are auto-guarded once it joins the registry, `LANG_META`, and those loops.
 
 ## Adding a Language
 

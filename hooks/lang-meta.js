@@ -95,6 +95,31 @@ export const LANG_META = {
       strong: /スクルージ\s*(?:みたいに|のように|っぽく|で\s*(?:答|話|返答))/,
     },
   },
+  hi: {
+    reminder: {
+      head: 'SCROOGE सक्रिय',
+      modeClose: '। ',
+      lite: 'भद्र आदरसूचक शैली, filler·खाली अभिवादन·hedging ड्रॉप, पूर्ण वाक्य।',
+      full: 'संज्ञा-अंत·सामान्य शैली, अर्थ स्पष्ट होने पर परसर्ग ड्रॉप, आदरसूचक हटाना।',
+      suffix: ' code block·error·तकनीकी शब्द मूल रूप में। सुरक्षा/अपरिवर्तनीय ऑपरेशन normal prose।',
+      flag: { prefix: ' flag: ', sep: '·', suffix: ' सक्रिय।' },
+    },
+    countermand: 'SCROOGE OFF — संपीड़न मोड बंद। इस turn से सामान्य register (सामान्य शैली) में वापस।',
+    flagHint: { lean: 'lean (न्यूनतम कोड)' },
+    nlCue: {
+      name: /स्क्रूज/,
+      // Devanagari has spaces, but JS `\b` is ASCII-only and inert on it — the trigger
+      // anchors on explicit cue strings after the name (की तरह / जैसे / मोड). Latin
+      // "scrooge" input is already caught by the en cue; the hi row owns Devanagari.
+      activate: /स्क्रूज\s*(?:की\s*तरह|जैसे|मोड)/,
+      off: /स्क्रूज\s*(?:मोड\s*)?(?:बंद|रोक(?:ो)?|हटाओ|अक्षम|निष्क्रिय|off)/i,
+      // मत = imperative "don't" (space-anchored so it never fires inside मतलब etc.).
+      // नहीं (bare declarative "no") is intentionally excluded, like the en bare-"no".
+      negate: /(?:^|\s)मत(?:\s|$)/,
+      meta: /समझा|क्या|कैसे|क्यों|बग|मतलब|तर्क|लॉजिक|काम\s*कर/,
+      strong: /स्क्रूज\s*(?:की\s*तरह|जैसे)/,
+    },
+  },
 };
 
 // Language lookup. Returns the row, or null for an unknown language (callers below

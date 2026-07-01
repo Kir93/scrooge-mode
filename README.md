@@ -31,9 +31,9 @@
 
 > Output-compression skill for AI coding agents — same answer, fewer tokens on every reply.
 
-KO-first trilingual (KO/EN/JA) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
+KO-first quadrilingual (KO/EN/JA/HI) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-**`~70% KO · ~73% EN · ~70% JA · output-only · honorifics stripped`** — `claude-opus-4-8`, N=16–21 paired median.
+**`~70% KO · ~73% EN · ~70% JA · ~66% HI · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI held-out N=11.
 
 <p align="center">
   <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
@@ -126,18 +126,18 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 
 | Component                | What                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en`/`ja` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions.                                                                 |
+| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en`/`ja`/`hi` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions.                                                                 |
 | `/scrooge … [flag]`      | Behavior flag orthogonal to the dial: `lean` (minimal code output) is **on by default** (~21% less code). Toggle with `nolean` (per session) or `SCROOGE_DEFAULT_FLAGS` (global). |
 | `/scrooge off`           | Clear state + the global default (global off), return to normal prose.                                                                                                             |
-| Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
+| Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
-| Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Both languages, every dial. |
+| Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Every language, every dial. |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = one rule file + one registry entry + one `hooks/lang-meta.js` row.    |
 | `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Reports measured input + output tokens from the session JSONL; never asks the model to estimate.    |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
 
-**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target.
+**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script.
 
 ## Benchmarks
 
@@ -147,7 +147,7 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 
 - **N=20–21 prompts × 1 run, paired median.** Single-run results; no variance estimate (a few prompts dropped on subscription timeouts). Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly").
 - **Register-clean run.** Both register hooks (scrooge's own activation hook and caveman) are neutralized for the benchmark so they cannot inject into the `normal`/`terse` baseline; token counts are deduped by `message.id` (prose-only basis). An earlier run whose baseline was silently compressed by the host's scrooge hook was discarded.
-- **Held-out cross-check.** Re-measured on a held-out prompt set (`prompts/{ko,en,ja}-report.txt`, disjoint from the tuning corpus): KO ~71%, EN ~68%, JA ~65% (N=11 each). Consistent with the headline above, so the savings are not an artifact of overfitting to the tuning prompts.
+- **Held-out cross-check.** Re-measured on a held-out prompt set (`prompts/{ko,en,ja,hi}-report.txt`, disjoint from the tuning corpus): KO ~71%, EN ~68%, JA ~65%, HI ~63% (N=11 each; HI per-prompt median 67%). Consistent with the headline above, so the savings are not an artifact of overfitting to the tuning prompts. HI is held-out-only — no separate tuning corpus measured yet.
 - **Register-only isolation.** The harness runs each arm under `claude --print --system-prompt <rule>`, which _replaces_ Claude Code's default system prompt. This isolates the register effect cleanly, but real `/scrooge` sessions keep Claude Code's full system prompt alongside the injected register, so real savings versus a real verbose session may differ from the headline. See [`benchmarks/README.md`](./benchmarks/README.md) for the full caveat list.
 - **Real `output_tokens`, not tokenizer estimates.** Numbers come from the Claude Code session JSONL's `output_tokens` field — what the API actually billed.
 
@@ -201,6 +201,19 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 `scrooge:ja/full` cuts Japanese output by **~70%** vs the verbose default, and beats the `terse` "answer concisely" control by **+43%** (15/15 prompt wins) — so the gain is the register, not generic brevity. Held-out cross-check (`prompts/ja-report.txt`, N=11): **~65%**. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
 
 > **Measurement note**: the `normal` baseline is measured with host memory files (`~/.claude/CLAUDE.md`, project `CLAUDE.local.md`) isolated, so it answers in the prompt's language (Japanese) — otherwise a host "respond in Korean" instruction makes the baseline answer in Korean, whose different token efficiency inflates the savings.
+
+### Hindi
+
+`scrooge:hi/full` maps the Korean mechanism onto Hindi — honorific leveling (`कीजिए` → `करो`), noun-stop / verbal-noun endings, and optional postposition drop (`को`/`में`/`से`; the `ने` ergative marker is kept, since dropping it can shift meaning) — while keeping a Devanagari body with English technical terms code-mixed verbatim.
+
+| Mode                  | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --------------------- | -----------------------------------: | ------------------: |
+| `normal`              |                                 2436 |          (baseline) |
+| **`scrooge:hi/full`** |                              **897** |            **~63%** |
+
+`scrooge:hi/full` cuts Hindi output by a **66.6% per-prompt median** (ratio of medians ~63%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.76 median claim-preservation, safety preserved 10/11** — better claim retention than JA; the single safety-check miss is a heuristic false-positive on a rate-limiting prompt with no security/irreversible content (the compressed answer keeps its technical caveat), and the loss elsewhere is breadth, not wrong information. Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others.
+
+> **Measurement note**: same cwd-isolation as Japanese — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Hindi, not the host "respond in Korean" default, which would otherwise inflate the savings.
 
 ### Document generation
 

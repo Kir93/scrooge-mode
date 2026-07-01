@@ -11,6 +11,10 @@
     "lite": "rules/ja/lite.md",
     "full": "rules/ja/full.md"
   },
+  "hi": {
+    "lite": "rules/hi/lite.md",
+    "full": "rules/hi/full.md"
+  },
   "fragments": {
     "ko": {
       "lean": "rules/ko/fragments/lean.md"
@@ -20,6 +24,9 @@
     },
     "ja": {
       "lean": "rules/ja/fragments/lean.md"
+    },
+    "hi": {
+      "lean": "rules/hi/fragments/lean.md"
     }
   }
 }

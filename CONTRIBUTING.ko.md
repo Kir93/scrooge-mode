@@ -84,10 +84,10 @@ GitHub branch protection은 `main` merge 전 `CI / verify` workflow 필수로 �
 Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 
 - User-facing docs는 English/Korean mirror 유지. 일본어는 경량 `README.ja.md` 랜딩(가치 + 설치 + 예시 1개)으로 출하 — 풀 미러 아님, canonical은 영문/국문.
-- 실질 rule 변경은 `ko`/`en`/`ja`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
+- 실질 rule 변경은 `ko`/`en`/`ja`/`hi`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
 - `rules/**` rename/move는 같은 PR에서 `registry.json` 수정.
 - Safety auto-clarity는 모든 dial에 유지.
-- Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지. `test_doc_boundaries.js`·`test_safety_escape.js`가 `ko`/`en`/`ja`를 순회하고, `test_registry_parity.js`가 `registry ↔ LANG_META ↔ VALID_DIALS` 완전성 + rule 도달성을 가드 — 신규 언어는 registry·`LANG_META`·해당 루프에 합류하면 rule 파일과 활성화 메타가 자동 보증됨.
+- Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지. `test_doc_boundaries.js`·`test_safety_escape.js`가 `ko`/`en`/`ja`/`hi`를 순회하고, `test_registry_parity.js`가 `registry ↔ LANG_META ↔ VALID_DIALS` 완전성 + rule 도달성을 가드 — 신규 언어는 registry·`LANG_META`·해당 루프에 합류하면 rule 파일과 활성화 메타가 자동 보증됨.
 
 ## Adding a Language
 

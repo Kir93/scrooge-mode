@@ -1,0 +1,27 @@
+# Scrooge benchmark — HI prompts
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+
+# --- debug ---
+React component हर click पर child component भी साथ में re-render होने की समस्या का कारण और समाधान समझाओ।
+Express middleware में `req.user` कभी-कभी `undefined` हो जाता है — इसके आम कारण बताओ।
+TypeScript में `Cannot find name 'process'` error आने का कारण और समाधान क्या है?
+PostgreSQL query production में ही धीमी होने के 3 आम कारण समझाओ।
+useEffect का cleanup function न चलने की स्थिति समझाओ।
+
+# --- explain ---
+JavaScript के closure से memory leak होने का scenario समझाओ।
+React Server Components और Client Components का अंतर मुख्य बिंदुओं में बताओ।
+TCP और UDP का मूल अंतर और हर एक किस काम के लिए उपयुक्त है बताओ।
+database index के read performance बढ़ाने का सिद्धांत और write में नुक़सान का कारण समझाओ।
+
+# --- review ---
+निम्न function की समस्या और सुधार बताओ: ```js\nfunction sum(arr) { let s = 0; for (let i = 0; i <= arr.length; i++) s += arr[i]; return s; }\n```
+async function में `await Promise.all` की जगह `for...of` से await को serial call करने वाले code का performance प्रभाव समझाओ।
+React में `useEffect(() => { fetchData() }, [])` के अंदर cleanup बिना setState करने वाले pattern का ख़तरा बताओ।
+
+# --- plan ---
+Node.js में बनी single monolith service को services में विभाजित करते समय पहले देखने योग्य 3 measurement metric बताओ।
+PostgreSQL में 100GB table में नया column जोड़ते हुए zero downtime के साथ आगे बढ़ने की प्रक्रिया चरण-दर-चरण समझाओ।
+Next.js 13 Pages Router project को App Router में चरणबद्ध migrate करने का क्रम बताओ।
+WebSocket आधारित real-time notification system design करते समय की backpressure strategy बताओ।

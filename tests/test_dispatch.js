@@ -122,7 +122,7 @@ test('deriveValidLangs picks up a new registry lang (no hardcoded array)', () =>
 // ── one LANG_META row joins every dispatch surface ──────────────────────────────
 
 test('metaLangs appends the new row in table order (lowest priority)', () => {
-  assert.deepEqual(metaLangs(), ['ko', 'en', 'ja', 'xx']);
+  assert.deepEqual(metaLangs(), ['ko', 'en', 'ja', 'hi', 'xx']);
 });
 
 test('NL parse dispatches to the new lang from its cue row, without disturbing ko/en/ja', () => {
