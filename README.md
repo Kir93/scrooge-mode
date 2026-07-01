@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  English · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a>
+  English · <a href="README.ko.md">한국어</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -31,9 +31,9 @@
 
 > Output-compression skill for AI coding agents — same answer, fewer tokens on every reply.
 
-KO-first quadrilingual (KO/EN/JA/HI) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
+KO-first pentalingual (KO/EN/JA/HI/ZH) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-**`~70% KO · ~73% EN · ~70% JA · ~66% HI · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI held-out N=11.
+**`~70% KO · ~73% EN · ~70% JA · ~66% HI · ~63% ZH · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI/ZH held-out N=11.
 
 <p align="center">
   <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
@@ -126,10 +126,10 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 
 | Component                | What                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en`/`ja`/`hi` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions.                                                                 |
+| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en`/`ja`/`hi`/`zh` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions.                                                                 |
 | `/scrooge … [flag]`      | Behavior flag orthogonal to the dial: `lean` (minimal code output) is **on by default** (~21% less code). Toggle with `nolean` (per session) or `SCROOGE_DEFAULT_FLAGS` (global). |
 | `/scrooge off`           | Clear state + the global default (global off), return to normal prose.                                                                                                             |
-| Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
+| Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Every language, every dial. |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = one rule file + one registry entry + one `hooks/lang-meta.js` row.    |
@@ -137,7 +137,7 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
 
-**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script.
+**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script. Chinese ships as the fifth — but unlike JA/HI, it is **not** a port of the Korean mechanism: Chinese is an isolating language with no honorific morphology or case particles to strip, so its register is a **zh-native** design (drop politeness `请`/`您`, conservatively drop redundant structural particles `的`/`了`/`着` and measure words, cut connective filler), modern concise prose rather than caveman's wenyan. ZH savings/fidelity measurement is pending.
 
 ## Benchmarks
 
@@ -214,6 +214,19 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 `scrooge:hi/full` cuts Hindi output by a **66.6% per-prompt median** (ratio of medians ~63%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.76 median claim-preservation, safety preserved 10/11** — better claim retention than JA; the single safety-check miss is a heuristic false-positive on a rate-limiting prompt with no security/irreversible content (the compressed answer keeps its technical caveat), and the loss elsewhere is breadth, not wrong information. Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others.
 
 > **Measurement note**: same cwd-isolation as Japanese — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Hindi, not the host "respond in Korean" default, which would otherwise inflate the savings.
+
+### Chinese
+
+`scrooge:zh/full` is a **zh-native** register, not a port of the Korean mechanism: Chinese is an isolating language with no honorifics or case particles to strip, so it drops politeness (`请`/`您`), conservatively drops redundant structural particles (`的`/`了`/`着`) and measure words, and cuts connective filler — keeping a Simplified-Chinese body with English technical terms code-mixed verbatim. Modern concise prose, not caveman's wenyan.
+
+| Mode | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --- | ---: | ---: |
+| `normal` | 2703 | (baseline) |
+| **`scrooge:zh/full`** | **897** | **~67%** |
+
+`scrooge:zh/full` cuts Chinese output by a **62.9% per-prompt median** (ratio of medians ~67%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 11/11** — higher claim retention than JA and no safety miss; the loss is breadth (secondary detail dropped under heavier compression), not wrong information (0 fully-equivalent is the expected independent-generation signal, not corruption). Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others. Before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, same forEach-async diagnosis).
+
+> **Measurement note**: same cwd-isolation as Japanese/Hindi — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Chinese, not the host "respond in Korean" default, which would otherwise inflate the savings.
 
 ### Document generation
 

@@ -242,6 +242,20 @@ test('the reminder is localized for hi', () => {
   assert.match(ctx, /SCROOGE सक्रिय \(hi\/full\)/);
 });
 
+test('/scrooge zh full activates and injects the full zh rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, '/scrooge zh full');
+  assert.deepEqual(state, { lang: 'zh', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — zh\/full/);
+});
+
+test('the reminder is localized for zh', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge zh');
+  const { ctx } = runHook(cfg, '解释一下这个 function');
+  assert.match(ctx, /SCROOGE 已激活 \(zh\/full\)/);
+});
+
 test('/scrooge off clears state and injects a countermand', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge');
@@ -296,6 +310,14 @@ test('session-scope: off on an active hi session injects a hi-localized counterm
   const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessHi' });
   assert.match(ctx, /SCROOGE OFF/);
   assert.match(ctx, /संपीड़न मोड बंद|सामान्य शैली/); // hi-localized
+});
+
+test('session-scope: off on an active zh session injects a zh-localized countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge zh', { session_id: 'sessZh' });
+  const { ctx } = runHook(cfg, '/scrooge off', { session_id: 'sessZh' });
+  assert.match(ctx, /SCROOGE OFF/);
+  assert.match(ctx, /压缩模式解除|常规文体/); // zh-localized
 });
 
 test('session-scope: off on an inactive session injects nothing', () => {

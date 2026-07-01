@@ -31,6 +31,7 @@ const DOCS_BOUNDARY = {
   ko: /Docs·prose 산출물/,
   ja: /Docs·prose 生成物/,
   hi: /Docs·prose सामग्री/,
+  zh: /Docs·prose 产物/,
 };
 
 // The docs-escape extension lives in Auto-Clarity for every dial (both langs
@@ -38,7 +39,7 @@ const DOCS_BOUNDARY = {
 const DOCS_ESCAPE = /Docs escape/;
 
 // Every lang × dial rule file carries the docs-compression boundary + escape.
-for (const lang of ['ko', 'en', 'ja', 'hi']) {
+for (const lang of ['ko', 'en', 'ja', 'hi', 'zh']) {
   for (const dial of ['lite', 'full']) {
     test(`rule ${lang}/${dial} carries the Docs/prose compression boundary + escape`, () => {
       const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');

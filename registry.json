@@ -15,6 +15,10 @@
     "lite": "rules/hi/lite.md",
     "full": "rules/hi/full.md"
   },
+  "zh": {
+    "lite": "rules/zh/lite.md",
+    "full": "rules/zh/full.md"
+  },
   "fragments": {
     "ko": {
       "lean": "rules/ko/fragments/lean.md"
@@ -27,6 +31,9 @@
     },
     "hi": {
       "lean": "rules/hi/fragments/lean.md"
+    },
+    "zh": {
+      "lean": "rules/zh/fragments/lean.md"
     }
   }
 }

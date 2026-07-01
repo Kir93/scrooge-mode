@@ -1,0 +1,27 @@
+# Scrooge benchmark — ZH report corpus (HELD-OUT)
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+# Simplified Chinese (简体).
+#
+# TRAIN/TEST SEPARATION: this is the *report* corpus. It is held out from rule
+# tuning — never tune rules/zh/*.md against these prompts. Use prompts/zh.txt
+# (the dev corpus) for tuning. Headline numbers should come from this report set.
+
+# --- debug ---
+React 里一输入就整个 form 重新 render 的原因和解决办法,解释一下。
+Node.js server 启动时报 `EADDRINUSE` 的原因和解决流程。
+TypeScript 里 `Type 'string | undefined' is not assignable to type 'string'` 的安全解决办法是什么?
+
+# --- explain ---
+JavaScript event delegation 的工作原理和好处,解释一下。
+transaction isolation level `READ COMMITTED` 和 `REPEATABLE READ` 的区别。
+React reconciliation 里 `key` 为什么重要,解释一下。
+
+# --- review ---
+指出下面 code 的问题: ```js\nconst cache = {}; function memo(fn) { return (n) => { if (cache[n]) return cache[n]; return cache[n] = fn(n); }; }\n```
+`arr.forEach(async (x) => { await save(x); })` 期望顺序 save 的 code 有什么问题?
+
+# --- plan ---
+单个 PostgreSQL 用 read replica 扩容时,最先该看的 3 个检查点。
+REST API 做 rate limiting 时选择 algorithm 的判断标准。
+CI pipeline 的 build time 变长后,降低它的优先级顺序。

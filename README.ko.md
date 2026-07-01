@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · 한국어 · <a href="README.ja.md">日本語</a>
+  <a href="README.md">English</a> · 한국어 · <a href="README.ja.md">日本語</a> · <a href="README.zh.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -31,9 +31,9 @@
 
 > AI 코딩 에이전트 응답의 출력 토큰을 줄이는 skill — 같은 답, 적은 토큰.
 
-AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA/HI) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
+AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA/HI/ZH) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
-**`~70% KO · ~73% EN · ~70% JA · ~66% HI · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI held-out N=11.
+**`~70% KO · ~73% EN · ~70% JA · ~66% HI · ~63% ZH · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI/ZH held-out N=11.
 
 <p align="center">
   <a href="#벤치마크"><img src="assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
@@ -124,10 +124,10 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 | 구성                     | 설명                                                                                      |
 | ------------------------ | ----------------------------------------------------------------------------------------- |
-| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en`/`ja`/`hi` × `lite`/`full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. |
+| `/scrooge [lang] [dial]` | register 활성화. 2축 — `ko`/`en`/`ja`/`hi`/`zh` × `lite`/`full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. |
 | `/scrooge … [flag]`      | dial과 직교인 행동 플래그: `lean`(코드 산출물 최소주의)은 **기본 on**(코드 ~21%↓). `nolean`(세션) 또는 `SCROOGE_DEFAULT_FLAGS`(전역)로 토글. |
 | `/scrooge off`           | 상태 + 글로벌 기본값 해제(전역 off), 일반 prose 복귀.                                     |
-| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
+| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 모든 언어 · 모든 dial.    |
 | `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄 + `hooks/lang-meta.js` 1행. |
@@ -135,7 +135,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
 
-**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — rule 엔진은 `registry.json`에서 모든 언어를 수술 없이 로드함. 일본어는 3번째 언어로 출하 — 영어 번역이 아니라 한국어 메커니즘 사상(keigo 제거 · 体言止め · 助詞 드롭); CJK 토큰 비효율이 압축 타깃으로 자연스러움. 힌디어는 4번째로 출하 — 동일 메커니즘(경어 평어화 · 명사형 종결 · 후치사 드롭)을 Devanagari(또 다른 토큰 비효율 문자)에 사상.
+**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — rule 엔진은 `registry.json`에서 모든 언어를 수술 없이 로드함. 일본어는 3번째 언어로 출하 — 영어 번역이 아니라 한국어 메커니즘 사상(keigo 제거 · 体言止め · 助詞 드롭); CJK 토큰 비효율이 압축 타깃으로 자연스러움. 힌디어는 4번째로 출하 — 동일 메커니즘(경어 평어화 · 명사형 종결 · 후치사 드롭)을 Devanagari(또 다른 토큰 비효율 문자)에 사상. 중국어는 5번째로 출하 — 단 JA/HI와 달리 한국어 메커니즘 이식 **아님**: 중국어는 고립어라 제거할 경어 형태소·격조사가 없어 register를 **zh-native**로 신설계(정중어 `请`/`您` 제거, 잉여 구조조사 `的`/`了`/`着`·양사 보수적 드롭, 연결어 filler 제거), caveman의 wenyan이 아닌 현대 간결체. ZH savings·fidelity 측정은 대기 중.
 
 ## 벤치마크
 
@@ -199,6 +199,19 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 `scrooge:hi/full`은 힌디어 출력을 verbose default 대비 **per-prompt 중앙값 66.6%**(median 비 ~63%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.76, safety 10/11 보존** — JA보다 claim 보존 높음; safety 1건 미달은 보안/되돌릴 수 없는 동작 없는 rate-limiting 프롬프트에서의 checks.js 휴리스틱 false-positive(압축 답도 기술 캐비엇 유지), 나머지 손실은 breadth이지 오정보 아님. held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음.
 
 > **측정 주의**: 일본어와 동일 cwd 격리 — `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`) 격리로 힌디어로 답하게 함. 격리 없으면 host "한국어로 답하라" 기본값 탓에 savings 부풀려짐.
+
+### 중국어
+
+`scrooge:zh/full`은 **zh-native** register — 한국어 메커니즘 이식 아님: 중국어는 고립어라 제거할 경어·격조사가 없어 정중어(`请`/`您`) 제거, 잉여 구조조사(`的`/`了`/`着`)·양사 보수적 드롭, 연결어 filler 제거로 압축 — 본문은 简体, 영어 기술용어는 code-mix 원문. caveman의 wenyan이 아닌 현대 간결체.
+
+| Mode | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --- | ---: | ---: |
+| `normal` | 2703 | (baseline) |
+| **`scrooge:zh/full`** | **897** | **~67%** |
+
+`scrooge:zh/full`은 중국어 출력을 verbose default 대비 **per-prompt 중앙값 62.9%**(median 비 ~67%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 11/11 보존** — JA보다 claim 보존 높고 safety 미달 0; 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님(fully-equivalent 0은 독립 생성의 예상 신호이지 손상 아님). held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음. before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, 동일 forEach-async 진단).
+
+> **측정 주의**: 일본어/힌디어와 동일 cwd 격리 — `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`) 격리로 중국어로 답하게 함. 격리 없으면 host "한국어로 답하라" 기본값 탓에 savings 부풀려짐.
 
 ### 문서 생성
 

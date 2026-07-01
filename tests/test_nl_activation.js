@@ -177,6 +177,46 @@ test('(hi) a style directive still activates even with a meta cue present', () =
   assert.deepEqual(parseNaturalActivation('स्क्रूज की तरह समझाओ'), { action: 'set', lang: 'hi', dial: 'full' });
 });
 
+// ---- Layer 1d: Chinese fixtures (zh-register) ----
+// Chinese has no inter-word spaces, so `\b` is inert; the parser anchors on cue
+// strings around the 斯克鲁奇 transliteration (一样 / 那样 / 模式). The off cue is
+// order-flexible because Chinese puts the off verb before OR after the name
+// (关闭斯克鲁奇 / 斯克鲁奇关闭). These pin the cue boundaries against false-positives.
+
+test('(zh) ZH activation triggers set zh/full', () => {
+  for (const p of ['像斯克鲁奇一样回答', '斯克鲁奇模式', '用斯克鲁奇那样的风格回答', '斯克鲁奇风格回答', '斯克鲁奇模式回答']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang: 'zh', dial: 'full' }, p);
+  }
+});
+
+test('(zh) off phrases deactivate (verb before OR after the name)', () => {
+  for (const p of ['关闭斯克鲁奇', '斯克鲁奇模式关闭', '停用斯克鲁奇', '斯克鲁奇 off', '禁用斯克鲁奇']) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'off' }, p);
+  }
+});
+
+test('(zh) negation guard suppresses activation + negated off is a no-op', () => {
+  assert.equal(parseNaturalActivation('别像斯克鲁奇一样回答'), null);
+  assert.equal(parseNaturalActivation('不要用斯克鲁奇模式'), null);
+  assert.equal(parseNaturalActivation('别关闭斯克鲁奇'), null);
+});
+
+test('(zh) no-intent / meta sentences do not toggle', () => {
+  for (const p of ['斯克鲁奇的电影', '斯克鲁奇模式的bug', '斯克鲁奇模式怎么工作', '斯克鲁奇模式是什么']) {
+    assert.equal(parseNaturalActivation(p), null, p);
+  }
+});
+
+test('(zh) a style directive still activates even with a meta cue present', () => {
+  assert.deepEqual(parseNaturalActivation('像斯克鲁奇一样解释这段代码'), { action: 'set', lang: 'zh', dial: 'full' });
+});
+
+test('(zh) 别 inside a benign word (识别) does not suppress a real activation', () => {
+  // 别 rides inside 识别/级别/特别; the negate cue anchors on 别+action-verb, so a
+  // legit activation carrying 识别 still fires instead of degrading to a no-op.
+  assert.deepEqual(parseNaturalActivation('像斯克鲁奇一样识别这段代码'), { action: 'set', lang: 'zh', dial: 'full' });
+});
+
 // ---- Layer 2: hook integration (black-box) ----
 
 const tmpDirs = [];
@@ -229,6 +269,21 @@ test('(hi) NL off through the hook clears state and injects a countermand', () =
   const cfg = freshConfig();
   runHook(cfg, 'स्क्रूज की तरह जवाब दो'); // hi/full active
   const { state, ctx } = runHook(cfg, 'स्क्रूज बंद करो');
+  assert.equal(state, null);
+  assert.match(ctx, /SCROOGE OFF/);
+});
+
+test('(zh) NL activation through the hook persists zh state + injects the full rule', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, '像斯克鲁奇一样回答');
+  assert.deepEqual(state, { lang: 'zh', dial: 'full', flags: [] });
+  assert.match(ctx, /SCROOGE MODE ACTIVE — zh\/full/);
+});
+
+test('(zh) NL off through the hook clears state and injects a countermand', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '像斯克鲁奇一样回答'); // zh/full active
+  const { state, ctx } = runHook(cfg, '关闭斯克鲁奇');
   assert.equal(state, null);
   assert.match(ctx, /SCROOGE OFF/);
 });

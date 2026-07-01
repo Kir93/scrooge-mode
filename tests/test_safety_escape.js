@@ -28,10 +28,11 @@ const ESCAPE_TOKENS = {
   ko: [/보안/, /되돌릴 수 없/],
   ja: [/セキュリティ/, /取り消せない/],
   hi: [/सुरक्षा/, /अपरिवर्तनीय/],
+  zh: [/安全/, /不可逆/],
 };
 
 // Layer 1 — rule files carry the escape contract for every lang × dial.
-for (const lang of ['ko', 'en', 'ja', 'hi']) {
+for (const lang of ['ko', 'en', 'ja', 'hi', 'zh']) {
   for (const dial of ['lite', 'full']) {
     test(`rule ${lang}/${dial} carries the Auto-Clarity escape section`, () => {
       const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');
@@ -46,8 +47,8 @@ for (const lang of ['ko', 'en', 'ja', 'hi']) {
 // Layer 1b — flag fragments carry the safety register too: every injected
 // surface must keep security / irreversible actions in normal prose (invariant
 // that holds across output, fragments, and any future surface).
-const FRAGMENT_SAFETY = { en: /security/i, ko: /보안/, ja: /セキュリティ/, hi: /सुरक्षा/ };
-for (const lang of ['ko', 'en', 'ja', 'hi']) {
+const FRAGMENT_SAFETY = { en: /security/i, ko: /보안/, ja: /セキュリティ/, hi: /सुरक्षा/, zh: /安全/ };
+for (const lang of ['ko', 'en', 'ja', 'hi', 'zh']) {
   for (const flag of ['lean']) {
     test(`fragment ${lang}/${flag} carries the safety register`, () => {
       const body = fs.readFileSync(
@@ -105,4 +106,10 @@ test('hi/full activation injects the Auto-Clarity escape clause (G7)', () => {
   const ctx = injectionFor('/scrooge hi full', { lang: 'hi', dial: 'full', flags: [] });
   assert.match(ctx, /Auto-Clarity/);
   for (const token of ESCAPE_TOKENS.hi) assert.match(ctx, token);
+});
+
+test('zh/full activation injects the Auto-Clarity escape clause (G7)', () => {
+  const ctx = injectionFor('/scrooge zh full', { lang: 'zh', dial: 'full', flags: [] });
+  assert.match(ctx, /Auto-Clarity/);
+  for (const token of ESCAPE_TOKENS.zh) assert.match(ctx, token);
 });

@@ -1,0 +1,28 @@
+# Scrooge benchmark — ZH prompts (dev / tuning corpus)
+# One prompt per non-comment line. Categories grouped (debug/explain/review/plan).
+# Information equivalence: each prompt has one expected technical answer regardless of register.
+# Simplified Chinese (简体). Held-out report corpus lives in prompts/zh-report.txt.
+
+# --- debug ---
+React 组件每次点击都连带子组件一起重新 render 的原因和解决办法,解释一下。
+Express 中间件里 `req.user` 偶尔变成 `undefined`,常见原因有哪些?
+TypeScript 报 `Cannot find name 'process'` 错误的原因和解决办法是什么?
+PostgreSQL 查询只在生产环境变慢,列举 3 个常见原因。
+useEffect 的 cleanup 函数不执行的情况,解释一下。
+
+# --- explain ---
+JavaScript 的 closure 导致内存泄漏的场景,解释一下。
+React Server Components 和 Client Components 的区别,只讲要点。
+TCP 和 UDP 的核心区别,以及各自适合的用途。
+database index 提升 read 性能的原理,以及为什么拖慢 write。
+
+# --- review ---
+指出下面函数的问题并给出改进: ```js\nfunction sum(arr) { let s = 0; for (let i = 0; i <= arr.length; i++) s += arr[i]; return s; }\n```
+async 函数里用 `for...of` 串行 await 代替 `await Promise.all` 的性能影响,解释一下。
+React 里 `useEffect(() => { fetchData() }, [])` 中不做 cleanup 就 setState 的风险。
+
+# --- plan ---
+Node.js 写的单体 monolith 服务要做服务拆分时,最先该看的 3 个测量指标。
+PostgreSQL 给 100GB 表加新列并做到 0 停机的步骤,分步说明。
+Next.js 13 Pages Router 项目逐步迁移到 App Router 的顺序。
+基于 WebSocket 的实时通知系统设计时的 backpressure 策略。

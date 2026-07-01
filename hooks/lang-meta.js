@@ -120,6 +120,33 @@ export const LANG_META = {
       strong: /स्क्रूज\s*(?:की\s*तरह|जैसे)/,
     },
   },
+  zh: {
+    reminder: {
+      head: 'SCROOGE 已激活',
+      modeClose: '。 ',
+      lite: '礼貌得体、filler·空客套·hedging 删除,完整句。',
+      full: '名词短语结尾·平语,义明时删冗余结构助词·量词,礼貌层·filler 删除。',
+      suffix: ' code block·error·技术词原形。安全/不可逆操作用 normal prose。',
+      flag: { prefix: ' flag: ', sep: '·', suffix: ' 已激活。' },
+    },
+    countermand: 'SCROOGE OFF — 压缩模式解除。本回合起回到日常 register(常规文体)。',
+    flagHint: { lean: 'lean(最小代码)' },
+    nlCue: {
+      name: /斯克鲁奇/,
+      // Chinese has no inter-word spaces, so JS `\b` is inert — the trigger anchors on
+      // explicit cue strings around the name (一样 / 那样 / 模式 / 来答…). Latin "scrooge"
+      // input is already caught by the en cue; the zh row owns the 斯克鲁奇 transliteration.
+      activate: /斯克鲁奇\s*(?:一样|那样|模式|风格|来\s*(?:答|回答|说|讲))/,
+      // Order-flexible: Chinese puts the off verb after the name (斯克鲁奇关闭) OR before
+      // it (关闭斯克鲁奇), unlike the KO/JA name-then-cue order — so both orders match.
+      off: /斯克鲁奇\s*(?:模式\s*)?(?:关闭|关掉|停止|停用|禁用|退出|off)|(?:关闭|关掉|停止|停用|禁用|退出)\s*斯克鲁奇/i,
+      // 别+verb / 不要 are the imperative "don't"; bare 别 is avoided — it rides inside
+      // benign words (识别/级别/特别), the same bare-"no" trap the en/hi rows dodge.
+      negate: /不要|别\s*(?:像|用|开|启|激活|启用|回答|答|说|讲|关|停|切换)/,
+      meta: /解释|说明|逻辑|bug|调试|怎么|如何|什么|为什么|为何|意思|含义|原理|运作|工作原理/i,
+      strong: /斯克鲁奇\s*(?:一样|那样|风格|来\s*(?:答|回答|说|讲))/,
+    },
+  },
 };
 
 // Language lookup. Returns the row, or null for an unknown language (callers below

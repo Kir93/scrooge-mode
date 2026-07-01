@@ -27,15 +27,18 @@ import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge
 // N=11 held-out 0.693; measured cwd-isolated so the normal baseline answers in
 // Japanese, not host-CLAUDE.md Korean). hi/full ~66% (claude-opus-4-8, held-out
 // N=11 per-prompt median 0.666, scrooge<normal 11/11; held-out only — no separate
-// tuning corpus). Only `full` is measured; `lite` has no benchmark yet, so it is
-// omitted and lite sessions still show "estimate pending" rather than a fabricated
-// number. Register-only isolation means real sessions may differ — hence the
-// "(est)" label on every derived figure.
+// tuning corpus). zh/full ~63% (claude-opus-4-8, held-out N=11 per-prompt median
+// 0.629, ratio-of-medians 0.668, scrooge<normal 11/11; zh-native register — not a
+// KO port — held-out only). Only `full` is measured; `lite` has no benchmark yet,
+// so it is omitted and lite sessions still show "estimate pending" rather than a
+// fabricated number. Register-only isolation means real sessions may differ —
+// hence the "(est)" label on every derived figure.
 const SAVINGS_RATIO = {
   ko: { full: 0.67 },
   en: { full: 0.65 },
   ja: { full: 0.63 },
   hi: { full: 0.66 },
+  zh: { full: 0.63 },
 };
 
 const SEP = '──────────────────────────────';

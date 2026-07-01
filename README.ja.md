@@ -9,14 +9,14 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> · <a href="README.ko.md">한국어</a> · 日本語
+  <a href="README.md">English</a> · <a href="README.ko.md">한국어</a> · 日本語 · <a href="README.zh.md">简体中文</a>
 </p>
 
 ---
 
 > このページは best-effort の日本語ランディングです。完全な仕様・ベンチマーク・methodology は canonical な[英語 README](README.md)を参照してください。
 
-AI コーディングエージェント向けの出力圧縮 skill。同じ答えを、より少ないトークンで返す — 圧縮するのは**出力のみ**で、reasoning・thinking・正確性には触れない。KO-first の quadrilingual(KO/EN/JA/HI)設計。日本語 register は英語規則の翻訳ではなく、韓国語の圧縮メカニズム（敬語除去・助詞ドロップ・体言止め）を日本語へ写像したもの。CJK のトークン非効率が圧縮の自然なターゲットになる。
+AI コーディングエージェント向けの出力圧縮 skill。同じ答えを、より少ないトークンで返す — 圧縮するのは**出力のみ**で、reasoning・thinking・正確性には触れない。KO-first の pentalingual(KO/EN/JA/HI/ZH)設計。日本語 register は英語規則の翻訳ではなく、韓国語の圧縮メカニズム（敬語除去・助詞ドロップ・体言止め）を日本語へ写像したもの。CJK のトークン非効率が圧縮の自然なターゲットになる。中国語（简体）は 5 番目の register として追加 — ただし JA/HI と違い、中国語は孤立語で除去すべき敬語・助詞がないため zh-native な設計（丁寧語 `请`/`您` の除去、冗長な構造助詞 `的`/`了`/`着`・量詞の保守的ドロップ）。詳細は[中国語ランディング](README.zh.md)。
 
 ## インストール
 
