@@ -134,10 +134,10 @@ test('deriveSessionKey prefers session_id, falls back to the transcript stem', (
 });
 
 test('getStatePath stays inside the config dir for any key', () => {
-  assert.match(getStatePath('sessA'), /\.scrooge-active-sessA$/);
-  assert.match(getStatePath(), /\.scrooge-active$/); // sessionless → global fallback
+  assert.match(getStatePath('sessA'), /[\\/]\.scrooge[\\/]sessions[\\/]sessA$/);
+  assert.match(getStatePath(), /[\\/]\.scrooge[\\/]global$/); // sessionless → global fallback
   const escaped = getStatePath(sanitizeSessionKey('../../escape'));
-  assert.match(escaped, /\.scrooge-active-escape$/);
+  assert.match(escaped, /[\\/]\.scrooge[\\/]sessions[\\/]escape$/);
   assert.equal(escaped.includes('..'), false);
 });
 

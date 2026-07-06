@@ -16,7 +16,13 @@
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { readState, writeSuffix, getStatePath, deriveSessionKey } from './scrooge-config.js';
+import {
+  readState,
+  writeSuffix,
+  getStatePath,
+  deriveSessionKey,
+  migrateLegacyState,
+} from './scrooge-config.js';
 import { readSession } from '../lib/session-log.js';
 import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
@@ -242,6 +248,8 @@ function main() {
   }
   const claudeDir =
     process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+  // After the Codex env resolution above, so legacy files fold into the right dir.
+  migrateLegacyState();
   const sess = readSession({
     agent,
     claudeDir,

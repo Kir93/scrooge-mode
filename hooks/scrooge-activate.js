@@ -38,6 +38,7 @@ import {
   deriveSessionKey,
   readSuffix,
   writeSuffix,
+  migrateLegacyState,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
 import { buildReminder, buildCountermand } from './lang-meta.js';
@@ -203,6 +204,9 @@ function emit(additionalContext) {
 
 function handlePayload(data) {
   try {
+    // Fold any legacy root-level state into `.scrooge/` before the reads below.
+    // This is the one entrypoint Codex also wires, so migration must run here.
+    migrateLegacyState();
     const prompt = data.prompt || '';
     // Session-scoped state: each Claude Code session keeps its own state file so
     // a `/scrooge off` in one session never clears another's. Sessionless hosts

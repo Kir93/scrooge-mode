@@ -14,9 +14,9 @@
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
 # Derive the session key once, up front, from the stdin payload Claude Code
-# provides. State is session-scoped (`.scrooge-active-<sid>`) so a different or
+# provides. State is session-scoped (`.scrooge/sessions/<sid>`) so a different or
 # fresh session never renders another's badge; sessionless hosts fall back to the
-# global `.scrooge-active`. SID is sanitized to the SAME charset as the JS
+# global `.scrooge/global`. SID is sanitized to the SAME charset as the JS
 # sanitizeSessionKey ([A-Za-z0-9_-], ≤64) so both sides resolve the same file.
 SID=""
 if [ ! -t 0 ]; then
@@ -25,10 +25,18 @@ if [ ! -t 0 ]; then
   SID=$(printf '%s' "$SID" | tr -cd 'A-Za-z0-9_-' | cut -c1-64)
 fi
 
+# State lives under .scrooge/ (sessions/<sid> per-session, global otherwise).
+# Legacy root-level fallback covers the skew window where this script was
+# refreshed by the installer but the hooks that migrate state have not run yet.
 if [ -n "$SID" ]; then
-  STATE="$CONFIG_DIR/.scrooge-active-$SID"
+  STATE="$CONFIG_DIR/.scrooge/sessions/$SID"
+  LEGACY_STATE="$CONFIG_DIR/.scrooge-active-$SID"
 else
-  STATE="$CONFIG_DIR/.scrooge-active"
+  STATE="$CONFIG_DIR/.scrooge/global"
+  LEGACY_STATE="$CONFIG_DIR/.scrooge-active"
+fi
+if [ ! -f "$STATE" ] && [ -f "$LEGACY_STATE" ]; then
+  STATE="$LEGACY_STATE"
 fi
 
 [ -L "$STATE" ] && exit 0
@@ -58,7 +66,10 @@ printf '\033[38;5;172m[SCROOGE:%s/%s]\033[0m' "$LANG_V" "$DIAL_V"
 # file avoids shelling out to node per keystroke. Same symlink/control-byte
 # hardening as the state file.
 if [ "${SCROOGE_STATUSLINE_SAVINGS:-1}" != "0" ]; then
-  SUFFIX_FILE="$CONFIG_DIR/.scrooge-statusline-suffix"
+  SUFFIX_FILE="$CONFIG_DIR/.scrooge/suffix"
+  if [ ! -f "$SUFFIX_FILE" ] && [ -f "$CONFIG_DIR/.scrooge-statusline-suffix" ]; then
+    SUFFIX_FILE="$CONFIG_DIR/.scrooge-statusline-suffix"
+  fi
   if [ -n "$SID" ] && [ -f "$SUFFIX_FILE" ] && [ ! -L "$SUFFIX_FILE" ]; then
     CONTENT=$(head -c 256 "$SUFFIX_FILE" 2>/dev/null | tr -d '\000-\037\177')
     FILE_SID="${CONTENT%%:*}"

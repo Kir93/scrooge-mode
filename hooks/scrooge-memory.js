@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { verifyPreservation, compressionDelta } from '../lib/memory-compress.js';
 import { recordInputDelta } from '../lib/ledger.js';
+import { migrateLegacyState } from './scrooge-config.js';
 
 const SOURCE = 'memory-compress';
 // Cap memory-file reads the same way the rest of lib/ caps its I/O, and reject
@@ -95,6 +96,7 @@ function main(argv) {
     process.stderr.write('record requires --session <key>\n');
     return 2;
   }
+  migrateLegacyState(); // ledger may still sit at its legacy root path
   const recorded = recordInputDelta({ sessionKey, source: SOURCE, baseline, saved });
   process.stdout.write(JSON.stringify({ ok: true, baseline, saved, recorded }) + '\n');
   return recorded ? 0 : 1;

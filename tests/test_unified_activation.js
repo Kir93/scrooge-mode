@@ -55,7 +55,7 @@ test('deriveSessionKey is canonical: session_id and the transcript stem agree', 
 test('off clears this session’s statusline suffix (no stale number after off)', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge ko full'); // activate (sessionKey 'uni')
-  const suffixPath = path.join(cfg, '.scrooge-statusline-suffix');
+  const suffixPath = path.join(cfg, '.scrooge', 'suffix');
   fs.writeFileSync(suffixPath, 'uni:KO·full ~21%'); // statusline wrote a number for this session
   runHook(cfg, '/scrooge off');
   assert.equal(fs.readFileSync(suffixPath, 'utf8'), '', 'suffix not cleared on off');
@@ -63,7 +63,8 @@ test('off clears this session’s statusline suffix (no stale number after off)'
 
 test('off does NOT clear a peer session’s statusline suffix (non-interference)', () => {
   const cfg = freshConfig();
-  const suffixPath = path.join(cfg, '.scrooge-statusline-suffix');
+  const suffixPath = path.join(cfg, '.scrooge', 'suffix');
+  fs.mkdirSync(path.join(cfg, '.scrooge'), { recursive: true });
   fs.writeFileSync(suffixPath, 'peer:KO·full ~21%'); // a different session owns the suffix
   runHook(cfg, '/scrooge off', 'uni'); // off in session 'uni'
   assert.equal(fs.readFileSync(suffixPath, 'utf8'), 'peer:KO·full ~21%', 'peer suffix was yanked');

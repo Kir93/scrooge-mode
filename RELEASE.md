@@ -74,6 +74,12 @@ This publishes the git-based install paths. Both commands below now resolve.
 > `~/.codex/scrooge/`, so a published fix does not auto-update an already-installed
 > Codex hook. When a release touches those paths, call out "existing Codex users:
 > reinstall to upgrade" in the release notes.
+>
+> Statusline note: the installer copies `hooks/scrooge-statusline.sh` into
+> `<config>/hooks/`, and plugin updates do NOT refresh that copy. When a release
+> changes state-file locations the installed script reads, call out "statusline
+> users: re-run the installer" (the script keeps a legacy-path fallback, so only
+> an outdated copy paired with migrated state is affected).
 
 ## 4. Verify resolution
 

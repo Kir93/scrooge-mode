@@ -525,8 +525,8 @@ ISOLATION_LOCK_DIR = Path("/tmp/scrooge-bench-isolation.lock.d")
 @contextlib.contextmanager
 def host_isolation(enabled: bool, isolate_settings: bool = False):
     """Neutralize host register hooks for the benchmark by moving their *state
-    files* aside (`~/.claude/.scrooge-active`, any `.scrooge-active-*`, and
-    `~/.claude/.caveman-active`).
+    files* aside (`~/.claude/.scrooge/{global,default,sessions/*}`, the legacy
+    root-level `.scrooge-active*` dotfiles, and `~/.claude/.caveman-active`).
 
     Why state files, not settings.json: a register plugin's hook (scrooge's
     UserPromptSubmit/SessionStart, caveman's) injects its directive into EVERY
@@ -583,10 +583,19 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
     # .scrooge-default is the global activation default: a fresh session's
     # SessionStart seeds from it, so it must move aside too or it re-activates the
     # register inside the benchmark child and contaminates the run.
-    state_files = [claude / ".scrooge-active", claude / ".scrooge-default", claude / ".caveman-active"]
+    # Both state generations: the current ~/.claude/.scrooge/ subdir layout and
+    # the legacy root-level dotfiles (a host running an older scrooge still
+    # writes there; the hooks fold legacy → subdir, so cover both).
+    scrooge_dir = claude / ".scrooge"
+    state_files = [
+        scrooge_dir / "global", scrooge_dir / "default",
+        claude / ".scrooge-active", claude / ".scrooge-default",
+        claude / ".caveman-active",
+    ]
+    state_files += sorted(scrooge_dir.glob("sessions/*"))
     state_files += sorted(claude.glob(".scrooge-active-*"))
     for sf in state_files:
-        safe = re.sub(r"[^A-Za-z0-9.]+", "-", sf.name)
+        safe = re.sub(r"[^A-Za-z0-9.]+", "-", str(sf.relative_to(claude)))
         targets.append((sf, Path(f"/tmp/scrooge-bench-{safe}.{pid}.bak")))
     moved = []
     try:
@@ -668,10 +677,14 @@ def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
     findings: list[tuple[str, str]] = []
 
     scrooge_states = [
+        home / ".claude" / ".scrooge" / "global",
+        home / ".claude" / ".scrooge" / "default",
         home / ".claude" / ".scrooge-active",
         home / ".claude" / ".scrooge-default",
+        cwd / ".scrooge" / "global",
         cwd / ".scrooge-active",
     ]
+    scrooge_states += sorted((home / ".claude" / ".scrooge").glob("sessions/*"))
     scrooge_states += sorted((home / ".claude").glob(".scrooge-active-*"))
     for st in scrooge_states:
         if st.exists():

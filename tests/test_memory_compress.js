@@ -149,7 +149,7 @@ test('CLI record books the saving under bySource[memory-compress]', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.equal(JSON.parse(r.stdout).recorded, true);
 
-  const ledger = aggregateLedger({}, path.join(cfg, '.scrooge-history.jsonl'));
+  const ledger = aggregateLedger({}, path.join(cfg, '.scrooge', 'history.jsonl'));
   assert.equal(ledger.bySource['memory-compress'], 75);
   assert.equal(ledger.inputSavedTokens, 75);
 });
@@ -161,7 +161,7 @@ test('CLI record refuses (exit 1, books nothing) on a corrupting compress', () =
   const r = runCli(['record', o, c, '--session', 'sess-bad'], { CLAUDE_CONFIG_DIR: cfg });
   assert.equal(r.status, 1);
   assert.equal(JSON.parse(r.stdout).recorded, false);
-  const histExists = fs.existsSync(path.join(cfg, '.scrooge-history.jsonl'));
+  const histExists = fs.existsSync(path.join(cfg, '.scrooge', 'history.jsonl'));
   assert.equal(histExists, false, 'ledger was written despite corruption');
 });
 

@@ -38,9 +38,9 @@ after(() => {
 // The hooks read CLAUDE_CONFIG_DIR from their own subprocess env, so the test
 // reads the resulting files by explicit path under configDir (not via the
 // config helpers, which would resolve against the test process's env).
-const defaultFile = (cfg) => path.join(cfg, '.scrooge-default');
-const stateFile = (cfg, sid) => path.join(cfg, `.scrooge-active-${sid}`);
-const versionFile = (cfg) => path.join(cfg, '.scrooge-version');
+const defaultFile = (cfg) => path.join(cfg, '.scrooge', 'default');
+const stateFile = (cfg, sid) => path.join(cfg, '.scrooge', 'sessions', sid);
+const versionFile = (cfg) => path.join(cfg, '.scrooge', 'version');
 
 // The installed version the SessionStart hook reads from package.json — kept
 // dynamic so a version bump never breaks these assertions.

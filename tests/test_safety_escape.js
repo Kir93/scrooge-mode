@@ -79,7 +79,7 @@ function injectionFor(prompt, expected) {
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   // The full rule body should reach the model, and state should be active.
-  assert.deepEqual(readState(path.join(cfg, '.scrooge-active')), expected);
+  assert.deepEqual(readState(path.join(cfg, '.scrooge', 'global')), expected);
   const j = JSON.parse(r.stdout);
   return j.hookSpecificOutput ? j.hookSpecificOutput.additionalContext : null;
 }

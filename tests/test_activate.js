@@ -77,7 +77,7 @@ function runHook(configDir, prompt, extra = {}, envOverrides = {}) {
     result = JSON.parse(r.stdout);
     ctx = result.hookSpecificOutput ? result.hookSpecificOutput.additionalContext : null;
   }
-  return { state: readState(path.join(configDir, '.scrooge-active')), ctx, result };
+  return { state: readState(path.join(configDir, '.scrooge', 'global')), ctx, result };
 }
 
 test('bare /scrooge on a fresh session activates en/full (G5 default)', () => {
@@ -274,7 +274,9 @@ test('an inactive session injects nothing on a plain prompt', () => {
 // Session-scope (Task 5): each session keeps its own state file, so an off in
 // one session never clears another's. session_id rides in the hook payload.
 function statePathFor(configDir, sid) {
-  return path.join(configDir, sid ? `.scrooge-active-${sid}` : '.scrooge-active');
+  return sid
+    ? path.join(configDir, '.scrooge', 'sessions', sid)
+    : path.join(configDir, '.scrooge', 'global');
 }
 
 test('session-scope: /scrooge off in one session does not clear another', () => {

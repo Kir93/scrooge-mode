@@ -241,7 +241,7 @@ function runHook(configDir, prompt) {
     const j = JSON.parse(r.stdout);
     ctx = j.hookSpecificOutput ? j.hookSpecificOutput.additionalContext : null;
   }
-  return { state: readState(path.join(configDir, '.scrooge-active')), ctx };
+  return { state: readState(path.join(configDir, '.scrooge', 'global')), ctx };
 }
 
 test('NL activation through the hook persists state + injects the full rule', () => {

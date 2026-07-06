@@ -49,7 +49,7 @@ function runHook(configDir, prompt, env = {}) {
   const ctx = r.stdout.trim()
     ? JSON.parse(r.stdout).hookSpecificOutput?.additionalContext ?? null
     : null;
-  return { state: readState(path.join(configDir, '.scrooge-active-flags')), ctx };
+  return { state: readState(path.join(configDir, '.scrooge', 'sessions', 'flags')), ctx };
 }
 
 // ── Unit: parseFlagList / defaultFlags ──────────────────────────────────────
@@ -91,7 +91,7 @@ test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON', () => {
     env,
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
-  assert.deepEqual(readState(path.join(cfg, '.scrooge-active-flags')), {
+  assert.deepEqual(readState(path.join(cfg, '.scrooge', 'sessions', 'flags')), {
     lang: 'ko',
     dial: 'full',
     flags: ['lean'],

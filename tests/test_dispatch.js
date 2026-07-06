@@ -146,8 +146,9 @@ test('reminder + countermand dispatch from the new table row (no branch edit)', 
 test('statusline extracts the new lang code with no edit (generic charset)', () => {
   const cfg = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-disp-'));
   tmpDirs.push(cfg);
+  fs.mkdirSync(path.join(cfg, '.scrooge'), { recursive: true });
   fs.writeFileSync(
-    path.join(cfg, '.scrooge-active'),
+    path.join(cfg, '.scrooge', 'global'),
     JSON.stringify({ lang: 'xx', dial: 'full', flags: [] })
   );
   const r = spawnSync('bash', [STATUSLINE], {
@@ -157,6 +158,23 @@ test('statusline extracts the new lang code with no edit (generic charset)', () 
   });
   assert.equal(r.status, 0, `statusline exited ${r.status}: ${r.stderr}`);
   assert.match(r.stdout, /\[SCROOGE:xx\/full\]/);
+});
+
+test('statusline falls back to the legacy root-level state file (skew window)', () => {
+  const cfg = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-disp-'));
+  tmpDirs.push(cfg);
+  // No .scrooge/ subdir at all — only the pre-migration legacy dotfile exists.
+  fs.writeFileSync(
+    path.join(cfg, '.scrooge-active'),
+    JSON.stringify({ lang: 'ko', dial: 'lite', flags: [] })
+  );
+  const r = spawnSync('bash', [STATUSLINE], {
+    input: '{}',
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, SCROOGE_STATUSLINE_SAVINGS: '0' },
+  });
+  assert.equal(r.status, 0, `statusline exited ${r.status}: ${r.stderr}`);
+  assert.match(r.stdout, /\[SCROOGE:ko\/lite\]/);
 });
 
 test('stats label dispatches generically; an un-benchmarked lang degrades gracefully', () => {

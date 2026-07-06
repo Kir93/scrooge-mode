@@ -20,11 +20,14 @@ import {
   readState,
   writeState,
   getStatePath,
+  getSessionsDir,
   getDefaultPath,
   deriveSessionKey,
   readVersionMarker,
   writeVersionMarker,
   defaultFlags,
+  sameState,
+  migrateLegacyState,
 } from './scrooge-config.js';
 import {
   resolveRepoRoot,
@@ -32,26 +35,56 @@ import {
   buildFullInjection,
 } from './scrooge-activate.js';
 
-// Per-session state files older than this are swept on session start. The mtime
-// reflects the last activation/change; a generous window avoids reaping a
-// long-lived but rarely-retoggled session while still bounding accumulation.
+// Sweep thresholds. SessionEnd cleanup is opportunistic — it does not fire when
+// a session is abandoned (VS Code "new conversation", documented unreliability:
+// anthropics/claude-code#6428/#17885/#14760) — so this startup sweep is the
+// primary bound, the same clean-exit + sweep-backstop split Claude Code itself
+// uses for shell-snapshots. Three rules, mirroring the SessionEnd semantics:
+//   - a marker equal to the saved default is pure redundancy (resume re-seeds
+//     from the default), so it only needs to outlive an active session: 1 day;
+//   - a marker that DIFFERS from the default carries a session override worth
+//     keeping for resume: 14 days;
+//   - a hard count cap evicts oldest-first as a burst backstop (claude-hud's
+//     TTL + cap pattern).
 const STALE_MS = 14 * 24 * 60 * 60 * 1000;
+const REDUNDANT_MS = 24 * 60 * 60 * 1000;
+const MAX_MARKERS = 300;
 
-// Best-effort removal of stale `.scrooge-active-<key>` files. Never touches the
-// bare global `.scrooge-active` (the sessionless fallback) and never follows a
-// symlink — lstat + unlink removes the link itself, not its target.
+// Best-effort removal of stale per-session markers in `.scrooge/sessions/`.
+// Never touches the global sessionless fallback (it lives outside sessions/)
+// and never follows a symlink — lstat + unlink removes the link itself.
 function sweepStaleState(now) {
   try {
-    const dir = path.dirname(getStatePath());
+    const dir = getSessionsDir();
+    const def = readState(getDefaultPath());
+    const kept = [];
     for (const name of fs.readdirSync(dir)) {
-      if (!name.startsWith('.scrooge-active-')) continue;
       const p = path.join(dir, name);
       try {
         const st = fs.lstatSync(p);
-        if (st.isSymbolicLink()) continue;
-        if (now - st.mtimeMs > STALE_MS) fs.unlinkSync(p);
+        if (st.isSymbolicLink() || !st.isFile()) continue;
+        const age = now - st.mtimeMs;
+        if (age > STALE_MS) {
+          fs.unlinkSync(p);
+          continue;
+        }
+        if (age > REDUNDANT_MS && sameState(readState(p), def)) {
+          fs.unlinkSync(p);
+          continue;
+        }
+        kept.push({ p, mtimeMs: st.mtimeMs });
       } catch (_) {
         /* best-effort per file */
+      }
+    }
+    if (kept.length > MAX_MARKERS) {
+      kept.sort((a, b) => a.mtimeMs - b.mtimeMs);
+      for (const { p } of kept.slice(0, kept.length - MAX_MARKERS)) {
+        try {
+          fs.unlinkSync(p);
+        } catch (_) {
+          /* best-effort per file */
+        }
       }
     }
   } catch (_) {
@@ -154,6 +187,7 @@ function emit(additionalContext) {
 
 function handlePayload(data) {
   try {
+    migrateLegacyState(); // before any state read — the default may still be at its legacy path
     sweepStaleState(Date.now());
     const root = resolveRepoRoot();
 

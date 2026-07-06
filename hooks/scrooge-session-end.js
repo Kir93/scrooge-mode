@@ -15,17 +15,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { deriveSessionKey, getStatePath, getDefaultPath, readState } from './scrooge-config.js';
-
-function sameState(a, b) {
-  if (!a || !b) return false;
-  if (a.lang !== b.lang || a.dial !== b.dial) return false;
-  const fa = [...(a.flags || [])].sort();
-  const fb = [...(b.flags || [])].sort();
-  return fa.length === fb.length && fa.every((f, i) => f === fb[i]);
-}
+import {
+  deriveSessionKey,
+  getStatePath,
+  getDefaultPath,
+  readState,
+  sameState,
+  migrateLegacyState,
+} from './scrooge-config.js';
 
 export function handlePayload(payload) {
+  migrateLegacyState(); // the ending session's marker may still sit at its legacy path
   const key = deriveSessionKey(payload);
   if (!key) return; // sessionless host — never touch the global fallback file
   const statePath = getStatePath(key);

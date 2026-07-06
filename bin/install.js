@@ -215,11 +215,21 @@ function repoSpec(opts) {
   return opts.tag ? `${REPO}#${opts.tag}` : REPO;
 }
 
-// Remove all Scrooge state/suffix files in a config dir, including the per-session
-// `.scrooge-active-<key>` files added with session-scope activation (Task 5) — a
-// fixed-name removal leaves those orphaned. unlinkSync removes a symlink itself
-// rather than following it.
+// Remove Scrooge state/suffix files in a config dir, across both generations:
+// the current `.scrooge/` subdir (sessions/ markers, global, suffix) and any
+// legacy root-level `.scrooge-active*` / suffix dotfiles from an older install.
+// Deliberately KEEPS `.scrooge/{default,version,history.jsonl}` — user
+// preference and lifetime stats survive a reinstall, matching the legacy
+// behavior of leaving `.scrooge-default` and friends in place. unlinkSync/rmSync
+// remove a symlink itself rather than following it.
 function removeStateFiles(dir, opts) {
+  const sub = path.join(dir, '.scrooge');
+  const subTargets = [path.join(sub, 'sessions'), path.join(sub, 'global'), path.join(sub, 'suffix')];
+  for (const p of subTargets) {
+    if (!safeExists(p)) continue;
+    if (opts.dryRun) { process.stdout.write(`  would remove ${p}\n`); continue; }
+    try { fs.rmSync(p, { recursive: true, force: true }); process.stdout.write(`  removed ${p}\n`); } catch (_) {}
+  }
   let names;
   try { names = fs.readdirSync(dir); } catch (_) { return; }
   for (const name of names) {

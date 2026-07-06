@@ -62,8 +62,8 @@ over another.
   visible in the data. This mirrors `lib/session-log.js` `parseClaudeSession`.
 - **Register pre-flight verification** — before measuring, the harness scans for
   active register-hook channels — **scrooge AND caveman** — and records the result
-  (`verify_register_clean`). An *active* channel (a present `.scrooge-active*`
-  state file, a `.caveman-active` flag, or `settings.json` actively wiring caveman)
+  (`verify_register_clean`). An *active* channel (a present scrooge state file — `.scrooge/` or a legacy
+  `.scrooge-active*` dotfile — a `.caveman-active` flag, or `settings.json` actively wiring caveman)
   is **blocking**: the run aborts unless `--allow-contaminated`. Installed-but-inert
   files (caveman plugin marketplace, skill symlink) are **advisory** (printed,
   non-blocking). Each row records `isolation_verified`. Scrooge matters here
@@ -348,8 +348,8 @@ answers onto an English run).
 To stop this, the harness moves the hooks' **activation-state files** aside for the
 benchmark duration (default; disable with `--no-isolate-host`):
 
-- `~/.claude/.scrooge-active` and any `~/.claude/.scrooge-active-*` — scrooge's
-  state. `hooks/scrooge-activate.js` injects nothing when the state file is absent
+- `~/.claude/.scrooge/{global,default,sessions/*}` plus the legacy root-level
+  `~/.claude/.scrooge-active*` dotfiles — scrooge's state. `hooks/scrooge-activate.js` injects nothing when the state file is absent
   (`if (state) emit(...)`), so removing it silences the hook.
 - `~/.claude/.caveman-active` — caveman's state flag.
 
@@ -361,7 +361,7 @@ stale backup (parent re-created the file mid-run) is discarded rather than
 clobbered.
 
 After moving them, the harness runs a **pre-flight register check**
-(`verify_register_clean`) inside the isolation window: a remaining `.scrooge-active*`
+(`verify_register_clean`) inside the isolation window: a remaining scrooge state file
 / `.caveman-active` / actively-wired caveman in `settings.json` is **blocking** (the
 run aborts unless `--allow-contaminated`); an installed-but-inert caveman plugin or
 skill symlink is **advisory**. The per-session contamination check (above) is the

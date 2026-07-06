@@ -102,6 +102,22 @@ function claudeDir() {
   return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
+// All Scrooge state lives under one dot-named subdirectory instead of loose
+// dotfiles at the config-dir root (the ecosystem convention: Claude Code core,
+// claude-hud, and the codex plugin all namespace per-session state into dirs).
+// The name MUST stay dotted: under Codex the config dir is ~/.codex, where the
+// undotted ~/.codex/scrooge/ is the installer's payload root — a name collision
+// would put live state inside the directory the uninstaller rm -rf's.
+export function scroogeDir() {
+  return path.join(claudeDir(), '.scrooge');
+}
+
+// Per-session markers get their own subdirectory so the sweep can readdir it
+// without filtering, and uninstall can remove it wholesale.
+export function getSessionsDir() {
+  return path.join(scroogeDir(), 'sessions');
+}
+
 // Filesystem-safe session key. The key lands in a predictable filename
 // (`.scrooge-active-<key>`), so an attacker-controlled session_id must never
 // carry path separators or `..`. Strip everything outside [A-Za-z0-9_-] (drops
@@ -127,9 +143,8 @@ export function deriveSessionKey(payload = {}) {
   return null;
 }
 
-// State file path. With a sessionKey it is per-session
-// (`.scrooge-active-<key>`, glob-cleanable as `.scrooge-active-*`); without one
-// it is the legacy global `.scrooge-active`, kept as the sessionless fallback.
+// State file path. With a sessionKey it is per-session (`.scrooge/sessions/<key>`);
+// without one it is the global `.scrooge/global`, kept as the sessionless fallback.
 //
 // Migration of the pre-session-scope global state is "ignore" (per spec
 // "무시/정리"): a session that was active before the upgrade resolves to its
@@ -140,29 +155,35 @@ export function deriveSessionKey(payload = {}) {
 // isolation bug this task fixes. Per-session files are bounded by the SessionStart
 // TTL sweep; the shared global is left for sessionless hosts.
 export function getStatePath(sessionKey) {
-  const base = sessionKey ? `.scrooge-active-${sessionKey}` : '.scrooge-active';
-  return path.join(claudeDir(), base);
+  return sessionKey ? path.join(getSessionsDir(), sessionKey) : path.join(scroogeDir(), 'global');
 }
 
-// Global activation default (`~/.claude/.scrooge-default`). Same {lang,dial,flags}
+// Global activation default (`.scrooge/default`). Same {lang,dial,flags}
 // schema as the session state, read/written through the same hardened path.
 // Activation writes it, a fresh session with no per-session state seeds from it
 // (auto-activate everywhere), and `/scrooge off` clears it (global off). NOT
 // session-scoped — one shared default seeds every new session, while live sessions
 // keep their own per-session state (so an off in one session never clobbers a peer).
 export function getDefaultPath() {
-  return path.join(claudeDir(), '.scrooge-default');
+  return path.join(scroogeDir(), 'default');
 }
 
-// Last-seen installed version marker (`~/.claude/.scrooge-version`). The
+// Last-seen installed version marker (`.scrooge/version`). The
 // SessionStart hook compares it against the package version to detect an upgrade
 // and remind a now-inactive prior user how to re-activate.
 export function getVersionPath() {
-  return path.join(claudeDir(), '.scrooge-version');
+  return path.join(scroogeDir(), 'version');
 }
 
 export function getSuffixPath() {
-  return path.join(claudeDir(), '.scrooge-statusline-suffix');
+  return path.join(scroogeDir(), 'suffix');
+}
+
+// Lifetime savings ledger (`.scrooge/history.jsonl`) — defined here so every
+// surface (stats hook, memory CLI, lib/ledger.js) resolves one location through
+// one module, same as the state paths.
+export function getHistoryPath() {
+  return path.join(scroogeDir(), 'history.jsonl');
 }
 
 export function isValidState(state) {
@@ -178,6 +199,17 @@ export function isValidState(state) {
   return (
     Array.isArray(state.flags) && state.flags.every((f) => VALID_FLAGS.includes(f))
   );
+}
+
+// Structural equality of two {lang, dial, flags} states (flags order-insensitive).
+// Shared by the SessionEnd marker cleanup and the SessionStart sweep: both delete
+// a per-session marker only when it carries nothing beyond the saved default.
+export function sameState(a, b) {
+  if (!a || !b) return false;
+  if (a.lang !== b.lang || a.dial !== b.dial) return false;
+  const fa = [...(a.flags || [])].sort();
+  const fb = [...(b.flags || [])].sort();
+  return fa.length === fb.length && fa.every((f, i) => f === fb[i]);
 }
 
 // Resolve a directory to its real path, refusing attacker-planted symlinks.
@@ -383,4 +415,83 @@ export function readVersionMarker(versionPath = getVersionPath()) {
 export function writeVersionMarker(version, versionPath = getVersionPath()) {
   const v = sanitizeVersion(version);
   return v === null ? false : safeWriteFile(versionPath, v);
+}
+
+// One-time move of the legacy loose `.scrooge-*` dotfiles from the config-dir
+// root into the `.scrooge/` subdirectory. Every hook entrypoint calls this
+// before touching state — including Codex, whose config.toml wires ONLY the
+// UserPromptSubmit hook, so the logic must not live in a SessionStart-only path.
+//
+// Idempotent and self-re-arming: the readdir filter finds nothing after the move
+// (cheap early exit), and a straggler written later by a stale writer (e.g. an
+// old Codex payload that updates only on reinstall) is folded in on the next run.
+// Race-safe across concurrent hooks: rename is atomic, the new path wins when
+// both exist, and every step is best-effort per file.
+//
+// Preserved by rename: default (user preference — losing it silently deactivates
+// every session), version (upgrade-notice gate), history.jsonl (lifetime stats),
+// per-session markers (may carry overrides worth keeping for resume), global.
+// Deleted: `.scrooge.tmp.*` crash litter and any symlink squatting on a legacy
+// path (unlink removes the link itself, never the target).
+const LEGACY_RENAMES = new Map([
+  ['.scrooge-active', () => getStatePath()],
+  ['.scrooge-default', getDefaultPath],
+  ['.scrooge-version', getVersionPath],
+  ['.scrooge-statusline-suffix', getSuffixPath],
+  ['.scrooge-history.jsonl', getHistoryPath],
+]);
+
+export function migrateLegacyState() {
+  try {
+    const root = claudeDir();
+    let names;
+    try {
+      names = fs.readdirSync(root);
+    } catch (_) {
+      return;
+    }
+    const legacy = names.filter(
+      (n) => n.startsWith('.scrooge-') || n.startsWith('.scrooge.tmp.')
+    );
+    if (!legacy.length) return;
+    for (const name of legacy) {
+      const from = path.join(root, name);
+      try {
+        const st = fs.lstatSync(from);
+        if (st.isSymbolicLink()) {
+          fs.unlinkSync(from);
+          continue;
+        }
+        if (!st.isFile()) continue;
+        if (name.startsWith('.scrooge.tmp.')) {
+          fs.unlinkSync(from);
+          continue;
+        }
+        let to;
+        if (LEGACY_RENAMES.has(name)) {
+          to = LEGACY_RENAMES.get(name)();
+        } else if (name.startsWith('.scrooge-active-')) {
+          const key = sanitizeSessionKey(name.slice('.scrooge-active-'.length));
+          if (!key) {
+            fs.unlinkSync(from); // unsanitizable marker name — planted, drop it
+            continue;
+          }
+          to = getStatePath(key);
+        } else {
+          continue; // unknown .scrooge-* file — not ours to move or delete
+        }
+        // resolveSafeDir mkdirs the destination tree and refuses symlinked dirs.
+        if (!resolveSafeDir(path.dirname(to))) continue;
+        if (fs.existsSync(to)) {
+          fs.unlinkSync(from); // new path already written — new wins
+        } else {
+          fs.renameSync(from, to);
+        }
+      } catch (_) {
+        /* best-effort per file */
+      }
+    }
+  } catch (_) {
+    /* hygiene must never break a hook */
+  }
 }
