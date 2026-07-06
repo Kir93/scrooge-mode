@@ -46,7 +46,7 @@ const PROVIDERS = [
 
 // ── Args ──────────────────────────────────────────────────────────────────
 function parseArgs(argv) {
-  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, only: [], configDir: null, tag: null };
+  const o = { dryRun: false, force: false, uninstall: false, listOnly: false, help: false, version: false, only: [], configDir: null, tag: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     switch (a) {
@@ -55,6 +55,7 @@ function parseArgs(argv) {
       case '-u': case '--uninstall': o.uninstall = true; break;
       case '--list': o.listOnly = true; break;
       case '-h': case '--help': o.help = true; break;
+      case '-v': case '--version': o.version = true; break;
       case '--': break;
       case '--only': {
         const v = argv[++i];
@@ -224,7 +225,7 @@ function repoSpec(opts) {
 // remove a symlink itself rather than following it.
 function removeStateFiles(dir, opts) {
   const sub = path.join(dir, '.scrooge');
-  const subTargets = [path.join(sub, 'sessions'), path.join(sub, 'global'), path.join(sub, 'suffix')];
+  const subTargets = [path.join(sub, 'sessions'), path.join(sub, 'global'), path.join(sub, 'suffix'), path.join(sub, 'update')];
   for (const p of subTargets) {
     if (!safeExists(p)) continue;
     if (opts.dryRun) { process.stdout.write(`  would remove ${p}\n`); continue; }
@@ -694,6 +695,7 @@ export function pruneClaudeSkillLeak(opts, results) {
 function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) { printHelp(); return; }
+  if (opts.version) { printVersion(); return; }
 
   const major = parseInt(process.versions.node.split('.')[0], 10);
   if (major < 18) die(`scrooge: Node ${process.versions.node} too old. Need Node ≥18. https://nodejs.org`);
@@ -755,8 +757,66 @@ Flags:
   --dry-run        print actions without running them
   --force          reinstall even if already present
   --config-dir P   override Claude config dir (default $CLAUDE_CONFIG_DIR or ~/.claude)
+  --version,-v     print the installed version and check for a newer release
   --help,-h        this help
 `);
+}
+
+// Installed version from the packaged manifest (one dir up from bin/install.js).
+function installedVersion() {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(fs.readFileSync(path.join(here, '..', 'package.json'), 'utf8'));
+    return typeof pkg.version === 'string' ? pkg.version : null;
+  } catch (_) { return null; }
+}
+
+// Numeric release-tuple compare — "0.18.0" > "0.9.0" (a string compare wouldn't).
+// Pre-release suffixes are ignored; non-parseable input is not "newer".
+function isNewerVersion(a, b) {
+  const parse = (v) => String(v).split('-')[0].split('.').map((n) => parseInt(n, 10));
+  const pa = parse(a), pb = parse(b);
+  for (let i = 0; i < 3; i++) {
+    if (!Number.isFinite(pa[i]) || !Number.isFinite(pb[i])) return false;
+    if (pa[i] !== pb[i]) return pa[i] > pb[i];
+  }
+  return false;
+}
+
+// Latest published release tag from GitHub ("v0.19.0" → "0.19.0"), or null on any
+// failure (offline, rate-limited, pre-Node-18 without fetch). Best-effort only.
+async function fetchLatestRelease() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+      headers: { 'User-Agent': 'scrooge-mode', Accept: 'application/vnd.github+json' },
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.tag_name === 'string' ? data.tag_name.replace(/^v/, '') : null;
+  } catch (_) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// On-demand version report: current + whether a newer release exists. The one
+// blocking network call is fine here — the user asked for it explicitly (unlike
+// the hooks, which must never fetch inline).
+async function printVersion() {
+  const cur = installedVersion();
+  process.stdout.write(`scrooge ${cur ? 'v' + cur : '(unknown version)'}\n`);
+  const latest = await fetchLatestRelease();
+  if (!latest || !cur) return;
+  if (isNewerVersion(latest, cur)) {
+    process.stdout.write(`\nA newer release is available: v${latest}\n`);
+    process.stdout.write(`Update: npx -y github:${REPO}\n`);
+  } else {
+    process.stdout.write(`You're on the latest release.\n`);
+  }
 }
 
 // Run only when invoked as a CLI, not when imported by tests. Compare REAL

@@ -79,3 +79,16 @@ if [ "${SCROOGE_STATUSLINE_SAVINGS:-1}" != "0" ]; then
     fi
   fi
 fi
+
+# Update-available indicator: the background probe writes .scrooge/update with
+# {"behind":true,"latest":"X"} when a newer release exists. Show a compact ↑vX
+# after the badge — ambient, zero-token. Honors SCROOGE_NO_UPDATE_CHECK; same
+# symlink/control-byte hardening as the state and suffix reads.
+UPDATE_FILE="$CONFIG_DIR/.scrooge/update"
+if [ "${SCROOGE_NO_UPDATE_CHECK:-0}" != "1" ] && [ -f "$UPDATE_FILE" ] && [ ! -L "$UPDATE_FILE" ]; then
+  UPD=$(head -c 256 "$UPDATE_FILE" 2>/dev/null | tr -d '\000-\037\177')
+  if printf '%s' "$UPD" | grep -qE '"behind"[[:space:]]*:[[:space:]]*true'; then
+    LATEST=$(printf '%s' "$UPD" | grep -oE '"latest"[[:space:]]*:[[:space:]]*"[0-9A-Za-z.+-]+"' | grep -oE '[0-9A-Za-z.+-]+"$' | tr -d '"' | head -1)
+    [ -n "$LATEST" ] && printf ' \033[38;5;172m↑v%s\033[0m' "$LATEST"
+  fi
+fi

@@ -94,6 +94,8 @@ const MAX_STATE_BYTES = 256;
 const MAX_SUFFIX_BYTES = 128;
 // Version marker is a short semver-ish string ("0.9.0", "1.0.0-rc.1").
 const MAX_VERSION_BYTES = 32;
+// Update-check cache is a small JSON object ({latest, checkedAt, behind, notifiedVersion}).
+const MAX_UPDATE_BYTES = 256;
 
 const O_NOFOLLOW =
   typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
@@ -177,6 +179,13 @@ export function getVersionPath() {
 
 export function getSuffixPath() {
   return path.join(scroogeDir(), 'suffix');
+}
+
+// Update-check cache (`.scrooge/update`). A detached background probe writes the
+// latest published version here; the SessionStart hook and the statusline read it
+// (never fetch inline), so a slow/offline registry never stalls a session.
+export function getUpdateCachePath() {
+  return path.join(scroogeDir(), 'update');
 }
 
 // Lifetime savings ledger (`.scrooge/history.jsonl`) — defined here so every
@@ -415,6 +424,89 @@ export function readVersionMarker(versionPath = getVersionPath()) {
 export function writeVersionMarker(version, versionPath = getVersionPath()) {
   const v = sanitizeVersion(version);
   return v === null ? false : safeWriteFile(versionPath, v);
+}
+
+// Installed version from the package manifest at `root`. Shared by the
+// SessionStart hook (upgrade detection) and the update-check probe (behind
+// calculation), so both read the version through one path. Returns null on any
+// read/parse failure — callers treat an unknown version as "cannot compare".
+export function readInstalledVersion(root) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    return typeof pkg.version === 'string' ? pkg.version : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Numeric semver comparison: is `a` strictly newer than `b`? Compares the
+// release tuple (major.minor.patch) numerically — a lexicographic string compare
+// would wrongly rank "0.9.0" above "0.18.0". A pre-release suffix ("-rc.1") is
+// dropped before comparison, so this intentionally treats "1.0.0-rc.1" == "1.0.0"
+// (we only ship final releases; a pre-release never triggers an update notice).
+// Non-parseable input yields false (no false-positive notice).
+export function semverGt(a, b) {
+  const parse = (v) =>
+    String(v)
+      .split('-')[0]
+      .split('.')
+      .map((n) => parseInt(n, 10));
+  const pa = parse(a);
+  const pb = parse(b);
+  for (let i = 0; i < 3; i++) {
+    const x = pa[i];
+    const y = pb[i];
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+// Update checking is disabled in CI (noise in automation) and by an explicit
+// opt-out env var. Read at every gate — the network refresh and the notice both
+// honor it, so setting it silences the feature entirely.
+export function isUpdateCheckDisabled() {
+  return process.env.SCROOGE_NO_UPDATE_CHECK === '1' || !!process.env.CI;
+}
+
+// Read the update-check cache. Returns a validated {latest, checkedAt, behind,
+// notifiedVersion} object, or null on any anomaly (missing, tampered, oversized).
+// `latest`/`notifiedVersion` pass through sanitizeVersion so a tampered cache can
+// never carry an injection payload into the notice or the statusline.
+export function readUpdateCache(cachePath = getUpdateCachePath()) {
+  const raw = safeReadFile(cachePath, MAX_UPDATE_BYTES);
+  if (raw === null) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object') return null;
+  const latest = parsed.latest == null ? null : sanitizeVersion(parsed.latest);
+  const checkedAt = Number(parsed.checkedAt);
+  if (!Number.isFinite(checkedAt)) return null;
+  return {
+    latest,
+    checkedAt,
+    behind: parsed.behind === true,
+    notifiedVersion: parsed.notifiedVersion == null ? null : sanitizeVersion(parsed.notifiedVersion),
+  };
+}
+
+export function writeUpdateCache(entry, cachePath = getUpdateCachePath()) {
+  const latest = entry.latest == null ? null : sanitizeVersion(entry.latest);
+  const checkedAt = Number(entry.checkedAt);
+  if (!Number.isFinite(checkedAt)) return false;
+  return safeWriteFile(
+    cachePath,
+    JSON.stringify({
+      latest,
+      checkedAt,
+      behind: entry.behind === true,
+      notifiedVersion: entry.notifiedVersion == null ? null : sanitizeVersion(entry.notifiedVersion),
+    })
+  );
 }
 
 // One-time move of the legacy loose `.scrooge-*` dotfiles from the config-dir

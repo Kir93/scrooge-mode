@@ -183,6 +183,15 @@ claude plugin update scrooge@scrooge
 
 latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
 
+### 업데이트 알림
+
+Scrooge는 하루 최대 1회 GitHub에서 새 릴리스를 확인해, 뒤처졌을 때 알림. 확인은 detached 백그라운드 프로세스에서 수행 — 세션을 막거나 느리게 하지 않으며, hook 자체는 네트워크를 건드리지 않고 캐시된 결과만 읽음.
+
+- **표시 위치:** 다음 세션 시작 시 한 줄 힌트(사용자 언어로 전달) + Claude statusline의 `↑vX` 마커. 업데이트는 위와 동일한 재실행.
+- **수동 확인:** `scrooge --version`(또는 `npx -y github:Kir93/scrooge-mode -- --version`)으로 설치 버전 + 새 릴리스 유무 출력.
+- **끄기:** `SCROOGE_NO_UPDATE_CHECK=1` 설정 시 백그라운드 확인·알림 전체 비활성. CI에서는 자동 skip.
+- **프라이버시:** 미인증 GitHub API 1회 호출(`releases/latest`) — 요청 자체 외 아무 데이터도 전송 안 함.
+
 ## Verify
 
 설치 후 대상 agent에서 Scrooge 활성화:

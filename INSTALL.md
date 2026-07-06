@@ -183,6 +183,15 @@ For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, regist
 
 To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
 
+### Update notifications
+
+Scrooge checks GitHub for a newer release at most once a day, then surfaces it when you're behind. The check runs in a detached background process — it never blocks or slows a session, and the hooks themselves never touch the network (they only read a cached result).
+
+- **Where it shows:** a one-line hint at the next session start (relayed in your language), plus an `↑vX` marker on the Claude statusline. Updating is the same re-run as above.
+- **Check on demand:** `scrooge --version` (or `npx -y github:Kir93/scrooge-mode -- --version`) prints the installed version and whether a newer release exists.
+- **Opt out:** set `SCROOGE_NO_UPDATE_CHECK=1` to disable the background check and the notice entirely. It is also skipped automatically in CI.
+- **Privacy:** the probe is a single unauthenticated GitHub API call (`releases/latest`) — it sends nothing beyond the request itself.
+
 ## Verify
 
 After install, start the target agent and activate Scrooge:

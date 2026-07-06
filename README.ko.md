@@ -102,7 +102,7 @@ npx -y github:Kir93/scrooge-mode
 npx -y github:Kir93/scrooge-mode#v0.6.1
 ```
 
-**업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용.
+**업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨 — Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용. Scrooge는 하루 1회 GitHub를 확인해 새 릴리스가 있으면 세션 시작 시 한 줄로 알림(Claude는 `↑vX` statusline 마커도) — 끄기는 `SCROOGE_NO_UPDATE_CHECK=1`, 수동 확인은 `scrooge --version`.
 
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 

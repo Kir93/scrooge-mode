@@ -12,6 +12,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   VALID_FLAGS,
@@ -25,6 +26,11 @@ import {
   deriveSessionKey,
   readVersionMarker,
   writeVersionMarker,
+  readInstalledVersion,
+  semverGt,
+  readUpdateCache,
+  writeUpdateCache,
+  isUpdateCheckDisabled,
   defaultFlags,
   sameState,
   migrateLegacyState,
@@ -89,16 +95,6 @@ function sweepStaleState(now) {
     }
   } catch (_) {
     /* best-effort */
-  }
-}
-
-// Current installed version from the package manifest at the repo root.
-function readInstalledVersion(root) {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-    return typeof pkg.version === 'string' ? pkg.version : null;
-  } catch (e) {
-    return null;
   }
 }
 
@@ -174,6 +170,53 @@ function buildAppliedNotice({ from, to }, added) {
   );
 }
 
+// Detached update probe runs at most once a day; the hook only reads its cache.
+const UPDATE_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+// One-line "update available" notice. The update path is uniform across every
+// install channel (npm/curl, Claude plugin, skills), so a single instruction —
+// re-run the installer — covers all of them.
+function buildUpdateNotice(latest) {
+  return (
+    `A newer Scrooge is available (v${latest}). Tell the user, in their language, to ` +
+    'update by re-running the installer: `npx -y github:Kir93/scrooge-mode` ' +
+    '(it updates every detected host in place). Mention it once, briefly.'
+  );
+}
+
+// Decide whether to surface an update notice this session. Gated to: real users
+// (an active session, or prior-activation evidence — never a never-activated
+// install), session startup only (not resume/clear/compact), opt-out/CI honored,
+// and once per published version (notifiedVersion). Re-verifies the cached latest
+// against the currently-installed version so a just-completed update goes silent.
+function maybeUpdateNotice(root, source, eligible) {
+  if (source !== 'startup' || !eligible || isUpdateCheckDisabled()) return null;
+  const cache = readUpdateCache();
+  if (!cache || !cache.behind || !cache.latest) return null;
+  const installed = readInstalledVersion(root);
+  if (!installed || !semverGt(cache.latest, installed)) return null;
+  if (cache.notifiedVersion === cache.latest) return null;
+  writeUpdateCache({ ...cache, notifiedVersion: cache.latest });
+  return buildUpdateNotice(cache.latest);
+}
+
+// Refresh the update cache in a detached background process, throttled to once a
+// day. Never blocks: the child is unref'd with stdio ignored, so session start
+// returns immediately regardless of network speed. A missing cache refreshes now
+// and the notice appears next session — an acceptable one-session delay that
+// keeps the hook itself network-free.
+function scheduleUpdateRefresh(source) {
+  try {
+    if (source !== 'startup' || isUpdateCheckDisabled()) return;
+    const cache = readUpdateCache();
+    if (cache && Date.now() - cache.checkedAt < UPDATE_REFRESH_MS) return;
+    const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'scrooge-update-check.js');
+    spawn(process.execPath, [script], { detached: true, stdio: 'ignore' }).unref();
+  } catch (e) {
+    /* best-effort — a failed refresh must never break session start */
+  }
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -191,6 +234,7 @@ function handlePayload(data) {
     sweepStaleState(Date.now());
     const root = resolveRepoRoot();
 
+    const source = typeof data.source === 'string' ? data.source : '';
     const sessionKey = deriveSessionKey(data);
     // Per-session state, or — for a brand-new session — seed from the global
     // default so activation persists across sessions ("type once → on everywhere").
@@ -199,11 +243,21 @@ function handlePayload(data) {
     // Detect a version upgrade once (records the marker regardless of state).
     const upgraded = consumeVersionChange(root);
 
+    // Update-available notice for real users; refresh the cache in the background
+    // (both no-ops off session startup / under opt-out / in CI).
+    const eligible = !!state || hasActivationArtifact();
+    const updateNotice = maybeUpdateNotice(root, source, eligible);
+    scheduleUpdateRefresh(source);
+
     if (!state) {
       // Inactive session: announce re-activation only on a version upgrade AND
       // when prior-activation evidence exists that the upgrade may have stranded —
-      // never to a user who installed Scrooge but never activated it.
-      if (upgraded && hasActivationArtifact()) emit(buildUpgradeNotice(upgraded));
+      // never to a user who installed Scrooge but never activated it. An update
+      // notice piggybacks here for a stranded prior user.
+      const parts = [];
+      if (upgraded && hasActivationArtifact()) parts.push(buildUpgradeNotice(upgraded));
+      if (updateNotice) parts.push(updateNotice);
+      if (parts.length) emit(parts.join('\n\n'));
       return;
     }
 
@@ -218,6 +272,7 @@ function handlePayload(data) {
     if (!body) return;
     let ctx = buildFullInjection(state.lang, state.dial, body, state.flags);
     if (applied) ctx += '\n\n' + buildAppliedNotice(upgraded, applied);
+    if (updateNotice) ctx += '\n\n' + updateNotice;
     emit(ctx);
   } catch (e) {
     // Silent fail — never break session start.
