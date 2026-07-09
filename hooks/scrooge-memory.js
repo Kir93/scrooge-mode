@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// scrooge-memory.js — CLI for the memory-compress surface (#4).
+// scrooge-memory.js — CLI for the memory-compress surface.
 //
 // The model produces the compressed prose (KO-aware, per the scrooge-memory
 // skill); this CLI is the deterministic guard around an irreversible overwrite:
 //
 //   verify <original> <candidate>            dry run — print {ok,missing,baseline,saved}
 //   record <original> <candidate> --session  verify, then record the input-savings
-//                                            delta on the one honest bill (#1)
+//                                            delta on the one honest bill
 //
 // `verify` has no side effects and exits 1 when a protected span was dropped, so a
 // caller can gate the overwrite on a clean exit. `record` refuses (exits 1) unless
@@ -97,7 +97,7 @@ function main(argv) {
     return 2;
   }
   migrateLegacyState(); // ledger may still sit at its legacy root path
-  const recorded = recordInputDelta({ sessionKey, source: SOURCE, baseline, saved });
+  const recorded = recordInputDelta({ sessionKey, source: SOURCE, saved });
   process.stdout.write(JSON.stringify({ ok: true, baseline, saved, recorded }) + '\n');
   return recorded ? 0 : 1;
 }

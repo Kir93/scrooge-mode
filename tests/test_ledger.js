@@ -99,7 +99,7 @@ test('sinceToEpoch parses d/h windows and rejects junk', () => {
 
 test('recordInputDelta is idempotent on (sessionKey, source) — re-recording overwrites', () => {
   const h = tmpHistory();
-  const d = { sessionKey: 's1', source: 'memory-compress', baseline: 1000, saved: 460, ts: 1000 };
+  const d = { sessionKey: 's1', source: 'memory-compress', saved: 460, ts: 1000 };
   recordInputDelta(d, h);
   recordInputDelta(d, h);
   recordInputDelta(d, h);
@@ -111,8 +111,8 @@ test('recordInputDelta is idempotent on (sessionKey, source) — re-recording ov
 
 test('recordInputDelta sums distinct sources per session into one input total', () => {
   const h = tmpHistory();
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', baseline: 1000, saved: 400, ts: 1000 }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'other-surface', baseline: 500, saved: 200, ts: 1000 }, h);
+  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 400, ts: 1000 }, h);
+  recordInputDelta({ sessionKey: 's1', source: 'other-surface', saved: 200, ts: 1000 }, h);
   const agg = aggregateLedger({}, h);
   assert.equal(agg.sessions, 1);
   assert.equal(agg.inputSavedTokens, 600);
@@ -124,7 +124,7 @@ test('upsertSession and recordInputDelta coexist — neither clobbers the other'
   const h = tmpHistory();
   // Output side records first, then an input surface, then stats re-upserts.
   upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 1000, savedTokens: 600, ts: 1000 }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', baseline: 800, saved: 300, ts: 1000 }, h);
+  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 300, ts: 1000 }, h);
   upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 1200, savedTokens: 700, ts: 2000 }, h);
   const agg = aggregateLedger({}, h);
   assert.equal(agg.sessions, 1);
@@ -143,7 +143,7 @@ test('aggregateLedger nets output + input − self overhead; reasoning is report
     inputOverheadTokens: 300,
     ts: 1000,
   }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', baseline: 1000, saved: 400, ts: 1000 }, h);
+  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 400, ts: 1000 }, h);
   const agg = aggregateLedger({}, h);
   assert.equal(agg.savedTokens, 1000);
   assert.equal(agg.inputSavedTokens, 400);
@@ -159,7 +159,7 @@ test('recordInputDelta refuses invalid input', () => {
   assert.equal(recordInputDelta(null, h), false);
   assert.equal(recordInputDelta({ sessionKey: '', source: 'x', saved: 1 }, h), false);
   assert.equal(recordInputDelta({ sessionKey: 's1', source: '', saved: 1 }, h), false);
-  assert.equal(recordInputDelta({ sessionKey: 's1', source: 'x', baseline: -1, saved: 1 }, h), false);
+  assert.equal(recordInputDelta({ sessionKey: 's1', source: 'x', saved: -1 }, h), false);
   assert.equal(aggregateLedger({}, h).sessions, 0); // nothing written
 });
 
