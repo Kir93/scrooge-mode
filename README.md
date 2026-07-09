@@ -33,10 +33,10 @@
 
 KO-first pentalingual (KO/EN/JA/HI/ZH) output-compression skill for AI coding agents — full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-**`~70% KO · ~73% EN · ~70% JA · ~66% HI · ~63% ZH · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI/ZH held-out N=11.
+**`~70% KO · ~66% EN · ~70% JA · ~66% HI · ~63% ZH · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN/JA N=16–25 paired median, HI/ZH held-out N=11.
 
 <p align="center">
-  <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 972 vs normal 3186 (−70%); English scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
+  <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 1042 vs normal 3413 (−70%); English scrooge:en/full 816 vs normal 2397 (−66%)" width="760"></a>
 </p>
 
 ## Demo
@@ -141,13 +141,13 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 
 ## Benchmarks
 
-Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/).
+Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction commands live in [`benchmarks/`](./benchmarks/). Every headline number below is backed by scrubbed raw rows under [`benchmarks/published/`](./benchmarks/published/) — recompute the medians yourself; per-file model, register version, and measurement date are in the [provenance manifest](./benchmarks/published/README.md).
 
 **Measurement conditions** (read before quoting the numbers):
 
-- **N=20–21 prompts × 1 run, paired median.** Single-run results; no variance estimate (a few prompts dropped on subscription timeouts). Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly").
+- **N=21–25 prompts × 1 run, paired median.** Single-run results; no variance estimate (a few prompts dropped on subscription timeouts). Re-running can shift any single cell by a few percent. Treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly").
 - **Register-clean run.** Both register hooks (scrooge's own activation hook and caveman) are neutralized for the benchmark so they cannot inject into the `normal`/`terse` baseline; token counts are deduped by `message.id` (prose-only basis). An earlier run whose baseline was silently compressed by the host's scrooge hook was discarded.
-- **Held-out cross-check.** Re-measured on a held-out prompt set (`prompts/{ko,en,ja,hi}-report.txt`, disjoint from the tuning corpus): KO ~71%, EN ~68%, JA ~65%, HI ~63% (N=11 each; HI per-prompt median 67%). Consistent with the headline above, so the savings are not an artifact of overfitting to the tuning prompts. HI is held-out-only — no separate tuning corpus measured yet.
+- **Held-out cross-check.** Re-measured on a held-out prompt set (`prompts/{ko,en,ja,hi}-report.txt`, disjoint from the tuning corpus): KO ~71%, EN ~68%, JA ~65%, HI ~63% (N=11 each; HI per-prompt median 67%). Consistent with the headline above, so the savings are not an artifact of overfitting to the tuning prompts. HI is held-out-only — no separate tuning corpus measured yet. Raw rows: [`benchmarks/published/`](./benchmarks/published/).
 - **Register-only isolation.** The harness runs each arm under `claude --print --system-prompt <rule>`, which _replaces_ Claude Code's default system prompt. This isolates the register effect cleanly, but real `/scrooge` sessions keep Claude Code's full system prompt alongside the injected register, so real savings versus a real verbose session may differ from the headline. See [`benchmarks/README.md`](./benchmarks/README.md) for the full caveat list.
 - **Real `output_tokens`, not tokenizer estimates.** Numbers come from the Claude Code session JSONL's `output_tokens` field — what the API actually billed.
 
@@ -155,25 +155,25 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 
 `normal` is the model default; `terse` is a control prompt ("answer concisely"); `scrooge:*` is the rule we ship. `caveman:full` is a comparison baseline, not a Scrooge mode.
 
-| Mode                  | Median output tokens (N=20) | Savings vs `normal` |
+| Mode                  | Median output tokens (N=21) | Savings vs `normal` |
 | --------------------- | --------------------------: | ------------------: |
-| `normal`              |                        3186 |          (baseline) |
-| `terse`               |                        2597 |                ~19% |
-| **`scrooge:ko/full`** |                     **972** |            **~70%** |
-| `caveman:full`        |                        1203 |                ~62% |
+| `normal`              |                        3413 |          (baseline) |
+| `terse`               |                        2242 |                ~34% |
+| **`scrooge:ko/full`** |                    **1042** |            **~70%** |
+| `caveman:full`        |                        1005 |                ~71% |
 
-`scrooge:ko/full` cuts Korean output by **~70%** vs the verbose default and by **~19%** vs `caveman:full` (15/20 prompt wins). It also beats `terse`, so the gain is the register itself, not just generic brevity. Fidelity (held-out, judge N=3): **0.68 median claim-preservation, safety preserved 12/16** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
+`scrooge:ko/full` cuts Korean output by **~70%** vs the verbose default, and beats the `terse` control — so the gain is the register itself, not just generic brevity. `caveman:full` lands at a similar token count (**1005** vs **1042**), but it gets there by breaking grammar and dropping information, where scrooge keeps the answer intact — the axis is that fidelity gap, not raw tokens. Fidelity (held-out, judge N=3): **0.68 median claim-preservation, safety preserved 12/16** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-ko-clean-opus48.jsonl`](./benchmarks/published/results-ko-clean-opus48.jsonl) (v0.19.1).
 
 ### English
 
-| Mode                  | Median output tokens (N=21) | Savings vs `normal` |
+| Mode                  | Median output tokens (N=25) | Savings vs `normal` |
 | --------------------- | --------------------------: | ------------------: |
-| `normal`              |                        3578 |          (baseline) |
-| `terse`               |                        2509 |                ~30% |
-| **`scrooge:en/full`** |                     **969** |            **~73%** |
-| `caveman:full`        |                        1264 |                ~65% |
+| `normal`              |                        2397 |          (baseline) |
+| `terse`               |                        1803 |                ~25% |
+| **`scrooge:en/full`** |                     **816** |            **~66%** |
+| `caveman:full`        |                         703 |                ~71% |
 
-`scrooge:en/full` cuts English output by **~73%** vs the verbose default and by **~23%** vs `caveman:full` (17/21 prompt wins) — its strongest result. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 9/11** — higher claim retention than JA; the loss is breadth (secondary detail under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
+`scrooge:en/full` cuts English output by **~66%** vs the verbose default and beats the `terse` control. `caveman:full` is smaller in raw tokens (**703** vs **816**) because it compresses telegraphically, discarding information; scrooge trades those tokens to keep the answer intact — the fidelity gap is the point. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 9/11** — higher claim retention than JA; the loss is breadth (secondary detail under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-en-clean-opus48.jsonl`](./benchmarks/published/results-en-clean-opus48.jsonl) (v0.19.1).
 
 **Mini English sample (`en/full`)**
 
@@ -198,7 +198,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 | `terse`               |                        1551 |                ~47% |
 | **`scrooge:ja/full`** |                     **877** |            **~70%** |
 
-`scrooge:ja/full` cuts Japanese output by **~70%** vs the verbose default, and beats the `terse` "answer concisely" control by **+43%** (15/15 prompt wins) — so the gain is the register, not generic brevity. Held-out cross-check (`prompts/ja-report.txt`, N=11): **~65%**. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
+`scrooge:ja/full` cuts Japanese output by **~70%** vs the verbose default, and beats the `terse` "answer concisely" control by **+43%** (15/15 prompt wins) — so the gain is the register, not generic brevity. Held-out cross-check (`prompts/ja-report.txt`, N=11): **~65%**. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-ja-report.jsonl`](./benchmarks/published/results-ja-report.jsonl) · [`results-ja-fidelity.jsonl`](./benchmarks/published/results-ja-fidelity.jsonl).
 
 > **Measurement note**: the `normal` baseline is measured with host memory files (`~/.claude/CLAUDE.md`, project `CLAUDE.local.md`) isolated, so it answers in the prompt's language (Japanese) — otherwise a host "respond in Korean" instruction makes the baseline answer in Korean, whose different token efficiency inflates the savings.
 
@@ -211,7 +211,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 | `normal`              |                                 2436 |          (baseline) |
 | **`scrooge:hi/full`** |                              **897** |            **~63%** |
 
-`scrooge:hi/full` cuts Hindi output by a **66.6% per-prompt median** (ratio of medians ~63%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.76 median claim-preservation, safety preserved 10/11** — better claim retention than JA; the single safety-check miss is a heuristic false-positive on a rate-limiting prompt with no security/irreversible content (the compressed answer keeps its technical caveat), and the loss elsewhere is breadth, not wrong information. Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others.
+`scrooge:hi/full` cuts Hindi output by a **66.6% per-prompt median** (ratio of medians ~63%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.76 median claim-preservation, safety preserved 10/11** — better claim retention than JA; the single safety-check miss is a heuristic false-positive on a rate-limiting prompt with no security/irreversible content (the compressed answer keeps its technical caveat), and the loss elsewhere is breadth, not wrong information. Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others. Raw rows: [`results-hi-report.jsonl`](./benchmarks/published/results-hi-report.jsonl) · [`results-hi-fidelity.jsonl`](./benchmarks/published/results-hi-fidelity.jsonl).
 
 > **Measurement note**: same cwd-isolation as Japanese — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Hindi, not the host "respond in Korean" default, which would otherwise inflate the savings.
 
@@ -224,7 +224,7 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 | `normal` | 2703 | (baseline) |
 | **`scrooge:zh/full`** | **897** | **~67%** |
 
-`scrooge:zh/full` cuts Chinese output by a **62.9% per-prompt median** (ratio of medians ~67%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 11/11** — higher claim retention than JA and no safety miss; the loss is breadth (secondary detail dropped under heavier compression), not wrong information (0 fully-equivalent is the expected independent-generation signal, not corruption). Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others. Before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, same forEach-async diagnosis).
+`scrooge:zh/full` cuts Chinese output by a **62.9% per-prompt median** (ratio of medians ~67%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 11/11** — higher claim retention than JA and no safety miss; the loss is breadth (secondary detail dropped under heavier compression), not wrong information (0 fully-equivalent is the expected independent-generation signal, not corruption). Measured held-out only — no separate tuning corpus yet, so no `normal`/`terse`/`scrooge` tuning table like the others. Before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, same forEach-async diagnosis). Raw rows: [`results-zh-report.jsonl`](./benchmarks/published/results-zh-report.jsonl) · [`results-zh-fidelity.jsonl`](./benchmarks/published/results-zh-fidelity.jsonl).
 
 > **Measurement note**: same cwd-isolation as Japanese/Hindi — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Chinese, not the host "respond in Korean" default, which would otherwise inflate the savings.
 
@@ -279,7 +279,7 @@ These doc-generation numbers are **noisier than the conversational headline** �
 | Primary target             | Aggressive English compression             | Korean-native bilingual compression                          |
 | Languages                  | EN (+ wenyan classical Chinese)            | KO, EN; i18n via `registry.json`                             |
 | Korean register            | None                                       | Native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default        |
-| English result in this run | `1264` median tokens                       | Stronger compression (`969` median tokens), wins ~23% on the clean run |
+| English result in this run | `703` median tokens (telegraphic, lossy)   | `816` median tokens — a few more, but the answer is preserved (fidelity 0.72) |
 | Benchmarking here          | Comparison arm (`caveman:full`)            | Real `output_tokens` runner, paired reports                  |
 
 In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.

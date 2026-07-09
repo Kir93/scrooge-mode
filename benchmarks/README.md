@@ -125,6 +125,83 @@ python3 benchmarks/run.py \
   --output benchmarks/results-en.jsonl
 ```
 
+## Reproducing a published number
+
+The scrubbed rows behind every headline live in [`published/`](./published/) with
+a per-file provenance table (model, register version, measurement date, corpus,
+isolation). To regenerate a number yourself:
+
+### Pin the model and isolate the host
+
+Every published number used `--model claude-opus-4-8`. Isolation matters as much
+as the model pin:
+
+- Conversational KO/EN (2026-07-09) used `--cwd <empty-dir>` so no project
+  `CLAUDE.md` reaches any arm; EN additionally set `~/.claude/CLAUDE.md` aside so
+  its "respond in Korean" line could not pull the `normal`/`caveman` baselines
+  into Korean.
+- Without isolation the `normal` baseline inflates — it echoes host rule files
+  into the answer, which inflates savings. The pre-flight register check aborts on
+  an active scrooge/caveman channel (see [Host isolation](#host-isolation)).
+
+### Use the right statistic
+
+`report.py` computes **ratio-of-medians** savings by default (median each arm,
+then take the ratio). The paired median is a *different* statistic, and the
+per-prompt median is a third one `report.py` does not compute:
+
+| Published number | Statistic | How |
+| ---------------- | --------- | --- |
+| KO/EN conversational, KO/EN/JA held-out | paired median | `report.py --input <file> --baseline normal --paired` |
+| JA/HI/ZH table savings (~65 / ~63 / ~67%) | ratio-of-medians | `report.py --input <file> --baseline normal` |
+| HI/ZH per-prompt median (66.6% / 62.9%) | median-of-ratios | **not produced by `report.py`** — for each prompt compute `1 − scrooge/normal`, then take the median of those ratios |
+
+So HI has two honest readings of the same rows: **~63%** (ratio-of-medians,
+`report.py` default) and **66.6%** (per-prompt median-of-ratios, computed
+separately). Both appear in the README — different aggregations, not a
+discrepancy.
+
+### Fidelity numbers
+
+Fidelity rows carry `score`, the safety/equivalence flags (`safety_pass`,
+`equivalent`, `byte_exact_pass`), `judge_runs`, and per-pair token counts — the
+judged prose (baseline/candidate answers and the `missing_claims` text) is
+excluded. Median claim-preservation = median of `score`; safety ratio = count of
+`safety_pass:true` over N; judge N=3 (majority verdict per pair).
+
+### Expected variance
+
+Single run, N=11–25, no variance estimate — a few prompts drop on subscription
+timeouts. Re-running shifts any single cell by a few percentage points, so treat
+headline percentages as **one-significant-figure estimates** (`~70%`, not
+"69.5% exactly"). `normal` has the widest spread (its stdev is near its median).
+
+### Foreground only
+
+Background runs get killed at session boundaries in this harness, which silently
+truncates a run and biases the medians. Always run the benchmark **foreground**
+and pass `--resume` to pick up any prompts that timed out — never background it.
+
+### Reproduce the caveman comparison
+
+`caveman:full` is a comparison arm, not a Scrooge mode. On the pure baseline it
+reaches a slightly *smaller* raw-token median than scrooge — it compresses
+telegraphically, discarding information — so this bench does **not** claim scrooge
+wins on raw tokens. Run it yourself and see:
+
+```bash
+python3 benchmarks/run.py --prompts benchmarks/prompts/en.txt \
+  --arms normal,terse,scrooge:en/full,caveman:full \
+  --model claude-opus-4-8 --cwd /tmp/scrooge-empty --resume \
+  --output benchmarks/results-en.jsonl
+python3 benchmarks/report.py --input benchmarks/results-en.jsonl --baseline normal --paired
+```
+
+Then look at the fidelity gap ([`fidelity/`](./fidelity/)) — that is where the two
+diverge: a similar token ballpark, very different claim-preservation. We cite
+caveman as the origin of the token-miser idea and the strongest compression
+baseline, and copy none of its text.
+
 ## Document-generation corpus
 
 `prompts/{ko,en}-docgen.txt` is a separate held-out corpus for the **doc-compression**

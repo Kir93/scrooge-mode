@@ -33,10 +33,10 @@
 
 AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA/HI/ZH) 출력 압축 skill — [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
-**`~70% KO · ~73% EN · ~70% JA · ~66% HI · ~63% ZH · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`; KO/EN/JA N=16–21 paired median, HI/ZH held-out N=11.
+**`~70% KO · ~66% EN · ~70% JA · ~66% HI · ~63% ZH · 출력만 압축 · 존대 제거`** — `claude-opus-4-8`; KO/EN/JA N=16–25 paired median, HI/ZH held-out N=11.
 
 <p align="center">
-  <a href="#벤치마크"><img src="assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 972 vs normal 3186 (−70%); 영어 scrooge:en/full 969 vs normal 3578 (−73%)" width="760"></a>
+  <a href="#벤치마크"><img src="assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 1042 vs normal 3413 (−70%); 영어 scrooge:en/full 816 vs normal 2397 (−66%)" width="760"></a>
 </p>
 
 ## 데모
@@ -139,13 +139,13 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 ## 벤치마크
 
-**`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/).
+**`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](./benchmarks/). 아래 모든 headline 수치는 [`benchmarks/published/`](./benchmarks/published/)의 scrubbed raw rows로 뒷받침됨 — median을 직접 재계산 가능; 파일별 model·register 버전·측정일은 [provenance manifest](./benchmarks/published/README.md).
 
 **측정 조건** (숫자 인용 전 반드시 읽을 것):
 
-- **N=20–21 프롬프트 × 1회 실행, paired median.** 단일 실행 결과 · 분산 추정 없음(구독 timeout으로 몇 프롬프트 누락). 재실행 시 각 셀이 몇 퍼센트 흔들릴 수 있음. 헤드라인 퍼센트는 1 유효숫자 추정으로 취급(`~70%`이지 "69.5%"가 아님).
+- **N=21–25 프롬프트 × 1회 실행, paired median.** 단일 실행 결과 · 분산 추정 없음(구독 timeout으로 몇 프롬프트 누락). 재실행 시 각 셀이 몇 퍼센트 흔들릴 수 있음. 헤드라인 퍼센트는 1 유효숫자 추정으로 취급(`~70%`이지 "69.5%"가 아님).
 - **Register-clean run.** register hook 둘(scrooge 자체 활성화 hook·caveman)을 측정 동안 중립화해 `normal`/`terse` baseline에 주입 못 하게 함. 토큰은 `message.id` dedup(prose-only 기준). baseline이 호스트 scrooge hook에 몰래 압축된 이전 run은 폐기함.
-- **Held-out cross-check.** 튜닝 corpus와 겹치지 않는 held-out 프롬프트셋(`prompts/{ko,en,ja,hi}-report.txt`)으로 재측정: KO ~71%, EN ~68%, JA ~65%, HI ~63%(각 N=11; HI per-prompt median 67%). 위 headline과 일치 → savings가 튜닝셋 overfit 아티팩트 아님. HI는 held-out 전용 — 별도 튜닝 corpus 미측정.
+- **Held-out cross-check.** 튜닝 corpus와 겹치지 않는 held-out 프롬프트셋(`prompts/{ko,en,ja,hi}-report.txt`)으로 재측정: KO ~71%, EN ~68%, JA ~65%, HI ~63%(각 N=11; HI per-prompt median 67%). 위 headline과 일치 → savings가 튜닝셋 overfit 아티팩트 아님. HI는 held-out 전용 — 별도 튜닝 corpus 미측정. Raw rows: [`benchmarks/published/`](./benchmarks/published/).
 - **Register-only isolation.** 하네스는 `claude --print --system-prompt <rule>`로 각 arm 실행 — Claude Code 기본 system prompt를 **대체**함. register 효과를 깔끔히 분리하지만, 실제 `/scrooge` 세션은 Claude Code 전체 system prompt 위에 register가 얹히므로 verbose 세션 대비 실측 절감은 헤드라인과 다를 수 있음. 전체 caveat는 [`benchmarks/README.md`](./benchmarks/README.md).
 - **실측 `output_tokens` — tokenizer 추정 아님.** 숫자는 Claude Code 세션 JSONL의 `output_tokens` 필드 — API가 실제 청구한 값.
 
@@ -153,25 +153,25 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 
 `normal`은 모델 기본 답변, `terse`는 "간결하게 답해"만 적용한 control, `scrooge:*`는 우리가 출하하는 규칙. `caveman:full`은 비교 baseline이며 Scrooge 모드 아님.
 
-| Mode                  | 대표 output tokens (N=20) | normal 대비 절감 |
+| Mode                  | 대표 output tokens (N=21) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
-| `normal`              |                      3186 |       (baseline) |
-| `terse`               |                      2597 |             ~19% |
-| **`scrooge:ko/full`** |                   **972** |         **~70%** |
-| `caveman:full`        |                      1203 |             ~62% |
+| `normal`              |                      3413 |       (baseline) |
+| `terse`               |                      2242 |             ~34% |
+| **`scrooge:ko/full`** |                  **1042** |         **~70%** |
+| `caveman:full`        |                      1005 |             ~71% |
 
-`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~70%**, `caveman:full` 대비 **~19%** 줄임(20개 중 15개 우세). `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.68, safety 12/16 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose 보존.
+`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~70%** 줄이고, `terse`보다도 짧음 → 단순 brevity 아니라 register 효과. `caveman:full`은 비슷한 token 수(**1005** vs **1042**)에 도달하나 문법을 깨고 정보를 버려서 그럼 — scrooge는 답을 온전히 보존함. 축은 raw token이 아니라 그 fidelity 차이. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.68, safety 12/16 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose 보존. Raw rows: [`results-ko-clean-opus48.jsonl`](./benchmarks/published/results-ko-clean-opus48.jsonl) (v0.19.1).
 
 ### 영어
 
-| Mode                  | 대표 output tokens (N=21) | normal 대비 절감 |
+| Mode                  | 대표 output tokens (N=25) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
-| `normal`              |                      3578 |       (baseline) |
-| `terse`               |                      2509 |             ~30% |
-| **`scrooge:en/full`** |                   **969** |         **~73%** |
-| `caveman:full`        |                      1264 |             ~65% |
+| `normal`              |                      2397 |       (baseline) |
+| `terse`               |                      1803 |             ~25% |
+| **`scrooge:en/full`** |                   **816** |         **~66%** |
+| `caveman:full`        |                       703 |             ~71% |
 
-`scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 9/11 보존** — JA보다 claim 보존 높음; 손실은 breadth이지 오정보 아님; 핵심 기술 답·안전 prose 보존.
+`scrooge:en/full`은 영어 출력을 verbose default 대비 **~66%** 줄이고 `terse`보다 짧음. `caveman:full`은 raw token이 더 적음(**703** vs **816**) — telegraphic하게 압축하며 정보를 버리기 때문; scrooge는 그 token을 답 보존에 씀. fidelity 차이가 핵심. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 9/11 보존** — JA보다 claim 보존 높음; 손실은 breadth이지 오정보 아님; 핵심 기술 답·안전 prose 보존. Raw rows: [`results-en-clean-opus48.jsonl`](./benchmarks/published/results-en-clean-opus48.jsonl) (v0.19.1).
 
 ### 일본어
 
@@ -183,7 +183,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | `terse`               |                      1551 |             ~47% |
 | **`scrooge:ja/full`** |                   **877** |         **~70%** |
 
-`scrooge:ja/full`은 일본어 출력을 verbose default 대비 **~70%** 줄이고, `terse`("간결하게 답해") control도 **+43%**(15/15 우세) 능가 — 절감은 register 자체. held-out 교차검증(`prompts/ja-report.txt`, N=11): **~65%**. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.60, corruption 0, safety 11/11 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose는 보존.
+`scrooge:ja/full`은 일본어 출력을 verbose default 대비 **~70%** 줄이고, `terse`("간결하게 답해") control도 **+43%**(15/15 우세) 능가 — 절감은 register 자체. held-out 교차검증(`prompts/ja-report.txt`, N=11): **~65%**. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.60, corruption 0, safety 11/11 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose는 보존. Raw rows: [`results-ja-report.jsonl`](./benchmarks/published/results-ja-report.jsonl) · [`results-ja-fidelity.jsonl`](./benchmarks/published/results-ja-fidelity.jsonl).
 
 > **측정 주의**: `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`, project `CLAUDE.local.md`)을 격리하고 측정 — prompt 언어(일본어)로 답하게 함. 격리 없으면 host "한국어로 답하라" 지시로 baseline이 한국어로 답해, 다른 토큰 효율 탓에 savings가 부풀려짐.
 
@@ -196,7 +196,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | `normal`              |                                 2436 |          (baseline) |
 | **`scrooge:hi/full`** |                              **897** |            **~63%** |
 
-`scrooge:hi/full`은 힌디어 출력을 verbose default 대비 **per-prompt 중앙값 66.6%**(median 비 ~63%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.76, safety 10/11 보존** — JA보다 claim 보존 높음; safety 1건 미달은 보안/되돌릴 수 없는 동작 없는 rate-limiting 프롬프트에서의 checks.js 휴리스틱 false-positive(압축 답도 기술 캐비엇 유지), 나머지 손실은 breadth이지 오정보 아님. held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음.
+`scrooge:hi/full`은 힌디어 출력을 verbose default 대비 **per-prompt 중앙값 66.6%**(median 비 ~63%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.76, safety 10/11 보존** — JA보다 claim 보존 높음; safety 1건 미달은 보안/되돌릴 수 없는 동작 없는 rate-limiting 프롬프트에서의 checks.js 휴리스틱 false-positive(압축 답도 기술 캐비엇 유지), 나머지 손실은 breadth이지 오정보 아님. held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음. Raw rows: [`results-hi-report.jsonl`](./benchmarks/published/results-hi-report.jsonl) · [`results-hi-fidelity.jsonl`](./benchmarks/published/results-hi-fidelity.jsonl).
 
 > **측정 주의**: 일본어와 동일 cwd 격리 — `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`) 격리로 힌디어로 답하게 함. 격리 없으면 host "한국어로 답하라" 기본값 탓에 savings 부풀려짐.
 
@@ -209,7 +209,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | `normal` | 2703 | (baseline) |
 | **`scrooge:zh/full`** | **897** | **~67%** |
 
-`scrooge:zh/full`은 중국어 출력을 verbose default 대비 **per-prompt 중앙값 62.9%**(median 비 ~67%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 11/11 보존** — JA보다 claim 보존 높고 safety 미달 0; 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님(fully-equivalent 0은 독립 생성의 예상 신호이지 손상 아님). held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음. before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, 동일 forEach-async 진단).
+`scrooge:zh/full`은 중국어 출력을 verbose default 대비 **per-prompt 중앙값 62.9%**(median 비 ~67%) 줄이고, held-out **11/11** 우세. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 11/11 보존** — JA보다 claim 보존 높고 safety 미달 0; 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님(fully-equivalent 0은 독립 생성의 예상 신호이지 손상 아님). held-out 전용 측정 — 별도 튜닝 corpus·`normal`/`terse` 표는 아직 없음. before/after: [`benchmarks/examples/zh-foreach-async.*`](./benchmarks/examples/) (`normal` 1221 → `scrooge` 466 tokens, 동일 forEach-async 진단). Raw rows: [`results-zh-report.jsonl`](./benchmarks/published/results-zh-report.jsonl) · [`results-zh-fidelity.jsonl`](./benchmarks/published/results-zh-fidelity.jsonl).
 
 > **측정 주의**: 일본어/힌디어와 동일 cwd 격리 — `normal` baseline은 host 메모리 파일(`~/.claude/CLAUDE.md`) 격리로 중국어로 답하게 함. 격리 없으면 host "한국어로 답하라" 기본값 탓에 savings 부풀려짐.
 
@@ -264,7 +264,7 @@ arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중�
 | 1차 목표          | 공격적 영어 압축                   | Korean-native 이중언어 압축                            |
 | 언어              | EN (+ wenyan 한문)                 | KO, EN; `registry.json` 기반 i18n                      |
 | 한국어 register   | 없음                               | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default  |
-| 이번 영어 결과    | `1264` median tokens               | 더 강한 압축 (`969` median tokens), 청정 run에서 ~23% 우세 |
+| 이번 영어 결과    | `703` median tokens (telegraphic·lossy) | `816` median tokens — 약간 많으나 답 보존 (fidelity 0.72) |
 | 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
 
 요약: Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨. 핵심은 한국어 1순위 register 설계이고, caveman은 출처와 가장 강한 영어 비교 baseline으로 명시함.
