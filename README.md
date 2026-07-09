@@ -137,7 +137,7 @@ Skill-only hosts get the register rule as a skill, but activation is manual — 
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
 
-**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script. Chinese ships as the fifth — but unlike JA/HI, it is **not** a port of the Korean mechanism: Chinese is an isolating language with no honorific morphology or case particles to strip, so its register is a **zh-native** design (drop politeness `请`/`您`, conservatively drop redundant structural particles `的`/`了`/`着` and measure words, cut connective filler), modern concise prose rather than caveman's wenyan. ZH savings/fidelity measurement is pending.
+**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language — the register is designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English; CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script. Chinese ships as the fifth — but unlike JA/HI, it is **not** a port of the Korean mechanism: Chinese is an isolating language with no honorific morphology or case particles to strip, so its register is a **zh-native** design (drop politeness `请`/`您`, conservatively drop redundant structural particles `的`/`了`/`着` and measure words, cut connective filler), modern concise prose rather than caveman's wenyan.
 
 ## Benchmarks
 
@@ -162,7 +162,7 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 | **`scrooge:ko/full`** |                     **972** |            **~70%** |
 | `caveman:full`        |                        1203 |                ~62% |
 
-`scrooge:ko/full` cuts Korean output by **~70%** vs the verbose default and by **~19%** vs `caveman:full` (15/20 prompt wins). It also beats `terse`, so the gain is the register itself, not just generic brevity.
+`scrooge:ko/full` cuts Korean output by **~70%** vs the verbose default and by **~19%** vs `caveman:full` (15/20 prompt wins). It also beats `terse`, so the gain is the register itself, not just generic brevity. Fidelity (held-out, judge N=3): **0.68 median claim-preservation, safety preserved 12/16** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
 
 ### English
 
@@ -173,7 +173,7 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 | **`scrooge:en/full`** |                     **969** |            **~73%** |
 | `caveman:full`        |                        1264 |                ~65% |
 
-`scrooge:en/full` cuts English output by **~73%** vs the verbose default and by **~23%** vs `caveman:full` (17/21 prompt wins) — its strongest result.
+`scrooge:en/full` cuts English output by **~73%** vs the verbose default and by **~23%** vs `caveman:full` (17/21 prompt wins) — its strongest result. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 9/11** — higher claim retention than JA; the loss is breadth (secondary detail under heavier compression), not wrong information; the core technical answer and safety prose are preserved.
 
 **Mini English sample (`en/full`)**
 

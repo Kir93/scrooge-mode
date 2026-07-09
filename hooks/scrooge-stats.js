@@ -9,9 +9,9 @@
 //
 // Honesty: token counts are MEASURED from the session JSONL `usage` fields.
 // Savings are a COUNTERFACTUAL ESTIMATE (what the same turns would have cost
-// uncompressed), always labelled "(est)". Per-dial ratios come from the Task 5
-// subscription benchmark; until that lands SAVINGS_RATIO is empty and we show
-// raw tokens only — never a fabricated savings number.
+// uncompressed), always labelled "(est)". Per-dial ratios come from the
+// subscription benchmark (SAVINGS_RATIO below, one entry per measured full dial);
+// a dial with no benchmark yet shows raw tokens only — never a fabricated number.
 
 import path from 'node:path';
 import os from 'node:os';
@@ -29,7 +29,8 @@ import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge
 
 // Per-(lang, dial) mean output-token compression ratio vs the uncompressed
 // baseline, register-only isolation: ko/full ~67%, en/full ~65% (N=24,
-// claude-opus-4-7); ja/full ~63% (claude-opus-4-8, mean of N=15 tuning 0.567 /
+// claude-opus-4-7 — earlier hook ratios, not re-measured on opus-4-8; the README
+// headline was); ja/full ~63% (claude-opus-4-8, mean of N=15 tuning 0.567 /
 // N=11 held-out 0.693; measured cwd-isolated so the normal baseline answers in
 // Japanese, not host-CLAUDE.md Korean). hi/full ~66% (claude-opus-4-8, held-out
 // N=11 per-prompt median 0.666, scrooge<normal 11/11; held-out only — no separate

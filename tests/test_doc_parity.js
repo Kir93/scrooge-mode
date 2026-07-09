@@ -104,3 +104,24 @@ test('READMEs carry no stale "two languages" phrasing', () => {
     );
   }
 });
+
+// (F) No "measurement pending" claim survives for a language that already carries a
+// measured section. The ZH self-contradiction (a "measurement is pending" sentence
+// sitting above ZH's own measured fidelity/savings table) is the exact pattern this
+// catches. Scoped to benchmarked languages (a set SAVINGS_RATIO membership defines),
+// so a legitimately unmeasured dial's "estimate pending" (e.g. lite) never trips it.
+const pendingPattern = {
+  'README.md': (lang) => new RegExp(lang.toUpperCase() + '[^.\\n]*measurement is pending', 'i'),
+  'README.ko.md': (lang) => new RegExp(lang.toUpperCase() + '[^.\\n]*측정[^.\\n]{0,6}대기'),
+};
+for (const [f, mk] of Object.entries(pendingPattern)) {
+  test(`${f} carries no "measurement pending" for a benchmarked language`, () => {
+    const body = read(f);
+    for (const lang of benchmarkedLangs) {
+      assert.ok(
+        !mk(lang).test(body),
+        `${f}: "${lang.toUpperCase()} … measurement pending" contradicts its measured section — remove the stale pending sentence`
+      );
+    }
+  });
+}

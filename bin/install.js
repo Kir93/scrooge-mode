@@ -16,8 +16,9 @@
 //
 // Pure Node stdlib, zero runtime deps. ESM (package.json "type": "module").
 //
-// NOTE: `claude plugin install` / `npx skills add` resolve against PUBLISHED
-// artifacts (Task 6). Until publishing lands, use --dry-run to inspect actions.
+// NOTE: `claude plugin install` / `npx skills add` resolve against the PUBLISHED
+// artifacts (npm + GitHub release). Use --dry-run to inspect actions without
+// installing.
 
 import fs from 'node:fs';
 import os from 'node:os';

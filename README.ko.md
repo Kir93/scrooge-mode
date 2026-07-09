@@ -135,7 +135,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
 
-**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — rule 엔진은 `registry.json`에서 모든 언어를 수술 없이 로드함. 일본어는 3번째 언어로 출하 — 영어 번역이 아니라 한국어 메커니즘 사상(keigo 제거 · 体言止め · 助詞 드롭); CJK 토큰 비효율이 압축 타깃으로 자연스러움. 힌디어는 4번째로 출하 — 동일 메커니즘(경어 평어화 · 명사형 종결 · 후치사 드롭)을 Devanagari(또 다른 토큰 비효율 문자)에 사상. 중국어는 5번째로 출하 — 단 JA/HI와 달리 한국어 메커니즘 이식 **아님**: 중국어는 고립어라 제거할 경어 형태소·격조사가 없어 register를 **zh-native**로 신설계(정중어 `请`/`您` 제거, 잉여 구조조사 `的`/`了`/`着`·양사 보수적 드롭, 연결어 filler 제거), caveman의 wenyan이 아닌 현대 간결체. ZH savings·fidelity 측정은 대기 중.
+**왜 한국어가 중요한가.** 기존 출력 압축 skill 대부분은 영어 1순위거나 한문을 유일한 비영어 타깃으로 가정함. Scrooge는 한국어를 1순위 언어로 — register가 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계됨, 영어의 번역 아님. 아키텍처는 i18n pluggable — rule 엔진은 `registry.json`에서 모든 언어를 수술 없이 로드함. 일본어는 3번째 언어로 출하 — 영어 번역이 아니라 한국어 메커니즘 사상(keigo 제거 · 体言止め · 助詞 드롭); CJK 토큰 비효율이 압축 타깃으로 자연스러움. 힌디어는 4번째로 출하 — 동일 메커니즘(경어 평어화 · 명사형 종결 · 후치사 드롭)을 Devanagari(또 다른 토큰 비효율 문자)에 사상. 중국어는 5번째로 출하 — 단 JA/HI와 달리 한국어 메커니즘 이식 **아님**: 중국어는 고립어라 제거할 경어 형태소·격조사가 없어 register를 **zh-native**로 신설계(정중어 `请`/`您` 제거, 잉여 구조조사 `的`/`了`/`着`·양사 보수적 드롭, 연결어 filler 제거), caveman의 wenyan이 아닌 현대 간결체.
 
 ## 벤치마크
 
@@ -160,7 +160,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | **`scrooge:ko/full`** |                   **972** |         **~70%** |
 | `caveman:full`        |                      1203 |             ~62% |
 
-`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~70%**, `caveman:full` 대비 **~19%** 줄임(20개 중 15개 우세). `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과.
+`scrooge:ko/full`은 한국어 출력을 verbose default 대비 **~70%**, `caveman:full` 대비 **~19%** 줄임(20개 중 15개 우세). `terse`보다도 짧음 → 단순 brevity 효과 아니라 register 효과. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.68, safety 12/16 보존** — 손실은 breadth(강압축으로 부차 디테일 누락)이지 오정보 아님; 핵심 기술 답·안전 prose 보존.
 
 ### 영어
 
@@ -171,7 +171,7 @@ skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수�
 | **`scrooge:en/full`** |                   **969** |         **~73%** |
 | `caveman:full`        |                      1264 |             ~65% |
 
-`scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과.
+`scrooge:en/full`은 영어 출력을 verbose default 대비 **~73%**, `caveman:full` 대비 **~23%** 줄임(21개 중 17개 우세) — 가장 강한 결과. fidelity(held-out, judge N=3): **claim-preservation 중앙값 0.72, safety 9/11 보존** — JA보다 claim 보존 높음; 손실은 breadth이지 오정보 아님; 핵심 기술 답·안전 prose 보존.
 
 ### 일본어
 

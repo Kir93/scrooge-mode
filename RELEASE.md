@@ -30,6 +30,8 @@ Run from a clean tree on `main`:
 - Every `registry.json` path resolves to an existing `rules/**` file, and every
   `rules/**` file is reachable from the registry.
 - Bilingual + dial parity holds (`ko`/`en`, `lite`/`full`, `README.md`/`README.ko.md`).
+- Doc-truth: no language with a measured savings/fidelity section still carries a
+  "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
 - The three version sources above match.
 
 ## 2. Bump version
