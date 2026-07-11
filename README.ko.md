@@ -278,3 +278,5 @@ arm별 대표 output tokens. 절감 열은 **각 프롬프트 감소율의 중�
 MIT © 2026 Kir93. 자세한 내용은 [LICENSE](LICENSE).
 
 Inspired by [caveman](https://github.com/JuliusBrussee/caveman) (MIT, © Julius Brussee) — 컨셉만 차용, i18n-first로 독립 재구현(verbatim 복사 없음).
+
+제작 이야기: [Scrooge 작업기 시리즈](https://kir93.co.kr/tag/scrooge) — 측정하는 압축을 만든 과정 기록.
