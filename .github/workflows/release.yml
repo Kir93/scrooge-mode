@@ -1,51 +1,54 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: Release tag, for example v0.2.1
-        required: true
+  push:
+    tags:
+      - 'v*.*.*'
 
 permissions:
   contents: write
 
 jobs:
-  tag:
+  release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout main
+      - name: Checkout pushed tag
         uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
+          # Check out the tagged commit, not main HEAD, so the version gate below
+          # reads the four sources from the tag's tree and compares them to the
+          # tag name — a tag on an older release commit still verifies correctly
+          # after main has moved on to the next bump.
+          ref: ${{ github.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Verify version triple
+      - name: Verify version quadruple against tag
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
 
-          const input = process.env.RELEASE_VERSION;
-          if (!/^v\d+\.\d+\.\d+$/.test(input)) {
-            console.error(`version must match vX.Y.Z, got: ${input}`);
+          const tag = process.env.TAG;
+          if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
+            console.error(`tag must match vX.Y.Z, got: ${tag}`);
             process.exit(1);
           }
 
-          const expected = input.slice(1);
+          const expected = tag.slice(1);
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
           const marketplace = JSON.parse(readFileSync('.claude-plugin/marketplace.json', 'utf8'));
+          const plugin = JSON.parse(readFileSync('.claude-plugin/plugin.json', 'utf8'));
           const actual = {
             'package.json version': pkg.version,
             'marketplace metadata.version': marketplace.metadata?.version,
             'marketplace plugins[0].version': marketplace.plugins?.[0]?.version,
+            'plugin.json version': plugin.version,
           };
 
           const mismatches = Object.entries(actual)
@@ -58,17 +61,20 @@ jobs:
           }
           NODE
 
-      - name: Configure git author
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Tag release
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: git tag "$RELEASE_VERSION"
-
-      - name: Push tag
-        env:
-          RELEASE_VERSION: ${{ inputs.version }}
-        run: git push origin "$RELEASE_VERSION"
+          # Release body = committed callout header + this version's generated
+          # changelog. --notes-file alone would drop the auto changelog, and
+          # --generate-notes does not cleanly merge with a header, so build the
+          # body explicitly: header first, then GitHub's generated notes.
+          generated="$(gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="$TAG" --jq .body)"
+          {
+            cat .github/release-notes-template.md
+            echo
+            echo "$generated"
+          } > release-body.md
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release-body.md
