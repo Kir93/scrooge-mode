@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 import { VALID_LANGS } from '../hooks/scrooge-config.js';
 import { deriveEstimate } from '../hooks/scrooge-stats.js';
+import { savingsMeta } from '../hooks/lang-meta.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
@@ -125,3 +126,28 @@ for (const [f, mk] of Object.entries(pendingPattern)) {
     }
   });
 }
+
+// (G) Every benchmarked (lang, full) carries complete savings provenance in
+// LANG_META — ratio + results + n + model — so each headline ratio is traceable to
+// its backing benchmark (results file(s), sample size, model). Presence-only, per
+// field: `results` may be a multi-file array and `n` a composite total (e.g. ja's
+// tuning + held-out mean), so no single fabricated n is ever required to pass. This
+// is the G4 traceability guard: a ratio present but missing its provenance fails.
+test('every benchmarked savings ratio carries results + n + model provenance', () => {
+  for (const lang of benchmarkedLangs) {
+    const meta = savingsMeta(lang, 'full');
+    assert.ok(meta, `${lang}/full: benchmarked but no LANG_META savings entry`);
+    assert.equal(typeof meta.ratio, 'number', `${lang}/full: ratio must be a number`);
+    const results = meta.results;
+    assert.ok(
+      (Array.isArray(results) && results.length > 0) ||
+        (typeof results === 'string' && results.length > 0),
+      `${lang}/full: results provenance missing (backing benchmark file trail)`
+    );
+    assert.ok(meta.n != null, `${lang}/full: n (sample size) provenance missing`);
+    assert.ok(
+      typeof meta.model === 'string' && meta.model.length > 0,
+      `${lang}/full: model provenance missing`
+    );
+  }
+});

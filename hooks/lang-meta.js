@@ -17,6 +17,15 @@
 //   reminder: pieces the per-turn reminder is assembled from (see buildReminder).
 //   countermand: the off-turn "return to normal prose" line.
 //   flagHint: compact per-flag behavior label map (mirrors each fragment heading).
+//   savings: measured per-dial output-token compression ratio + its provenance,
+//          moved here from the former scrooge-stats.js SAVINGS_RATIO constant so a
+//          benchmarked language lives in ONE row (ratio included), not a second
+//          parallel table. Per dial: { ratio, results, n, model } — `results` is the
+//          backing benchmark file(s) (gitignored; a metadata trail, never asserted to
+//          exist on disk), `n` the sample size, `model` the measured model. Only
+//          `full` is benchmarked today, so `lite` is absent and deriveEstimate returns
+//          null for it ("estimate pending"). Ratios are UNCHANGED from the prior
+//          constant — this is a provenance move, not a re-measurement.
 //   nlCue: natural-language activation cues (see parseNaturalActivation in
 //          nl-activation.js). Each is the language's slice of the original combined
 //          regex; `name`/`meta`/`strong`/`off`/`activate`/`negate` test independently
@@ -35,6 +44,9 @@ export const LANG_META = {
     },
     countermand: 'SCROOGE OFF — 압축 모드 해제. 이번 턴부터 평소 register(일반 문체)로 복귀.',
     flagHint: { lean: 'lean(최소 코드)' },
+    savings: {
+      full: { ratio: 0.67, results: ['benchmarks/results-ko-report.jsonl'], n: 24, model: 'claude-opus-4-7' },
+    },
     nlCue: {
       name: /스크루지/,
       // Activation triggers: the "scrooge" name plus an explicit action cue. The bare
@@ -60,6 +72,9 @@ export const LANG_META = {
     },
     countermand: 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.',
     flagHint: { lean: 'lean (minimal code)' },
+    savings: {
+      full: { ratio: 0.65, results: ['benchmarks/results-en.jsonl'], n: 24, model: 'claude-opus-4-7' },
+    },
     nlCue: {
       name: /scrooge/i,
       // The "be a token miser" persona stays on the EN side because it names Scrooge
@@ -84,6 +99,11 @@ export const LANG_META = {
     },
     countermand: 'SCROOGE OFF — 圧縮モード解除。今ターンから通常の register（通常文体）に復帰。',
     flagHint: { lean: 'lean（最小コード）' },
+    savings: {
+      // ratio 0.63 = mean of N=15 tuning (0.567) and N=11 held-out (0.693); n is the
+      // combined sample count, results cites the published held-out report file.
+      full: { ratio: 0.63, results: ['benchmarks/results-ja-report.jsonl'], n: 26, model: 'claude-opus-4-8' },
+    },
     nlCue: {
       name: /スクルージ/,
       // Japanese has no inter-word spaces, so `\b` is inert — the trigger anchors on
@@ -106,6 +126,9 @@ export const LANG_META = {
     },
     countermand: 'SCROOGE OFF — संपीड़न मोड बंद। इस turn से सामान्य register (सामान्य शैली) में वापस।',
     flagHint: { lean: 'lean (न्यूनतम कोड)' },
+    savings: {
+      full: { ratio: 0.66, results: ['benchmarks/results-hi-report.jsonl'], n: 11, model: 'claude-opus-4-8' },
+    },
     nlCue: {
       name: /स्क्रूज/,
       // Devanagari has spaces, but JS `\b` is ASCII-only and inert on it — the trigger
@@ -131,6 +154,9 @@ export const LANG_META = {
     },
     countermand: 'SCROOGE OFF — 压缩模式解除。本回合起回到日常 register(常规文体)。',
     flagHint: { lean: 'lean(最小代码)' },
+    savings: {
+      full: { ratio: 0.63, results: ['benchmarks/results-zh-report.jsonl'], n: 11, model: 'claude-opus-4-8' },
+    },
     nlCue: {
       name: /斯克鲁奇/,
       // Chinese has no inter-word spaces, so JS `\b` is inert — the trigger anchors on
@@ -161,6 +187,15 @@ export function langMeta(lang) {
 // priority and never disturb the ko→en→ja precedence.
 export function metaLangs() {
   return Object.keys(LANG_META);
+}
+
+// Measured savings entry { ratio, results, n, model } for a (lang, dial), or null
+// when the pair has no benchmark (any lite dial today, or a lang with no savings row).
+// deriveEstimate reads `.ratio` from this; the doc-parity provenance guard reads the
+// whole entry. Replaces the removed scrooge-stats.js SAVINGS_RATIO constant.
+export function savingsMeta(lang, dial) {
+  const s = LANG_META[lang] && LANG_META[lang].savings;
+  return (s && s[dial]) || null;
 }
 
 // Compact per-flag behavior labels for the active language; an unmapped flag (or a

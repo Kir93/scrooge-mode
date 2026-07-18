@@ -10,8 +10,9 @@
 // Honesty: token counts are MEASURED from the session JSONL `usage` fields.
 // Savings are a COUNTERFACTUAL ESTIMATE (what the same turns would have cost
 // uncompressed), always labelled "(est)". Per-dial ratios come from the
-// subscription benchmark (SAVINGS_RATIO below, one entry per measured full dial);
-// a dial with no benchmark yet shows raw tokens only — never a fabricated number.
+// subscription benchmark, carried per language in lang-meta.js (LANG_META.savings)
+// and read here via savingsMeta(); a dial with no benchmark yet shows raw tokens
+// only — never a fabricated number.
 
 import path from 'node:path';
 import os from 'node:os';
@@ -26,27 +27,15 @@ import {
 import { readSession } from '../lib/session-log.js';
 import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
+import { savingsMeta } from './lang-meta.js';
 
-// Per-(lang, dial) mean output-token compression ratio vs the uncompressed
-// baseline, register-only isolation: ko/full ~67%, en/full ~65% (N=24,
-// claude-opus-4-7 — earlier hook ratios, not re-measured on opus-4-8; the README
-// headline was); ja/full ~63% (claude-opus-4-8, mean of N=15 tuning 0.567 /
-// N=11 held-out 0.693; measured cwd-isolated so the normal baseline answers in
-// Japanese, not host-CLAUDE.md Korean). hi/full ~66% (claude-opus-4-8, held-out
-// N=11 per-prompt median 0.666, scrooge<normal 11/11; held-out only — no separate
-// tuning corpus). zh/full ~63% (claude-opus-4-8, held-out N=11 per-prompt median
-// 0.629, ratio-of-medians 0.668, scrooge<normal 11/11; zh-native register — not a
-// KO port — held-out only). Only `full` is measured; `lite` has no benchmark yet,
-// so it is omitted and lite sessions still show "estimate pending" rather than a
-// fabricated number. Register-only isolation means real sessions may differ —
-// hence the "(est)" label on every derived figure.
-const SAVINGS_RATIO = {
-  ko: { full: 0.67 },
-  en: { full: 0.65 },
-  ja: { full: 0.63 },
-  hi: { full: 0.66 },
-  zh: { full: 0.63 },
-};
+// Per-(lang, dial) mean output-token compression ratios now live in lang-meta.js
+// (LANG_META[lang].savings), one row per language alongside the rest of that
+// language's metadata, each with its provenance (results file(s), N, model). This
+// hook reads them through savingsMeta(). Only `full` is measured; `lite` has no
+// benchmark yet, so lite sessions show "estimate pending" rather than a fabricated
+// number. Register-only isolation means real sessions may differ — hence the "(est)"
+// label on every derived figure.
 
 const SEP = '──────────────────────────────';
 
@@ -63,8 +52,8 @@ function humanizeTokens(n) {
 // only — tool_use output (bash/edit/tool JSON) is not compressed by the register
 // and must stay out of the savings base (ADR-003).
 function deriveEstimate(proseOutputTokens, lang, dial) {
-  const ratio =
-    lang != null && dial != null ? SAVINGS_RATIO[lang]?.[dial] : undefined;
+  const meta = lang != null && dial != null ? savingsMeta(lang, dial) : null;
+  const ratio = meta ? meta.ratio : undefined;
   if (ratio == null || ratio <= 0 || ratio >= 1) return null;
   const estNormal = Math.round(proseOutputTokens / (1 - ratio));
   return {
@@ -81,7 +70,7 @@ function shortPath(p) {
 
 // Rough char→token estimate (~4 chars/token). No tokenizer dependency — that
 // would be a heavy dep for a rough receipt; everything derived from it is
-// labelled "(est)", the same honesty discipline as SAVINGS_RATIO.
+// labelled "(est)", the same honesty discipline as the savings ratios.
 function estimateTokens(text) {
   return text ? Math.ceil(text.length / 4) : 0;
 }
@@ -306,5 +295,4 @@ export {
   humanizeTokens,
   estimateTokens,
   suffixFor,
-  SAVINGS_RATIO,
 };
