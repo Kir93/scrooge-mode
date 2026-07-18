@@ -35,6 +35,40 @@ Run from a clean tree on `main`:
   "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
 - The four version sources above match (`npm test` guards this).
 
+## 1a. Fidelity judge gate (manual, release-time)
+
+The LLM **claim-equivalence judge** is a release-time **manual, local** gate: it runs
+on a subscription CLI, so it structurally cannot run in CI. CI runs only the
+**deterministic** half — the golden-corpus tripwire (`tests/test_golden_corpus.js`,
+inside `npm test`) — which is a **weak proxy** for claim-preservation. The judge is the
+measured half. (Per the savings-measurement decision ADR-003: a benchmark
+re-measurement consumes subscription quota — an external action behind a human
+approval gate, not metered cash — which is why it stays manual.)
+
+**Rule-regression detection lives here, not in CI (F1).** The deterministic CI check
+runs over a *frozen* corpus, so it is blind to `rules/**` edits — checks.js returns the
+same verdict before and after a rule change. Catching a real rule/register regression
+is therefore split across two signals, both outside the deterministic check:
+
+- the **CI rule-diff marker** — a PR **or a direct push to `main`** touching `rules/**`
+  gets a non-blocking "register 재측정 필요" annotation (`.github/workflows/ci.yml`),
+  flagging that this gate may need a re-run — so a `/my-release` direct push surfaces the
+  reminder too, not only an external contributor's PR;
+- **this judge gate** — the actual re-measurement.
+
+**When to re-measure — minimal trigger.** Re-run the judge only on a **substantive**
+register change; skip it otherwise. Substantive = an edit that can move model output:
+adding/removing/changing the meaning of an instruction, a dial tone change, or an edit
+to a safety/boundary clause. Exempt (no re-measurement): a typo fix, a comment, a
+markdownlint fix, or any change that cannot alter output. When it is ambiguous, default
+to re-measuring — the conservative direction.
+
+**How to re-measure — N=3.** Regenerate the paired outputs and judge with
+`--judge-runs 3` (majority verdict per pair) over the **held-out** report corpus, per
+[`benchmarks/README.md`](benchmarks/README.md) § "Fidelity bench" (Steps 1–2 of
+`benchmarks/fidelity/run.py`). Pin `--model` for a reproducible headline; update a
+cited savings/fidelity number only if it actually moves.
+
 ## 2. Bump version
 
 Edit the four version sources to the new version (semver). Commit:

@@ -109,3 +109,51 @@ jobs:
             }
           }
           NODE
+
+      # Non-blocking advisory: a change to rules/** (register rule bodies and fragments,
+      # all under rules/) gets a "재측정 필요" marker so the maintainer re-runs the manual
+      # fidelity judge gate (RELEASE.md § "Fidelity judge gate") before release. Fires on
+      # BOTH a rules-touching PR and a direct push to main — the latter is the maintainer's
+      # own /my-release path, where no PR review would otherwise surface the change. The
+      # deterministic golden-corpus check (npm test) is blind to rule-text edits (frozen
+      # corpus, F1), so this marker + the manual judge are the rule-regression signal. Pure
+      # git diff — no subscription CLI. continue-on-error + base-ref skip keep it strictly
+      # non-blocking (fork/shallow clone or a first/force push without the base commit are
+      # skipped). Base per event: PR → the PR base sha; push → the pre-push sha (before).
+      - name: Flag rule changes for judge re-measurement
+        continue-on-error: true
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          # Empty or all-zero base (first push, new branch, or a force-push with no
+          # recorded parent) — nothing to diff against; skip (non-blocking).
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "::notice title=재측정 마커 스킵::base ref 없음(최초/force push) — rule-diff 판정 생략 (비차단)"
+            exit 0
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BASE" 2>/dev/null || true
+          fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "::notice title=재측정 마커 스킵::base ref 미획득(fork/shallow clone) — rule-diff 판정 생략 (비차단)"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE" HEAD -- 'rules/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::warning title=register 재측정 필요::rules/ 변경 감지 — 실질 변경이면 릴리스 전 RELEASE.md의 Fidelity judge gate(수동 judge N=3)를 확인하세요 (비차단)"
+            {
+              echo "### ⚠️ register 재측정 필요"
+              echo ""
+              echo "이 변경은 \`rules/**\`를 건드립니다. **실질 변경**(지시문 add/remove/의미변경·dial 톤·safety/boundary 절)이면 릴리스 전 RELEASE.md의 **Fidelity judge gate**(수동 LLM judge, N=3)를 실행하세요. typo·주석·markdownlint 수정은 면제입니다. 비차단 안내이며 머지/릴리스를 막지 않습니다."
+              echo ""
+              echo "변경된 rule 파일:"
+              echo '```'
+              echo "$CHANGED"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "rules/ 무변경 — 재측정 마커 미노출"
+          fi
