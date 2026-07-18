@@ -21,6 +21,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { VALID_LANGS } from '../hooks/scrooge-config.js';
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'registry.json'), 'utf8'));
@@ -38,13 +40,18 @@ const DOCS_BOUNDARY = {
 // use the literal "Docs escape" label).
 const DOCS_ESCAPE = /Docs escape/;
 
-// Every lang × dial rule file carries the docs-compression boundary + escape.
-for (const lang of ['ko', 'en', 'ja', 'hi', 'zh']) {
+// Every lang × dial rule file carries the docs-compression boundary + escape. The
+// loop is registry-derived (VALID_LANGS) so a new language is covered automatically;
+// the per-lang DOCS_BOUNDARY map is hand-maintained data, so a registry lang missing
+// from it fails clearly (assert) instead of matching against `undefined`.
+for (const lang of VALID_LANGS) {
   for (const dial of ['lite', 'full']) {
     test(`rule ${lang}/${dial} carries the Docs/prose compression boundary + escape`, () => {
+      const boundary = DOCS_BOUNDARY[lang];
+      assert.ok(boundary, `no DOCS_BOUNDARY entry for '${lang}' — add its Docs/prose boundary marker`);
       const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');
       assert.match(body, /## Boundaries/, 'missing Boundaries heading');
-      assert.match(body, DOCS_BOUNDARY[lang], 'missing Docs/prose boundary item');
+      assert.match(body, boundary, 'missing Docs/prose boundary item');
       assert.match(body, DOCS_ESCAPE, 'missing Docs escape (Auto-Clarity extension)');
     });
   }
