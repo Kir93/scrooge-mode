@@ -8,16 +8,17 @@ Repo: `Kir93/scrooge-mode`. Plugin/marketplace name: `scrooge`. npm name: `scroo
 
 ## Version sources (must match)
 
-A release sets one version in three places. They must be identical:
+A release sets one version in four places. They must be identical:
 
 | File | Field |
 | ---- | ----- |
 | `package.json` | `version` |
 | `.claude-plugin/marketplace.json` | `metadata.version` |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` |
+| `.claude-plugin/plugin.json` | `version` |
 
-`.claude-plugin/plugin.json` currently has no `version` field. If one is
-added later, update this table at the same time.
+`npm test` runs `test_version_consistency`, which fails if any of the four
+sources drifts — so a bump that misses one is caught before a tag is pushed.
 
 ## 1. Pre-flight
 
@@ -32,50 +33,62 @@ Run from a clean tree on `main`:
 - Bilingual + dial parity holds (`ko`/`en`, `lite`/`full`, `README.md`/`README.ko.md`).
 - Doc-truth: no language with a measured savings/fidelity section still carries a
   "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
-- The three version sources above match.
+- The four version sources above match (`npm test` guards this).
 
 ## 2. Bump version
 
-Edit the three version sources to the new version (semver). Commit:
+Edit the four version sources to the new version (semver). Commit:
 
 ```bash
-git commit -m "chore: 버전 vX.Y.Z" package.json .claude-plugin/marketplace.json
+git commit -m "chore: 버전 vX.Y.Z" package.json .claude-plugin/marketplace.json .claude-plugin/plugin.json
 ```
 
-## 3a. Workflow tag and push (recommended)
+## 3a. Tag-push release (recommended)
 
-After the version commit is on `main`, run the manual GitHub Actions workflow:
-
-```bash
-gh workflow run release.yml -f version=vX.Y.Z --ref main
-```
-
-The workflow is `workflow_dispatch` only. It checks that `package.json.version`,
-`.claude-plugin/marketplace.json` `metadata.version`, and
-`.claude-plugin/marketplace.json` `plugins[0].version` all match the input
-version without the leading `v`, then creates tag `vX.Y.Z` and runs:
-
-```bash
-git push origin vX.Y.Z
-```
-
-The workflow declares `permissions: contents: write` so `GITHUB_TOKEN` can push
-the tag. It does not run `npm publish`; §6 stays optional and manual.
-
-## 3. Tag and push
+With the version commit on `main` (and `main` pushed), push its tag. **Pushing
+the tag is the release** — `.github/workflows/release.yml` reacts to the tag push;
+it no longer creates the tag itself:
 
 ```bash
 git tag vX.Y.Z
-git push origin main --tags
+git push origin vX.Y.Z
 ```
 
-This publishes the git-based install paths. Both commands below now resolve.
+The workflow triggers on `push:` for tags matching `v*.*.*`. It checks out the
+**tagged commit** (not `main` HEAD), verifies that all four version sources in
+that commit — `package.json` `version`, `.claude-plugin/marketplace.json`
+`metadata.version` and `plugins[0].version`, and `.claude-plugin/plugin.json`
+`version` — equal the tag without its leading `v`, then creates the GitHub release
+for that tag with `GITHUB_TOKEN` (`permissions: contents: write`; no Kir93 PAT
+needed). The release body combines the committed
+`.github/release-notes-template.md` callout header with the version's generated
+changelog. The workflow does not run `npm publish` (§6).
+
+A mistyped or mismatched tag does not produce a release. The trigger's `v*.*.*`
+filter ignores non-version tags, and the four-source version gate runs **before**
+the release step — if any source disagrees with the tag, or the tag is malformed,
+the job fails and no release is created. Because the gate reads the tagged
+commit's tree rather than `main`, pushing a tag on an older release commit after
+`main` has advanced to the next bump still verifies against the right version.
+
+The workflow triggers only for a tag pushed onto a commit that already contains
+this `release.yml`. Push-tags is the only trigger — there is no
+`workflow_dispatch` fallback — so tag the `main` HEAD that includes this workflow.
+A tag on an older commit predating it will not trigger any release, and there is
+no automated path to re-release such a commit.
+
+## 3. What a pushed tag resolves
+
+A pushed tag publishes the git-based install paths — both commands in §4 resolve
+against it, and `npx -y github:Kir93/scrooge-mode#vX.Y.Z` pins to the tagged
+commit.
 
 > Hook payload note: changes under `hooks/`, `rules/`, `lib/`, or `registry.json`
 > reach existing Codex installs only on reinstall — the installer copies them into
 > `~/.codex/scrooge/`, so a published fix does not auto-update an already-installed
-> Codex hook. When a release touches those paths, call out "existing Codex users:
-> reinstall to upgrade" in the release notes.
+> Codex hook. This is the "existing Codex users: reinstall to upgrade" callout; its
+> canonical wording lives in `.github/release-notes-template.md`, which the release
+> workflow prepends to every release body.
 >
 > Statusline note: the installer copies `hooks/scrooge-statusline.sh` into
 > `<config>/hooks/`, and plugin updates do NOT refresh that copy. When a release
@@ -124,12 +137,22 @@ found in the public skills.sh docs. Track discovery with:
 - Badge URL: <https://skills.sh/b/Kir93/scrooge-mode>
 - Submit/PR URL: N/A until skills.sh exposes a manual submission queue.
 
-## 6. (Optional) npm publish
+## 6. npm publish — deferred (not adopted)
 
-The installer uses the `github:` shorthand, so npm is not required. Publish
-`scrooge-mode` only if an npm vector is wanted:
+Publishing `scrooge-mode` to npm is an **explicit deferral** (decision D1=B,
+2026-07-08), not a pending option — neither automatic nor manual publish is
+adopted. The `github:` shorthand (§4) is the only distribution vector.
 
-```bash
-npm pack --dry-run   # confirm file set (hooks/lib/skills/commands/.claude-plugin included)
-npm publish
-```
+Rationale:
+
+- The one-line installer resolves from GitHub directly, so npm is not required to
+  install (§4).
+- An npm publish is an irreversible public release; the `github:` path already
+  covers every install channel without it.
+- npm provenance (`--provenance`) can only be generated by a CI publish (GitHub
+  OIDC), which would reintroduce the auto-publish surface the launch deliberately
+  avoided.
+
+Reopen only on real demand for an npm vector. Even then automatic publish stays
+off: a provenance publish would run behind a manual `workflow_dispatch` (a human
+trigger), never hung on the tag-push release trigger.
