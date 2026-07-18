@@ -331,6 +331,32 @@ so unusual phrasing can mis-score (the LLM judge backstops it); the per-call jud
 transcript is not separately contamination-scanned (the pre-flight + host_isolation
 are the defense). Fidelity result JSONL is gitignored like other `results-*` files.
 
+### CI golden-corpus tripwire (deterministic, runs in `npm test`)
+
+`tests/test_golden_corpus.js` runs checks.js's deterministic signals over a frozen
+golden corpus (the `docs/*-qa-checklist.md` Sample outputs + the `examples/` pairs)
+on every push/PR — no subscription CLI, so it fits CI. Three scope caveats bound what
+it proves:
+
+- **Weak proxy.** The deterministic signals (byte-exact span preservation,
+  safety-sentence preservation) are a weak proxy for claim-preservation. They catch
+  corrupted/dropped code and dropped/inverted warnings — not whether the compressed
+  answer carries the same claims. Claim-equivalence is the LLM judge's job (offline,
+  manual, subscription-gated).
+- **Static corpus → rule-text blind (F1).** The corpus is frozen committed text, so
+  checks.js returns the same verdict before and after any `rules/**` edit. This test
+  is a tripwire on **checks.js's logic and the frozen fixtures**, *not* a live
+  rule-text / register-regression detector — editing a rule moves no number here.
+  Detecting a real rule/register regression is the job of the CI rule-diff
+  re-measurement marker + the manual judge gate (RELEASE.md).
+- **Safety hard-gate needs a dedicated fixture (F2).** The shipped sample outputs
+  never fire `detectSafety` (measured: ko/en Sample 3 and all five `examples/` pairs
+  phrase the warning as "되돌리기 어렵게" / "irreversibly", dodging the exact
+  `SAFETY_PATTERN` tokens). A hard gate over shipped text would be vacuous, so the
+  safety axis runs against a dedicated inline safety-positive fixture (self-validated
+  to actually fire `detectSafety`); the `examples/` byte-exact axis is advisory only
+  (independent generations → noisy, per the known-limits note above).
+
 ## Codex secondary benchmark
 
 Use Codex while Claude quota is tight, but keep the result separate from the
