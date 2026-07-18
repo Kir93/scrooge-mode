@@ -1,7 +1,7 @@
 {
   "name": "scrooge",
   "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
-  "version": "0.20.0",
+  "version": "0.20.1",
   "author": {
     "name": "Kir93",
     "url": "https://github.com/Kir93"
