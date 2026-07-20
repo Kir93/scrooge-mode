@@ -97,6 +97,12 @@ const MAX_VERSION_BYTES = 32;
 // Update-check cache is a small JSON object ({latest, checkedAt, behind, notifiedVersion}).
 const MAX_UPDATE_BYTES = 256;
 
+// Symlink-swap guard for the atomic state write below: opening with O_NOFOLLOW
+// refuses a target that was swapped for a symlink. O_NOFOLLOW is POSIX-only — on
+// Windows fs.constants.O_NOFOLLOW is undefined and falls back to 0 (a no-op open
+// flag), so this specific open-time refusal is inert there. Known Windows limit
+// (best-effort tier — INSTALL.md "Platform support"); sanitizeSessionKey path
+// containment still holds, only the symlink-swap refusal is lost.
 const O_NOFOLLOW =
   typeof fs.constants.O_NOFOLLOW === 'number' ? fs.constants.O_NOFOLLOW : 0;
 

@@ -120,7 +120,7 @@ The installer sets up each detected host at its capability tier:
 | Codex | skills + `config.toml` hook | ✓ | ✓ | — |
 | Cursor · Windsurf · Cline · Continue · Gemini CLI | skills (skill-only) | — | — | — |
 
-Skill-only hosts get the register rule as a skill, but activation is manual — no per-turn reinject hook and no token stats. The full hook + stats + statusline experience is Claude Code; Codex gets the hook + stats via `~/.codex/config.toml`.
+Skill-only hosts get the register rule as a skill, but activation is manual — no per-turn reinject hook and no token stats. The full hook + stats + statusline experience is Claude Code; Codex gets the hook + stats via `~/.codex/config.toml`. Codex wires only `UserPromptSubmit` (no `SessionStart`), so its update notice and `↑vX` marker are Claude-only and upgrades are a reinstall — see [Update](INSTALL.md#update) in INSTALL.md.
 
 ## Surface
 

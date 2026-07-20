@@ -181,6 +181,8 @@ claude plugin update scrooge@scrooge
 
 **Codex**는 재실행 시 hook payload(hooks, rules, lib, registry)를 overwrite하고 `~/.codex/config.toml` hook을 멱등 재머지함. **다른 skills 에이전트**(Cursor, Windsurf, Cline, Continue, Gemini CLI)는 재실행 시 `scrooge` skill이 overwrite됨. 어느 쪽이든 자동으로 최신을 받음.
 
+> **Codex tier 한계.** Codex 통합은 `UserPromptSubmit` hook만 배선하고 `SessionStart`는 미배선 — 세션 내 업데이트 알림과 `↑vX` statusline 마커가 Codex에는 뜨지 않음. 새 릴리스는 `scrooge --version`으로 수동 확인하고, Codex payload는 copy 방식(in-place `plugin update` 없음)이라 **업그레이드 = installer 재실행**.
+
 latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
 
 ### 업데이트 알림
@@ -216,6 +218,13 @@ npm test
 npx markdownlint-cli2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
+
+## Platform support
+
+Linux·macOS가 CI 검증 플랫폼 — 매 push마다 `ubuntu-latest`에서 `npm test` 실행. **Windows는 best-effort, CI 미검증.** installer에 Windows 분기(경로 처리, `where` 프로브, shell spawn, `EPERM`/`EISDIR` 정리)와 PowerShell shim이 있으나 `windows-latest` job이 이를 실행하지 않으므로 릴리스 보장 대상에서 Windows는 unsupported로 간주. 두 known-limit는 닫지 않고 문서화만:
+
+- **`install.ps1` / `uninstall.ps1`**은 `node bin/install.js`로 위임하는 얇은 shim. CI 미실행 — Windows에서 수동 검증 필요.
+- **Windows에선 symlink 보호가 약함.** atomic state writer는 symlink로 바꿔치기된 target을 거부하려 `O_NOFOLLOW`로 open하지만, Windows엔 `fs.constants.O_NOFOLLOW`가 없어 `0`으로 폴백(`hooks/scrooge-config.js`)돼 open 시점 symlink 거부가 no-op. sanitized-key 경로 격리는 유지되고 symlink-swap 가드만 상실.
 
 ## Troubleshooting
 

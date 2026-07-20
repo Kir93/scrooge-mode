@@ -181,6 +181,8 @@ After updating, the first new session shows a one-time reminder of how to re-act
 
 For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
 
+> **Codex tier limit.** The Codex integration wires only the `UserPromptSubmit` hook, not `SessionStart` — so the in-session update notice and the `↑vX` statusline marker never surface on Codex. Check for a newer release manually with `scrooge --version`, and because the Codex payload is a copy (no in-place `plugin update`), **upgrading means re-running the installer**.
+
 To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
 
 ### Update notifications
@@ -216,6 +218,13 @@ npm test
 npx markdownlint-cli2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
+
+## Platform support
+
+Linux and macOS are the CI-verified platforms — every push runs `npm test` on `ubuntu-latest`. **Windows is best-effort, not CI-verified.** The installer carries Windows branches (path handling, `where` probe, shell spawn, `EPERM`/`EISDIR` cleanup) and a PowerShell shim, but no `windows-latest` job exercises them, so treat Windows as unsupported for release guarantees. Two known limits are documented, not closed:
+
+- **`install.ps1` / `uninstall.ps1`** are thin shims that delegate to `node bin/install.js`. They are not run in CI; validate them manually on Windows.
+- **Symlink hardening is weaker on Windows.** The atomic state writer opens with `O_NOFOLLOW` to refuse a target swapped for a symlink, but `fs.constants.O_NOFOLLOW` is absent on Windows and falls back to `0` (`hooks/scrooge-config.js`), so that open-time symlink refusal is a no-op there. The sanitized-key path containment still applies; only the symlink-swap guard is lost.
 
 ## Troubleshooting
 

@@ -4,9 +4,10 @@
 Runs the same arm specs as run.py through `codex exec` and emits the same JSONL
 shape, so report.py can compare normal / scrooge / caveman with paired scoring.
 
-This is a secondary cross-agent signal. Do not mix these numbers with the
-Claude Code subscription benchmark; Codex uses a different runtime, tokenizer,
-and instruction wrapper.
+This is a best-effort secondary cross-agent signal, never a headline source
+(run.py is the primary harness). Do not mix these numbers with the Claude Code
+subscription benchmark; Codex uses a different runtime, tokenizer, and
+instruction wrapper. See benchmarks/README.md "Codex secondary benchmark".
 """
 
 from __future__ import annotations

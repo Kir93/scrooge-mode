@@ -359,9 +359,13 @@ it proves:
 
 ## Codex secondary benchmark
 
-Use Codex while Claude quota is tight, but keep the result separate from the
-Claude Code benchmark. Codex uses a different runtime, tokenizer, and prompt
-wrapper, so it is a portability signal, not the canonical README claim.
+`run_codex.py` is a **best-effort secondary cross-agent signal, never a headline
+source.** `run.py` (Claude Code subscription) is the primary harness; `run_codex.py`
+reuses its arm specs and JSONL shape through `codex exec`, but Codex runs a
+different runtime, tokenizer, and instruction wrapper. **Do not mix its numbers into
+the headline `claude-opus-4-8` subscription figures** — keep Codex rows in their own
+table (see [Limitations](#limitations)). Use it as a portability check while Claude
+quota is tight.
 
 ```bash
 python3 benchmarks/run_codex.py \

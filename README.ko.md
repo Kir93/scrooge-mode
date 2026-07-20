@@ -118,7 +118,7 @@ installer가 감지된 호스트를 각 기능 tier로 설치함:
 | Codex | skills + `config.toml` hook | ✓ | ✓ | — |
 | Cursor · Windsurf · Cline · Continue · Gemini CLI | skills (skill-only) | — | — | — |
 
-skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. 완전한 hook+stats+statusline은 Claude Code, Codex는 `~/.codex/config.toml`로 hook+stats 제공.
+skill-only 호스트는 register 규칙을 skill로 받지만 활성화는 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. 완전한 hook+stats+statusline은 Claude Code, Codex는 `~/.codex/config.toml`로 hook+stats 제공. Codex는 `UserPromptSubmit`만 배선(`SessionStart` 없음)하므로 업데이트 알림·`↑vX` 마커는 Claude 전용이고 업그레이드는 재설치 — INSTALL.ko.md의 [Update](INSTALL.ko.md#update) 참고.
 
 ## 표면
 

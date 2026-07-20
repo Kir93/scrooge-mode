@@ -2,6 +2,8 @@
 # scrooge installer shim (Windows).
 #   Local clone:  ./install.ps1 [flags]   → node bin/install.js
 #   else:         npx github delegation
+# Best-effort Windows shim — NOT exercised by CI (ubuntu-latest only); validate
+# manually on Windows. See INSTALL.md "Platform support". Logic: delegate to node.
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
