@@ -1,0 +1,8 @@
+{"file": "samples/loose.md", "category": "dup", "anchor": "Always run the linter before every commit", "note": "pure-prose duplicate block (2nd copy) — no protected span, verifyPreservation passes, removable full"}
+{"file": "samples/loose.md", "category": "dup", "anchor": "Run `scripts/deploy.sh --force` to push a release", "note": "protected-span duplicate block (F2) — inline code count N->N-1, verifyPreservation REJECT, removable 0"}
+{"file": "samples/loose.md", "category": "dead", "anchor": "docs/legacy/OLD-GUIDE.md", "note": "broken path reference — target does not exist on disk"}
+{"file": "samples/loose.md", "category": "dead", "anchor": "pending until the infra work lands", "note": "stale marker (pending / until X lands)"}
+{"file": "samples/loose.md", "category": "lowdensity", "anchor": "Basically, to get started you just need", "note": "filler-heavy prose (basically/just/simply/honestly/pretty much)"}
+{"file": "samples/medium.md", "category": "dup", "anchor": "Open a pull request early and request review", "note": "pure-prose duplicate block (2nd copy) — removable full"}
+{"file": "samples/medium.md", "category": "dead", "anchor": "TBD item tracked under Task 7", "note": "TBD Task N marker"}
+{"file": "samples/medium.md", "category": "lowdensity", "anchor": "We should probably consider maybe", "note": "hedging/filler (probably/maybe/at some point later)"}

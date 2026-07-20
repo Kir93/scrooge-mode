@@ -1,0 +1,164 @@
+{
+  "schema": "context-audit/report@1",
+  "note": "Phase 0 deterministic measurement. LLM=0, quota=0, bit-identical for a fixed repo state. This is a SNAPSHOT: self-repo rows are LIVE (drift with edits) and ARE verdict inputs (they feed the full-corpus marginal median + the regime-divergence guard), so the verdict can shift if those docs change. Drift-free/stable: the labeled scoring (recall/precision, synthetic only) and the floor re-measurement. Corpus-expansion range is Task 4 (LLM-dependent, separate).",
+  "thresholds": {
+    "marginalGoPct": 8,
+    "marginalKillPct": 3,
+    "precisionGo": 0.8,
+    "precisionNoise": 0.5,
+    "emitVerdict": true
+  },
+  "anchors": {
+    "mcpShrinkNoGoPct": 2.6,
+    "memoryCompressFloorPct": 7.7
+  },
+  "verdict": "WEAK",
+  "verdictReason": "regime divergence (Open Q1): synthetic median 28.22% clears GO but dogfood-tight self-repo median 0% is in the kill zone — no single median is representative. Expand the corpus with representative less-compressed real docs (D3 local manifest) before GO.",
+  "marginal": {
+    "medianPct": 0,
+    "minPct": 0,
+    "maxPct": 31.43,
+    "syntheticMedianPct": 28.22,
+    "selfRepoMedianPct": 0,
+    "note": "structural (dup+dead) removable tokens / baseline tokens, per file. low-density excluded (memory-compress absorbs it, F1/F4). guard-passing only (F2)."
+  },
+  "scoring": {
+    "per": {
+      "dup": {
+        "labeled": 3,
+        "caught": 3,
+        "recall": 1,
+        "flagged": 3,
+        "tp": 3,
+        "precision": 1
+      },
+      "dead": {
+        "labeled": 3,
+        "caught": 3,
+        "recall": 1,
+        "flagged": 3,
+        "tp": 3,
+        "precision": 1
+      },
+      "lowdensity": {
+        "labeled": 2,
+        "caught": 2,
+        "recall": 1,
+        "flagged": 2,
+        "tp": 2,
+        "precision": 1
+      }
+    },
+    "structuralPrecision": 1,
+    "structuralEstablished": true
+  },
+  "floor": {
+    "baselineTokens": 112,
+    "savedTokens": 10,
+    "savingPct": 8.93,
+    "anchorPct": 7.7,
+    "note": "historical dogfood-tight floor 7.7% (superset spec:206). This committed pair is a reference fixture for deterministic re-measurement, not a re-run of that original LLM compression."
+  },
+  "gross": {
+    "removableTokens": 175,
+    "structuralTokens": 126
+  },
+  "files": [
+    {
+      "id": "self-claude",
+      "path": "CLAUDE.md",
+      "source": "self-repo",
+      "labeled": false,
+      "live": true,
+      "baselineTokens": 1083,
+      "counts": {
+        "dup": 0,
+        "dead": 0,
+        "lowdensity": 0
+      },
+      "grossTokens": 0,
+      "structuralTokens": 0,
+      "structuralMarginalPct": 0
+    },
+    {
+      "id": "self-agents",
+      "path": "AGENTS.md",
+      "source": "self-repo",
+      "labeled": false,
+      "live": true,
+      "baselineTokens": 176,
+      "counts": {
+        "dup": 0,
+        "dead": 0,
+        "lowdensity": 0
+      },
+      "grossTokens": 0,
+      "structuralTokens": 0,
+      "structuralMarginalPct": 0
+    },
+    {
+      "id": "self-rules-ko-full",
+      "path": "rules/ko/full.md",
+      "source": "self-repo",
+      "labeled": false,
+      "live": true,
+      "baselineTokens": 1151,
+      "counts": {
+        "dup": 0,
+        "dead": 0,
+        "lowdensity": 3
+      },
+      "grossTokens": 14,
+      "structuralTokens": 0,
+      "structuralMarginalPct": 0
+    },
+    {
+      "id": "self-rules-en-full",
+      "path": "rules/en/full.md",
+      "source": "self-repo",
+      "labeled": false,
+      "live": true,
+      "baselineTokens": 1389,
+      "counts": {
+        "dup": 0,
+        "dead": 0,
+        "lowdensity": 1
+      },
+      "grossTokens": 16,
+      "structuralTokens": 0,
+      "structuralMarginalPct": 0
+    },
+    {
+      "id": "syn-medium",
+      "path": "samples/medium.md",
+      "source": "synthetic",
+      "labeled": true,
+      "live": false,
+      "baselineTokens": 175,
+      "counts": {
+        "dup": 1,
+        "dead": 1,
+        "lowdensity": 1
+      },
+      "grossTokens": 63,
+      "structuralTokens": 55,
+      "structuralMarginalPct": 31.43
+    },
+    {
+      "id": "syn-loose",
+      "path": "samples/loose.md",
+      "source": "synthetic",
+      "labeled": true,
+      "live": false,
+      "baselineTokens": 284,
+      "counts": {
+        "dup": 2,
+        "dead": 2,
+        "lowdensity": 1
+      },
+      "grossTokens": 82,
+      "structuralTokens": 71,
+      "structuralMarginalPct": 25
+    }
+  ]
+}

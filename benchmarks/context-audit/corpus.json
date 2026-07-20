@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "note": "context-audit Phase 0 corpus manifest. self-repo = dogfood-tight injected docs (floor regime, unlabeled wild set — flagged counts reported, not scored, per drift mitigation). synthetic = labeled ground-truth fixtures (recall/precision scoring). local_expansion = optional private files (NOT committed; local-corpus convention). floor_pair = reference (original, compressed) for the deterministic compressionDelta re-measurement.",
+  "files": [
+    { "id": "self-claude", "source": "self-repo", "path": "CLAUDE.md", "density": "tight", "labeled": false },
+    { "id": "self-agents", "source": "self-repo", "path": "AGENTS.md", "density": "tight", "labeled": false },
+    { "id": "self-rules-ko-full", "source": "self-repo", "path": "rules/ko/full.md", "density": "tight", "labeled": false },
+    { "id": "self-rules-en-full", "source": "self-repo", "path": "rules/en/full.md", "density": "tight", "labeled": false },
+    { "id": "syn-medium", "source": "synthetic", "path": "samples/medium.md", "density": "medium", "labeled": true },
+    { "id": "syn-loose", "source": "synthetic", "path": "samples/loose.md", "density": "loose", "labeled": true }
+  ],
+  "local_expansion": [],
+  "floor_pair": {
+    "original": "samples/floor-ref.original.md",
+    "compressed": "samples/floor-ref.compressed.md",
+    "anchor_note": "historical dogfood-tight floor 7.7% (superset spec:206). This committed pair is a reference fixture for deterministic re-measurement, not a re-run of that original LLM compression."
+  }
+}
