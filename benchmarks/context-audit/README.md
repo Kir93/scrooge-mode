@@ -70,12 +70,18 @@ deterministic GO verdict (F1).
 ## Reproduce
 
 ```bash
-node benchmarks/context-audit/run.js        # deterministic report -> results/ (Task 3)
+node benchmarks/context-audit/run.js        # deterministic report -> results/report.* (Task 3)
 npm test                                     # detector determinism + masking canaries
+
+# Task 4 (optional, LLM-dependent — subscription quota, FOREGROUND only, NON-bit-identical):
+node benchmarks/context-audit/mc-range.js    # live memory-compress RANGE -> results/mc-range.json
 ```
 
-No subscription quota, no LLM, no external dependency — the deterministic core is
-zero-dep `node` and CI-testable, mirroring `benchmarks/fidelity/checks.js`.
+The deterministic core (`run.js`, detectors, tests) needs no subscription quota, no
+LLM, no external dependency — zero-dep `node`, CI-testable, mirroring
+`benchmarks/fidelity/checks.js`. Only `mc-range.js` calls the subscription `claude`
+CLI (isolated via `--setting-sources ''` + empty cwd); its output is
+non-deterministic and excluded from the GO verdict (F1).
 
 ## Files
 
@@ -88,5 +94,6 @@ zero-dep `node` and CI-testable, mirroring `benchmarks/fidelity/checks.js`.
 | `samples/floor-ref.{original,compressed}.md` | floor re-measurement reference pair |
 | `detectors.js` | the three deterministic detectors (Task 2) |
 | `run.js` | scorer + GO/NO-GO report (Task 3) |
-| `mc-range.js` | LLM-dependent range measurement (Task 4, optional) |
-| `results/` | committed reproducible reports |
+| `mc-range.js` | LLM-dependent range measurement (Task 4) |
+| `results/report.{md,json}` | committed deterministic GO/NO-GO report (Task 3) |
+| `results/mc-range.json` | committed LLM-dependent range (Task 4, non-bit-identical) |

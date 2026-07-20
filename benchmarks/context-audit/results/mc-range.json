@@ -1,0 +1,114 @@
+{
+  "schema": "context-audit/mc-range@1",
+  "llm_dependent": true,
+  "bit_identical": false,
+  "generated_at": "2026-07-20T07:12:43.968Z",
+  "model": "claude-opus-4-8",
+  "note": "memory-compress corpus-expansion RANGE (Task 4). Live-compressed via subscription `claude` (--setting-sources \"\" isolation, empty cwd). NON-deterministic: re-running yields different compressed prose. EXCLUDED from the deterministic GO verdict (F1) — separate from report.json. Range covers guard-passing rows only. Local (private) rows are path-redacted / not committed.",
+  "anchors": {
+    "memoryCompressFloorPct": 7.7,
+    "deterministicFloorPct": 8.93
+  },
+  "range": {
+    "minPct": 3.88,
+    "medianPct": 3.98,
+    "maxPct": 23.59,
+    "n": 3,
+    "note": "min/median/max of per-file live memory-compress saving %, guard-passing rows only."
+  },
+  "caveats": [
+    "n=3 guard-passing row(s) (2 self-repo + 1 synthetic) — thin; treat the range as INDICATIVE, not a distribution.",
+    "2 row(s) GUTTED (model truncated/summarized instead of compressing — saving>80% but guard-failed): self-rules-ko-full, self-rules-en-full — invalid, excluded.",
+    "1 row(s) guard-REJECTED (model dropped a protected span on harder compression — the F2 phenomenon, live): syn-medium — excluded (not safely realizable).",
+    "realizable (guard-passing) live saving: median 3.98%, range 3.88–23.59% across 2 self-repo + 1 synthetic. Median below the 7.7% historical floor anchor and the 8.93% deterministic floor pair. Harder compressions were gutted or guard-rejected (see counts) — realizable headroom is modest and the guard, not the model, caps it."
+  ],
+  "floorRelation": {
+    "historicalFloorPct": 7.7,
+    "deterministicFloorPct": 8.93,
+    "liveMedianPct": 3.98,
+    "liveRangePct": [
+      3.88,
+      23.59
+    ],
+    "finding": "live range 3.88–23.59% STRADDLES the 7.7% floor: median 3.98% is below it, the top is pulled up by looser synthetic samples while real tight self docs sit below. The floor point is not a floor of the realizable distribution — safely-realizable saving on tight docs runs lower."
+  },
+  "counts": {
+    "validGuardPassing": 3,
+    "gutted": 2,
+    "guardRejected": 1,
+    "errored": 0
+  },
+  "files": [
+    {
+      "id": "self-claude",
+      "path": "CLAUDE.md",
+      "source": "self-repo",
+      "baselineTokens": 1083,
+      "savedTokens": 42,
+      "savingPct": 3.88,
+      "guardOk": true
+    },
+    {
+      "id": "self-agents",
+      "path": "AGENTS.md",
+      "source": "self-repo",
+      "baselineTokens": 176,
+      "savedTokens": 7,
+      "savingPct": 3.98,
+      "guardOk": true
+    },
+    {
+      "id": "self-rules-ko-full",
+      "path": "rules/ko/full.md",
+      "source": "self-repo",
+      "baselineTokens": 1151,
+      "savedTokens": 1140,
+      "savingPct": 99.04,
+      "guardOk": false,
+      "guardMissing": [
+        "hooks/scrooge-activate.js",
+        "registry.json",
+        "`Fix:`",
+        "`원인:`",
+        "`해결:`"
+      ]
+    },
+    {
+      "id": "self-rules-en-full",
+      "path": "rules/en/full.md",
+      "source": "self-repo",
+      "baselineTokens": 1389,
+      "savedTokens": 1373,
+      "savingPct": 98.85,
+      "guardOk": false,
+      "guardMissing": [
+        "hooks/scrooge-activate.js",
+        "registry.json",
+        "`Fix:`",
+        "`Cause:`",
+        "`→`"
+      ]
+    },
+    {
+      "id": "syn-medium",
+      "path": "samples/medium.md",
+      "source": "synthetic",
+      "baselineTokens": 175,
+      "savedTokens": 71,
+      "savingPct": 40.57,
+      "guardOk": false,
+      "guardMissing": [
+        "loose.md"
+      ]
+    },
+    {
+      "id": "syn-loose",
+      "path": "samples/loose.md",
+      "source": "synthetic",
+      "baselineTokens": 284,
+      "savedTokens": 67,
+      "savingPct": 23.59,
+      "guardOk": true
+    }
+  ]
+}
