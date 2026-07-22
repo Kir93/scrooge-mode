@@ -40,6 +40,10 @@ from typing import Iterator, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = REPO_ROOT / "rules"
+# Default bench cwd lives OUTSIDE the repo: an empty dir means no project
+# CLAUDE.md leaks into context (see build_cmd docstring) and bench session
+# JSONL stays out of the repo's interactive session list.
+DEFAULT_BENCH_CWD = Path.home() / ".cache" / "scrooge-bench"
 CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 
 TERSE_CONTROL_SYSTEM = (
@@ -715,7 +719,10 @@ def main() -> int:
     ap.add_argument("--arms", required=True, help="Comma-separated arm specs.")
     ap.add_argument("--runs", type=int, default=1, help="Repetitions per (arm, prompt). Default 1.")
     ap.add_argument("--output", required=True, type=Path, help="JSONL output file (results appended).")
-    ap.add_argument("--cwd", type=Path, default=REPO_ROOT, help="Working dir for claude invocation. Default repo root.")
+    ap.add_argument("--cwd", type=Path, default=DEFAULT_BENCH_CWD,
+                    help="Working dir for claude invocation. Default ~/.cache/scrooge-bench "
+                         "(empty dir: no project CLAUDE.md pollution, bench sessions stay "
+                         "out of the repo's session list).")
     ap.add_argument("--timeout", type=int, default=120, help="Per-call timeout seconds. Default 120.")
     ap.add_argument("--dry-run", action="store_true", help="Synthesize fake responses (smoke test).")
     ap.add_argument("--no-isolate-host", action="store_true",
