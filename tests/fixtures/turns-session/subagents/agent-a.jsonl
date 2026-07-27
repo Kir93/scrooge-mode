@@ -1,0 +1,1 @@
+{"type":"assistant","message":{"id":"msg_SUB1","model":"claude-opus-4-8","content":[{"type":"text","text":"subagent reply."}],"usage":{"input_tokens":200,"output_tokens":25,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}

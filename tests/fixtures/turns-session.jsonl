@@ -1,0 +1,8 @@
+{"type":"user","message":{"role":"user","content":"start"}}
+{"type":"assistant","message":{"id":"msg_T1","model":"claude-opus-4-8","content":[{"type":"text","text":"first answer part 1."}],"usage":{"input_tokens":400,"output_tokens":90,"cache_read_input_tokens":20,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_T1","model":"claude-opus-4-8","content":[{"type":"text","text":"first answer part 1."}],"usage":{"input_tokens":400,"output_tokens":90,"cache_read_input_tokens":20,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_T1","model":"claude-opus-4-8","content":[{"type":"text","text":"part 2 with `npm test`."}],"usage":{"input_tokens":400,"output_tokens":90,"cache_read_input_tokens":20,"cache_creation_input_tokens":0}}}
+{not valid json at all
+{"type":"assistant","message":{"id":"msg_T2","model":"claude-opus-4-8","content":[{"type":"tool_use","id":"toolu_9","name":"Bash","input":{}}],"usage":{"input_tokens":500,"output_tokens":40,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_skip","model":"claude-opus-4-8","content":[{"type":"text","text":"no usage line — not a counted response"}]}}
+{"type":"assistant","message":{"id":"msg_T3","model":"claude-opus-4-8","content":[{"type":"text","text":"final prose turn."}],"usage":{"input_tokens":600,"output_tokens":150,"cache_read_input_tokens":30,"cache_creation_input_tokens":0}}}
