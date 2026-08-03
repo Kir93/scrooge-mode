@@ -158,6 +158,21 @@ test('buildReport maps session verdicts to caveat-relax / reinject-tune / inconc
   assert.equal(none.main.verdict, 'inconclusive'); // no conclusive session — 판정 금지
 });
 
+test('buildReport reports the median late/early ratio over conclusive sessions only', () => {
+  // The README quotes this number next to the counts and claims all four can be
+  // checked against results.json, so it has to be a field — and it has to skip
+  // inconclusive sessions, whose ratio is null and would sort as 0, dragging the
+  // median down without anything looking wrong.
+  const halved = proseAnalysis('a', [100, 100, 100, 50, 50, 50]); // ratio 0.5
+  const level = proseAnalysis('b', [100, 100, 100, 100, 100, 100]); // ratio 1
+  const doubled = proseAnalysis('c', [100, 100, 100, 200, 200, 200]); // ratio 2
+  const short = proseAnalysis('d', [100]); // inconclusive, ratio null
+
+  assert.equal(buildReport([halved, level, doubled]).main.medianRatio, 1);
+  assert.equal(buildReport([halved, level, doubled, short]).main.medianRatio, 1);
+  assert.equal(buildReport([short, short]).main.medianRatio, null);
+});
+
 test('buildReport aggregates subagent turns separately from the main verdict', () => {
   const withSub = analyzeSession(FIXTURE, { includeSubagents: true });
   const report = buildReport([withSub]);

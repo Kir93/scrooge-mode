@@ -1,11 +1,17 @@
-// Version-source consistency guard (release-pipeline-maturity Task 1).
+// Version-source consistency guard (release-pipeline-maturity Task 1;
+// lockfile sources added in integrity-sweep Task 11).
 //
-// A release sets one version in four places; they must stay in lockstep. The
-// release workflow (.github/workflows/release.yml) checks these four against the
+// A release sets one version in six places; they must stay in lockstep. The
+// release workflow (.github/workflows/release.yml) checks them against the
 // pushed tag, but that check only runs at tag time. This test runs on every
-// `npm test` (CI push/PR), so a bump that moves fewer than all four sources is
+// `npm test` (CI push/PR), so a bump that moves fewer than all six sources is
 // caught before a tag is ever pushed. Sources mirror release.yml's read/compare
 // shape (readFileSync + JSON.parse).
+//
+// `package-lock.json` carries the version twice — top level and `packages[""]` —
+// and `npm ci` succeeds even when both disagree with `package.json`, so nothing
+// else in the pipeline notices. It drifted to 0.2.1 against a 0.21.0 package.json
+// and stayed there. Regenerate with `npm install --package-lock-only` after a bump.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,16 +24,19 @@ const REPO_ROOT = path.join(HERE, '..');
 
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8'));
 
-test('all four version sources are identical', () => {
+test('all six version sources are identical', () => {
   const pkg = readJson('package.json');
   const marketplace = readJson('.claude-plugin/marketplace.json');
   const plugin = readJson('.claude-plugin/plugin.json');
+  const lock = readJson('package-lock.json');
 
   const sources = {
     'package.json version': pkg.version,
     'marketplace metadata.version': marketplace.metadata?.version,
     'marketplace plugins[0].version': marketplace.plugins?.[0]?.version,
     'plugin.json version': plugin.version,
+    'package-lock.json version': lock.version,
+    'package-lock.json packages[""].version': lock.packages?.['']?.version,
   };
 
   // Every source must be a non-empty string (a missing field reads as undefined,

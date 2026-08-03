@@ -22,6 +22,8 @@ import {
   mergeCodexHookConfig,
   pruneClaudeSkillLeak,
   removeCodexHookConfig,
+  safeReplaceFile,
+  findOwnRepoRoot,
 } from '../bin/install.js';
 
 const INSTALL_JS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'install.js');
@@ -105,6 +107,108 @@ test('main() fires when invoked through a bin symlink (CLI-guard regression)', {
   fs.rmSync(dir, { recursive: true, force: true });
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /Supported agents/); // proves main() ran via the symlink
+});
+
+// ── Self-install guard (integrity-sweep Task 12) ──────────────────────────────
+// findOwnRepoRoot decides whether the installer is running inside its own clone.
+// A wrong answer is not cosmetic: it drives whether we install into the user's
+// agent config or refuse as a self-install, and the walk touches every parent
+// directory up to `/`.
+
+test('findOwnRepoRoot finds the package root by name, walking up', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-own-'));
+  const nested = path.join(dir, 'a', 'b');
+  fs.mkdirSync(nested, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'scrooge-mode' }));
+  assert.equal(fs.realpathSync(findOwnRepoRoot(nested, 'scrooge-mode')), fs.realpathSync(dir));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('findOwnRepoRoot ignores a different package and an unparseable manifest', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-own-'));
+  const nested = path.join(dir, 'a');
+  fs.mkdirSync(nested, { recursive: true });
+  // Someone else's package must not match, and a broken package.json must not
+  // abort the walk — it keeps going upward.
+  fs.writeFileSync(path.join(nested, 'package.json'), '{ not json');
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'some-other-pkg' }));
+  assert.equal(findOwnRepoRoot(nested, 'scrooge-mode'), null);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('findOwnRepoRoot terminates at the filesystem root instead of looping', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-own-'));
+  assert.equal(findOwnRepoRoot(dir, 'a-name-no-package-will-ever-have'), null);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ── Single-source guards on install.js (integrity-sweep Task 3) ──────────────
+// Source-level asserts, not behavioural ones: both properties are about what the
+// file is allowed to CONTAIN. A behavioural test would pass just as happily
+// against a re-introduced private copy.
+
+test('release comparison comes from hooks/scrooge-config.js, not a local copy', () => {
+  // `scrooge --version` and the session-start update notice must agree on what
+  // "newer" means. A second parser here drifts silently — no test would fail.
+  const src = fs.readFileSync(INSTALL_JS, 'utf8');
+  assert.match(src, /import \{ semverGt \} from '\.\.\/hooks\/scrooge-config\.js'/);
+  assert.ok(!/function (isNewerVersion|semverGt)\s*\(/.test(src), 'install.js redefines the version compare');
+});
+
+test('safeReplaceFile backs up once, preserves mode, and leaves no temp file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-write-'));
+  const target = path.join(dir, 'settings.json');
+  fs.writeFileSync(target, 'original\n');
+  fs.chmodSync(target, 0o644);
+
+  safeReplaceFile(target, 'first\n');
+  assert.equal(fs.readFileSync(target, 'utf8'), 'first\n');
+  // The pre-existing content is preserved as the user's snapshot.
+  assert.equal(fs.readFileSync(target + '.bak', 'utf8'), 'original\n');
+  if (process.platform !== 'win32') assert.equal(fs.statSync(target).mode & 0o777, 0o644);
+
+  // A later write (e.g. uninstall) must not overwrite that first snapshot.
+  safeReplaceFile(target, 'second\n');
+  assert.equal(fs.readFileSync(target, 'utf8'), 'second\n');
+  assert.equal(fs.readFileSync(target + '.bak', 'utf8'), 'original\n');
+
+  assert.deepEqual(fs.readdirSync(dir).filter((f) => f.startsWith('.scrooge.tmp')), []);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('user-owned config files are written through safeReplaceFile only', () => {
+  // A raw writeFileSync truncates first: a crash mid-write leaves the user's
+  // settings.json/config.toml destroyed with no backup. Match the whole call
+  // (balanced-paren-free but newline-tolerant) rather than the first comma-free
+  // argument — `fs.writeFileSync(path.join(cfg, 'settings.json'), …)` would slip
+  // past an `[^,]+` capture and quietly disarm this guard.
+  const src = fs.readFileSync(INSTALL_JS, 'utf8');
+  for (const m of src.matchAll(/fs\.writeFileSync\([\s\S]*?\);/g)) {
+    assert.ok(
+      !/settingsPath|configPath|settings\.json|config\.toml/.test(m[0]),
+      `user config written without safeReplaceFile: ${m[0].slice(0, 120)}`
+    );
+  }
+  assert.match(src, /export function safeReplaceFile\(/);
+});
+
+test('safeReplaceFile writes through a symlinked config file, not over it', {
+  skip: process.platform === 'win32' ? 'symlinkSync needs admin/Developer Mode on Windows' : false,
+}, () => {
+  // Dotfile setups symlink settings.json into a tracked repo. Renaming over the
+  // link would replace it with a plain file and strand the repo copy.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-link-'));
+  const real = path.join(dir, 'dotfiles-settings.json');
+  const link = path.join(dir, 'settings.json');
+  fs.writeFileSync(real, 'original\n');
+  fs.symlinkSync(real, link);
+
+  safeReplaceFile(link, 'updated\n');
+
+  assert.ok(fs.lstatSync(link).isSymbolicLink(), 'symlink was replaced by a regular file');
+  assert.equal(fs.readFileSync(real, 'utf8'), 'updated\n');
+  assert.equal(fs.readFileSync(real + '.bak', 'utf8'), 'original\n'); // backup beside the real file
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 // ── Claude re-run = update (Task: update-path) ───────────────────────────────

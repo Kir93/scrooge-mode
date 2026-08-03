@@ -163,6 +163,77 @@ test('recordInputDelta refuses invalid input', () => {
   assert.equal(aggregateLedger({}, h).sessions, 0); // nothing written
 });
 
+// Regression: the read cap (bytes) and the write cap (sessions) used to be in
+// different units, so a history of large entries could pass the write cap while
+// failing the read cap. The read then returned null, the writer read that as "no
+// history yet", and the next write replaced a lifetime of entries with one line.
+test('a history file over the read cap is never overwritten', () => {
+  const h = tmpHistory();
+  // 300 KB of well-formed entries — past the 256 KB read cap.
+  const lines = [];
+  for (let i = 0; i < 1200; i++) {
+    lines.push(
+      JSON.stringify({ sessionId: `s${i}`, model: 'claude-opus-4-7', savedTokens: 10, ts: i, pad: 'x'.repeat(200) })
+    );
+  }
+  const body = lines.join('\n') + '\n';
+  fs.writeFileSync(h, body);
+  assert.ok(fs.statSync(h).size > 256 * 1024);
+
+  assert.equal(upsertSession({ sessionId: 'new', savedTokens: 999, ts: 99999 }, h), false);
+  assert.equal(recordInputDelta({ sessionKey: 'new', source: 'memory-compress', saved: 5 }, h), false);
+  assert.equal(fs.readFileSync(h, 'utf8'), body); // untouched, not collapsed to one entry
+
+  // The zeros are reported as "unreadable", not as "nothing was ever saved".
+  const agg = aggregateLedger({}, h);
+  assert.equal(agg.sessions, 0);
+  assert.equal(agg.unreadable, true);
+});
+
+test('a write that would cross the read cap drops the oldest entries instead', () => {
+  const h = tmpHistory();
+  // Fill to just under the cap with well-formed entries, well below MAX_SESSIONS
+  // so the session-count cap cannot be what trims — only the byte cap can.
+  const line = (i) =>
+    JSON.stringify({ sessionId: `s${String(i).padStart(400, '0')}`, model: 'claude-opus-4-7', savedTokens: 1, ts: i });
+  const seeded = [];
+  let bytes = 1;
+  for (let i = 1; bytes + line(i).length + 1 < 256 * 1024; i++) {
+    seeded.push(line(i));
+    bytes += line(i).length + 1;
+  }
+  fs.writeFileSync(h, seeded.join('\n') + '\n');
+  assert.ok(seeded.length < 1000, 'seed must stay under the session cap');
+  const oldest = JSON.parse(seeded[0]).sessionId;
+
+  assert.equal(upsertSession({ sessionId: 'newest', savedTokens: 7, ts: 10 ** 9 }, h), true);
+
+  assert.ok(fs.statSync(h).size <= 256 * 1024); // still readable next session
+  const after = fs.readFileSync(h, 'utf8');
+  assert.ok(after.includes('"sessionId":"newest"'));
+  assert.ok(!after.includes(`"sessionId":"${oldest}"`)); // oldest dropped, not the new write
+  assert.equal(aggregateLedger({}, h).unreadable, false);
+});
+
+test('a near-full history keeps the entry being written, even with no timestamp', () => {
+  // recordInputDelta callers may omit `ts` (hooks/scrooge-memory.js does), so the
+  // new entry sorts oldest and would be first over the byte cliff — written,
+  // reported as success, and silently absent from the file.
+  const h = tmpHistory();
+  const line = (i) =>
+    JSON.stringify({ sessionId: `s${String(i).padStart(400, '0')}`, model: 'claude-opus-4-7', savedTokens: 1, ts: i });
+  const seeded = [];
+  let bytes = 1;
+  for (let i = 1; bytes + line(i).length + 1 < 256 * 1024; i++) {
+    seeded.push(line(i));
+    bytes += line(i).length + 1;
+  }
+  fs.writeFileSync(h, seeded.join('\n') + '\n');
+
+  assert.equal(recordInputDelta({ sessionKey: 'no-ts', source: 'memory-compress', saved: 42 }, h), true);
+  assert.equal(aggregateLedger({}, h).bySource['memory-compress'], 42);
+});
+
 test('upsertSession refuses invalid input and a symlinked history path', {
   skip: process.platform === 'win32' ? 'symlinkSync needs admin/Developer Mode on Windows' : false,
 }, () => {

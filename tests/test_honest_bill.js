@@ -49,6 +49,23 @@ test('formatStats omits reasoning/overhead lines when zero', () => {
   assert.doesNotMatch(out, /Self overhead/);
 });
 
+test('formatStats says the lifetime total is unavailable when the history is over the read cap', () => {
+  // sessions === 0 normally means "nothing accumulated yet" and the block is
+  // omitted. Over the cap it means "unreadable" — silently showing the same
+  // empty screen is how a lifetime total goes missing without a word.
+  const out = formatStats({
+    outputTokens: 1000,
+    proseOutputTokens: 1000,
+    reasoningOutputTokens: 0,
+    inputOverheadTokens: 0,
+    cacheReadTokens: 0,
+    turns: 2,
+    state: ACTIVE,
+    ledger: { sessions: 0, savedTokens: 0, inputSavedTokens: 0, bySource: {}, unreadable: true },
+  });
+  assert.match(out, /Lifetime \(ledger\):\s+unavailable — history file could not be read/);
+});
+
 test('formatStats ledger block renders the net bill with input savings and per-source breakdown', () => {
   const out = formatStats({
     outputTokens: 2000,

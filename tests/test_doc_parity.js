@@ -29,7 +29,7 @@ const lineMatching = (body, re) => body.split('\n').find((l) => re.test(l));
 // Languages that carry a measured savings ratio — probed through the public stats
 // estimator instead of importing the private SAVINGS_RATIO constant. These MUST
 // appear in the savings headline; an unbenchmarked language (in VALID_LANGS but
-// with no ratio → "estimate pending") is intentionally NOT required there.
+// with no ratio, which now says so explicitly) is intentionally NOT required there.
 const benchmarkedLangs = VALID_LANGS.filter((l) => deriveEstimate(1000, l, 'full') != null);
 
 // English count word for a roster of n languages; past the common ladder a brand
@@ -110,7 +110,7 @@ test('READMEs carry no stale "two languages" phrasing', () => {
 // measured section. The ZH self-contradiction (a "measurement is pending" sentence
 // sitting above ZH's own measured fidelity/savings table) is the exact pattern this
 // catches. Scoped to benchmarked languages (a set SAVINGS_RATIO membership defines),
-// so a legitimately unmeasured dial's "estimate pending" (e.g. lite) never trips it.
+// so a dial that publishes no ratio (lite — measured, NO-GO) never trips it.
 const pendingPattern = {
   'README.md': (lang) => new RegExp(lang.toUpperCase() + '[^.\\n]*measurement is pending', 'i'),
   'README.ko.md': (lang) => new RegExp(lang.toUpperCase() + '[^.\\n]*측정[^.\\n]{0,6}대기'),
@@ -130,9 +130,9 @@ for (const [f, mk] of Object.entries(pendingPattern)) {
 // (G) Every benchmarked (lang, full) carries complete savings provenance in
 // LANG_META — ratio + results + n + model — so each headline ratio is traceable to
 // its backing benchmark (results file(s), sample size, model). Presence-only, per
-// field: `results` may be a multi-file array and `n` a composite total (e.g. ja's
-// tuning + held-out mean), so no single fabricated n is ever required to pass. This
-// is the G4 traceability guard: a ratio present but missing its provenance fails.
+// field: `results` may be a multi-file array and `n` a per-file count, so no single
+// fabricated n is ever required to pass. This is the G4 traceability guard: a ratio
+// present but missing its provenance fails.
 test('every benchmarked savings ratio carries results + n + model provenance', () => {
   for (const lang of benchmarkedLangs) {
     const meta = savingsMeta(lang, 'full');
@@ -148,6 +148,60 @@ test('every benchmarked savings ratio carries results + n + model provenance', (
     assert.ok(
       typeof meta.model === 'string' && meta.model.length > 0,
       `${lang}/full: model provenance missing`
+    );
+  }
+});
+
+// (H) The LANG_META ratio a user sees in /scrooge-stats and the README table a
+// reader recomputes from published rows must be the SAME measurement. They are two
+// hand-maintained surfaces over one dataset, so they drift silently: before this
+// guard ko carried an opus-4-7 ratio against an opus-4-8 table (2.5pp off) and the
+// hi/zh ratios were transposed (3pp each, in opposite directions).
+//
+// Derivation, matching how the published tables are computed:
+//   ratio = 1 − median(scrooge) / median(normal), rounded to 2 decimals.
+// The README medians are the assertion's input, so a table edit that changes a
+// number without updating LANG_META fails here rather than shipping.
+function readmeMedians(body, lang) {
+  // Number-only cells, in order. A savings cell like `~64% (per-prompt 69.6%)`
+  // is not number-only, so it never masquerades as a median.
+  const numbers = (line) =>
+    line
+      .replace(/\*\*/g, '')
+      .split('|')
+      .slice(1, -1)
+      .map((c) => c.trim())
+      .filter((c) => /^\d[\d,]*$/.test(c))
+      .map((c) => Number(c.replace(/,/g, '')));
+
+  const lines = body.split('\n');
+  const armIdx = lines.findIndex((l) => l.includes(`\`scrooge:${lang}/full\``) && l.trim().startsWith('|'));
+  if (armIdx === -1) return null;
+  const armNums = numbers(lines[armIdx]);
+
+  // Two README table shapes carry the same measurement:
+  //   per-language — one median per row, with a `normal` row above in the table
+  //   combined     — `| arm | normal | scrooge | savings | fidelity |` on one row
+  if (armNums.length >= 2) return { normal: armNums[0], scrooge: armNums[1] };
+  for (let i = armIdx; i >= 0 && lines[i].trim().startsWith('|'); i--) {
+    if (/\|\s*`normal`\s*\|/.test(lines[i])) {
+      const n = numbers(lines[i])[0];
+      return n && armNums[0] ? { normal: n, scrooge: armNums[0] } : null;
+    }
+  }
+  return null;
+}
+
+test('LANG_META ratios match the README tables they are derived from', () => {
+  const body = read('README.md');
+  for (const lang of benchmarkedLangs) {
+    const medians = readmeMedians(body, lang);
+    assert.ok(medians, `README.md: no benchmark table row found for scrooge:${lang}/full`);
+    const derived = Number((1 - medians.scrooge / medians.normal).toFixed(2));
+    assert.equal(
+      savingsMeta(lang, 'full').ratio,
+      derived,
+      `${lang}/full: LANG_META ratio disagrees with README (normal ${medians.normal} → scrooge ${medians.scrooge} = ${derived})`
     );
   }
 });

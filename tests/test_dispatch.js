@@ -188,8 +188,26 @@ test('stats label dispatches generically; an un-benchmarked lang degrades gracef
     state,
   });
   assert.match(out, /Mode:\s+xx\/full/);
-  assert.match(out, /Savings estimate pending — no benchmark ratio for 'xx\/full'/);
+  assert.match(out, /No savings estimate published for 'xx\/full'/);
+  assert.match(out, /no benchmark run yet/); // truly unmeasured — distinct from the lite case below
   assert.match(suffixFor({ outputTokens: 500, turns: 2, state }), /tok/); // raw tokens, not a fake est
+});
+
+test('a lite session says the dial was measured and not adopted, not "pending"', () => {
+  // lite has no ratio because the measurement rejected it (Pareto loss vs full),
+  // not because it is unmeasured. Telling the user "pending" implies a number is
+  // coming; the honest register-product answer is why there will not be one.
+  const out = formatStats({
+    turns: 2,
+    outputTokens: 500,
+    proseOutputTokens: 400,
+    cacheReadTokens: 0,
+    state: { lang: 'ko', dial: 'lite', flags: [] },
+  });
+  assert.equal(deriveEstimate(1000, 'ko', 'lite'), null); // D2 option A: no lite ratio injected
+  assert.match(out, /No savings estimate published for 'ko\/lite'/);
+  assert.match(out, /measured and not adopted/);
+  assert.doesNotMatch(out, /pending/);
 });
 
 // ── missing table row → safe fallback (no crash) ────────────────────────────────

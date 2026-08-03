@@ -7,6 +7,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { loadCorpus, loadLabels, maskedSaving, byteLen } from '../benchmarks/context-audit/lib.js';
 import {
@@ -22,6 +25,7 @@ import {
   thresholds,
 } from '../benchmarks/context-audit/run.js';
 
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const { files } = loadCorpus();
 const byId = (id) => files.find((f) => f.id === id);
 
@@ -152,6 +156,27 @@ test('decideVerdict: GO / NO-GO / regime-divergence WEAK / WITHHELD', () => {
 
   const withheld = decideVerdict({ medianPct: 12, syntheticMedianPct: 12, selfRepoMedianPct: 10 }, 1, true, thresholds({ CA_VERDICT: 'off' }));
   assert.equal(withheld.verdict, 'WITHHELD');
+});
+
+// Regeneration guard (integrity-sweep Task 18). The invariant test below checks
+// SHAPE; nothing checked that the committed artefact still matches what the
+// detectors produce. So a detector change could ship while results/report.json
+// kept describing the old behaviour — the audit's own evidence going stale
+// silently. It caught its first drift immediately: editing rules/ko/full.md
+// moved that file's baselineTokens and left the committed report behind.
+//
+// Deterministic parts only. No network, no LLM: mc-range.js is the measured
+// LLM surface and is deliberately not regenerated here.
+test('the committed context-audit report matches a fresh run', () => {
+  const fresh = buildReport({});
+  const committed = JSON.parse(
+    fs.readFileSync(path.join(HERE, '..', 'benchmarks/context-audit/results/report.json'), 'utf8')
+  );
+  assert.deepEqual(
+    fresh,
+    committed,
+    'benchmarks/context-audit/results/report.json is stale — re-run `node benchmarks/context-audit/run.js` and commit both results/report.{json,md}'
+  );
 });
 
 test('buildReport: stable invariants hold regardless of live self-repo drift', () => {
