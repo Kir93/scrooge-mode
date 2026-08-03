@@ -11,8 +11,8 @@
 // Savings are a COUNTERFACTUAL ESTIMATE (what the same turns would have cost
 // uncompressed), always labelled "(est)". Per-dial ratios come from the
 // subscription benchmark, carried per language in lang-meta.js (LANG_META.savings)
-// and read here via savingsMeta(); a dial with no benchmark yet shows raw tokens
-// only — never a fabricated number.
+// and read here via savingsMeta(); a dial with no published ratio (lite, or an
+// unbenchmarked language) shows raw tokens only — never a fabricated number.
 
 import path from 'node:path';
 import os from 'node:os';
@@ -25,17 +25,23 @@ import {
   migrateLegacyState,
 } from './scrooge-config.js';
 import { readSession } from '../lib/session-log.js';
-import { upsertSession, aggregateLedger, sinceToEpoch } from '../lib/ledger.js';
+import { upsertSession, aggregateLedger, sinceToEpoch, getHistoryPath } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
 import { savingsMeta } from './lang-meta.js';
 
 // Per-(lang, dial) mean output-token compression ratios now live in lang-meta.js
 // (LANG_META[lang].savings), one row per language alongside the rest of that
 // language's metadata, each with its provenance (results file(s), N, model). This
-// hook reads them through savingsMeta(). Only `full` is measured; `lite` has no
-// benchmark yet, so lite sessions show "estimate pending" rather than a fabricated
-// number. Register-only isolation means real sessions may differ — hence the "(est)"
-// label on every derived figure.
+// hook reads them through savingsMeta().
+//
+// `lite` carries no ratio on purpose, and it is NOT unmeasured. It was measured
+// (lite-dial-verification, 2026-07-20): ko/lite +43.8% vs normal at fidelity
+// 0.650, en/lite +60.3% at 0.700 — against ko/full 0.690 and en/full 0.720. lite
+// compresses LESS than full and preserves LESS, a Pareto loss, so the verdict was
+// NO-GO and decision D2 (option A) kept the dial shipped but its ratio out of the
+// product surface. Publishing a lite estimate would advertise a dial we measured
+// and did not adopt. Register-only isolation means real sessions may differ —
+// hence the "(est)" label on every derived figure.
 
 const SEP = '──────────────────────────────';
 
@@ -46,8 +52,9 @@ function humanizeTokens(n) {
   return String(Math.round(n));
 }
 
-// Counterfactual estimate for one (lang, dial), or null when no benchmark ratio
-// exists for that pair (e.g. any lite session, or a lang not yet benchmarked).
+// Counterfactual estimate for one (lang, dial), or null when that pair carries no
+// published ratio — every lite session (measured, NO-GO, see above) and any
+// language not yet benchmarked.
 // The ratio is a prose-register figure, so it is applied to prose output tokens
 // only — tool_use output (bash/edit/tool JSON) is not compressed by the register
 // and must stay out of the savings base (ADR-003).
@@ -96,7 +103,18 @@ function selfOverheadTokens(state) {
 // Lifetime ledger block — accumulated savings across sessions, or a `--since`
 // window. Empty when the ledger has no sessions yet.
 function formatLedger(ledger, since) {
-  if (!ledger || ledger.sessions === 0) return '';
+  if (!ledger) return '';
+  // An unreadable history reads as zero sessions, which is NOT the same as
+  // "nothing saved yet" — the entries are still on disk. Saying so is the
+  // difference between a visible pause and a silent loss of the lifetime total
+  // (integrity-sweep Task 2).
+  if (ledger.unreadable) {
+    return (
+      `${SEP}\nLifetime (ledger):     unavailable — history file could not be read (likely over the size cap).\n` +
+      `Trim or move ${getHistoryPath()} to resume accumulating.\n`
+    );
+  }
+  if (ledger.sessions === 0) return '';
   const label = since ? `Since ${since}` : 'Lifetime';
   let block =
     `${SEP}\n${label} (ledger):\n` +
@@ -165,7 +183,10 @@ function formatStats({
     footer = `Estimate from benchmarks/ (mean per-dial, ${modeLabel}); applied to prose output only — tool_use output excluded. Savings are counterfactual.`;
   } else {
     savings =
-      `Savings estimate pending — no benchmark ratio for '${state.lang}/${state.dial}' yet.\n` +
+      `No savings estimate published for '${state.lang}/${state.dial}'.\n` +
+      (state.dial === 'lite'
+        ? 'The lite dial was measured and not adopted for estimates — it compresses less than full AND preserves less (see benchmarks/README.md).\n'
+        : 'That language/dial pair has no benchmark run yet.\n') +
       'Measured output tokens shown above; no estimate fabricated.';
   }
 

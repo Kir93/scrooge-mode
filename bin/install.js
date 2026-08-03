@@ -26,6 +26,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import child_process from 'node:child_process';
 import crypto from 'node:crypto';
+// Release-tuple comparison lives in hooks/scrooge-config.js — one implementation
+// shared by `scrooge --version` and the session-start update notice, so the two
+// can never disagree about what "newer" means (and the hooks tests cover both).
+import { semverGt } from '../hooks/scrooge-config.js';
 
 const REPO = 'Kir93/scrooge-mode';
 const PLUGIN = 'scrooge'; // used as BOTH plugin and marketplace name → install target `scrooge@scrooge` (line below). Task 6's .claude-plugin/marketplace.json MUST set name: "scrooge" or this target won't resolve.
@@ -116,6 +120,74 @@ function vscodeExtPresent(needle) {
 }
 
 function safeExists(p) { try { return fs.existsSync(p); } catch (_) { return false; } }
+
+// Back up a user-owned config file to `<path>.bak`, once. Only writes when no
+// .bak exists, so the very first snapshot — the user's pre-install state — is
+// never overwritten by a later install or uninstall. Best-effort: a failed
+// backup never blocks the write it precedes.
+function backupOnce(targetPath) {
+  const bak = targetPath + '.bak';
+  if (!safeExists(targetPath) || safeExists(bak)) return;
+  try { fs.copyFileSync(targetPath, bak); } catch (_) { /* best-effort */ }
+}
+
+// Follow a symlinked config file to the file it points at. Dotfile setups
+// routinely symlink `~/.claude/settings.json` into a tracked repo; the old
+// writeFileSync followed that link, and renaming over it would silently replace
+// the link with a plain file (and back up the LINK TARGET's content under the
+// link's own name). Resolve first so both the backup and the replacement land on
+// the real file, exactly where the previous behaviour put them.
+function resolveThroughLink(targetPath) {
+  try {
+    if (!fs.lstatSync(targetPath).isSymbolicLink()) return targetPath;
+    return fs.realpathSync(targetPath);
+  } catch (_) {
+    return targetPath; // missing, or a broken link → write at the given path
+  }
+}
+
+// Replace a user-owned config file without ever leaving it truncated: back it up,
+// write a fresh temp file beside it, then rename over the target. A crash or a
+// full disk mid-write loses the temp file, not the user's config.
+//
+// Same O_EXCL|O_NOFOLLOW temp → rename shape as hooks/scrooge-config.js
+// safeWriteFile, deliberately re-stated here rather than imported: that one is
+// hardened for Scrooge's OWN predictable ~/.claude/.scrooge-* paths, so it forces
+// mode 0600 and refuses any directory outside the user's home. Both are wrong
+// here — these are the user's files (`settings.json`, `config.toml`), their mode
+// is theirs to keep, and `--config-dir` may legitimately point outside home.
+// Throws on failure so each call site keeps its existing catch/report path.
+// Exported for tests: this is a data-safety property of the user's own files, so
+// it is asserted directly rather than inferred from an install run.
+export function safeReplaceFile(linkOrPath, content) {
+  const targetPath = resolveThroughLink(linkOrPath);
+  backupOnce(targetPath);
+  const dir = path.dirname(targetPath);
+  let mode = 0o644;
+  try { mode = fs.statSync(targetPath).mode & 0o777; } catch (_) { /* new file → default */ }
+
+  const tmp = path.join(dir, `.scrooge.tmp.${process.pid}.${Date.now()}`);
+  const O_NOFOLLOW = fs.constants.O_NOFOLLOW || 0;
+  let created = false;
+  try {
+    let fd;
+    try {
+      fd = fs.openSync(tmp, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | O_NOFOLLOW, mode);
+      created = true;
+      fs.writeSync(fd, String(content));
+      try { fs.fchmodSync(fd, mode); } catch (_) { /* best-effort on Windows */ }
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+    }
+    // rename replaces an existing destination on every platform Node supports
+    // (libuv maps it to MOVEFILE_REPLACE_EXISTING on Windows), so there is never
+    // a moment where the user's config file does not exist.
+    fs.renameSync(tmp, targetPath);
+  } catch (e) {
+    if (created) { try { fs.unlinkSync(tmp); } catch (_) { /* best-effort */ } }
+    throw e;
+  }
+}
 
 // Probe table keyed by clause kind. Exposed as a default so tests can inject
 // deterministic stubs in place of the real OS probes.
@@ -337,10 +409,8 @@ function wireStatusline(opts, results) {
       catch (_) { process.stdout.write('  NOTE: settings.json unparseable — statusline not wired.\n'); return; }
     }
     if (!settings.statusLine) {
-      const bak = settingsPath + '.bak';
-      if (safeExists(settingsPath) && !safeExists(bak)) { try { fs.copyFileSync(settingsPath, bak); } catch (_) {} }
       settings.statusLine = { type: 'command', command: `bash "${dest}"` };
-      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      safeReplaceFile(settingsPath, JSON.stringify(settings, null, 2) + '\n');
       process.stdout.write('  statusline badge configured.\n');
     } else {
       const cur = typeof settings.statusLine === 'string' ? settings.statusLine : settings.statusLine.command || '';
@@ -568,10 +638,7 @@ function wireCodexHook(opts, results) {
     const before = safeExists(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
     const after = mergeCodexHookConfig(before, command, normalizedPath(configPath));
     if (after !== before) {
-      if (safeExists(configPath) && !safeExists(configPath + '.bak')) {
-        try { fs.copyFileSync(configPath, configPath + '.bak'); } catch (_) {}
-      }
-      fs.writeFileSync(configPath, after + (after.endsWith('\n') ? '' : '\n'));
+      safeReplaceFile(configPath, after + (after.endsWith('\n') ? '' : '\n'));
       process.stdout.write('  Codex user-level hook configured.\n');
       results.installed.push('codex-hook');
     } else {
@@ -600,7 +667,7 @@ function unwireCodexHook(opts, results) {
       const before = fs.readFileSync(configPath, 'utf8');
       const after = removeCodexHookConfig(before);
       if (after !== before) {
-        fs.writeFileSync(configPath, after.replace(/\s*$/, '\n'));
+        safeReplaceFile(configPath, after.replace(/\s*$/, '\n'));
         process.stdout.write('  removed Scrooge Codex hook from config.toml\n');
         results.removed.push('codex-hook');
       }
@@ -634,7 +701,7 @@ function uninstall(opts, results) {
     try {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       const cur = settings.statusLine && (typeof settings.statusLine === 'string' ? settings.statusLine : settings.statusLine.command || '');
-      if (cur && cur.includes('scrooge-statusline')) { delete settings.statusLine; fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n'); process.stdout.write('  removed scrooge statusline from settings.json\n'); }
+      if (cur && cur.includes('scrooge-statusline')) { delete settings.statusLine; safeReplaceFile(settingsPath, JSON.stringify(settings, null, 2) + '\n'); process.stdout.write('  removed scrooge statusline from settings.json\n'); }
     } catch (_) {}
   }
   // Don't auto-delete the .bak: install only writes it when absent, so it may be
@@ -772,18 +839,6 @@ function installedVersion() {
   } catch (_) { return null; }
 }
 
-// Numeric release-tuple compare — "0.18.0" > "0.9.0" (a string compare wouldn't).
-// Pre-release suffixes are ignored; non-parseable input is not "newer".
-function isNewerVersion(a, b) {
-  const parse = (v) => String(v).split('-')[0].split('.').map((n) => parseInt(n, 10));
-  const pa = parse(a), pb = parse(b);
-  for (let i = 0; i < 3; i++) {
-    if (!Number.isFinite(pa[i]) || !Number.isFinite(pb[i])) return false;
-    if (pa[i] !== pb[i]) return pa[i] > pb[i];
-  }
-  return false;
-}
-
 // Latest published release tag from GitHub ("v0.19.0" → "0.19.0"), or null on any
 // failure (offline, rate-limited, pre-Node-18 without fetch). Best-effort only.
 async function fetchLatestRelease() {
@@ -812,7 +867,7 @@ async function printVersion() {
   process.stdout.write(`scrooge ${cur ? 'v' + cur : '(unknown version)'}\n`);
   const latest = await fetchLatestRelease();
   if (!latest || !cur) return;
-  if (isNewerVersion(latest, cur)) {
+  if (semverGt(latest, cur)) {
     process.stdout.write(`\nA newer release is available: v${latest}\n`);
     process.stdout.write(`Update: npx -y github:${REPO}\n`);
   } else {

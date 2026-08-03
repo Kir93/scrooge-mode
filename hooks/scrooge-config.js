@@ -57,9 +57,14 @@ export const VALID_DIALS = ['lite', 'full'];
 // Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
 // this set is dropped (never persisted, never injected). `lean` is the lone flag.
 export const VALID_FLAGS = ['lean'];
-// `lean` is ON by default — measured ~21% output reduction by cutting bloat
-// (over-engineering, alternative-narration), never correctness (its fragment pins
-// the safety floor). Opt out with `nolean` / SCROOGE_DEFAULT_FLAGS.
+// `lean` is ON by default — it cuts bloat (over-engineering, alternative-narration),
+// never correctness (its fragment pins the safety floor). Measured on top of `full`,
+// paired against the same register without the flag: KO +34.6% (n=22) / EN +10.3%
+// (n=21), est, prose-only, claude-opus-4-8. The per-language figures differ by 24pp,
+// so this comment carries both rather than an average that fits neither.
+// Reproduce: benchmarks/report.py --input results-lean2-{ko,en}.jsonl
+//            --baseline scrooge:{ko,en}/full --paired
+// Opt out with `nolean` / SCROOGE_DEFAULT_FLAGS.
 export const DEFAULT_ON_FLAGS = ['lean'];
 export const DEFAULT_STATE = { lang: 'en', dial: 'full', flags: [...DEFAULT_ON_FLAGS] };
 
@@ -307,6 +312,24 @@ export function safeWriteFile(targetPath, content) {
     }
   } catch (e) {
     if (debug) process.stderr.write(`[scrooge] safeWriteFile failed: ${e.message}\n`);
+    return false;
+  }
+}
+
+// Whether a path is a plain existing file right now.
+//
+// safeReadFile collapses "missing", "not a regular file", "over the size cap" and
+// "unreadable" into one null. That is the right fail-closed posture for the
+// state/suffix/version/update files — they are all rewritable caches. The lifetime
+// ledger is not: treating an unreadable history as an empty one would overwrite a
+// user's whole accumulated record. That caller checks this FIRST, then reads; a
+// null read after a positive answer means the entries are there but could not be
+// loaded, so it must not write. Checking in that order also fails closed if the
+// file changes between the two calls.
+export function isRegularFile(targetPath) {
+  try {
+    return fs.lstatSync(targetPath).isFile();
+  } catch (e) {
     return false;
   }
 }
