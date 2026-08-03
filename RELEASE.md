@@ -8,7 +8,7 @@ Repo: `Kir93/scrooge-mode`. Plugin/marketplace name: `scrooge`. npm name: `scroo
 
 ## Version sources (must match)
 
-A release sets one version in four places. They must be identical:
+A release sets one version in six places. They must be identical:
 
 | File | Field |
 | ---- | ----- |
@@ -16,9 +16,15 @@ A release sets one version in four places. They must be identical:
 | `.claude-plugin/marketplace.json` | `metadata.version` |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` |
 | `.claude-plugin/plugin.json` | `version` |
+| `package-lock.json` | `version` |
+| `package-lock.json` | `packages[""].version` |
 
-`npm test` runs `test_version_consistency`, which fails if any of the four
+`npm test` runs `test_version_consistency`, which fails if any of the six
 sources drifts — so a bump that misses one is caught before a tag is pushed.
+
+The lockfile pair is not hand-edited: run `npm install --package-lock-only`
+after bumping `package.json`. `npm ci` succeeds even when the lockfile version
+disagrees, so this guard is the only thing that catches it.
 
 ## 1. Pre-flight
 
@@ -33,7 +39,7 @@ Run from a clean tree on `main`:
 - Bilingual + dial parity holds (`ko`/`en`, `lite`/`full`, `README.md`/`README.ko.md`).
 - Doc-truth: no language with a measured savings/fidelity section still carries a
   "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
-- The four version sources above match (`npm test` guards this).
+- The six version sources above match (`npm test` guards this).
 
 ## 1a. Fidelity judge gate (manual, release-time)
 
@@ -71,10 +77,11 @@ cited savings/fidelity number only if it actually moves.
 
 ## 2. Bump version
 
-Edit the four version sources to the new version (semver). Commit:
+Edit `package.json`, `.claude-plugin/marketplace.json`, and `.claude-plugin/plugin.json` to the new version (semver), then regenerate the lockfile so its two version fields follow:
 
 ```bash
-git commit -m "chore: 버전 vX.Y.Z" package.json .claude-plugin/marketplace.json .claude-plugin/plugin.json
+npm install --package-lock-only
+git commit -m "chore: 버전 vX.Y.Z" package.json package-lock.json .claude-plugin/marketplace.json .claude-plugin/plugin.json
 ```
 
 ## 3a. Tag-push release (recommended)
@@ -89,7 +96,7 @@ git push origin vX.Y.Z
 ```
 
 The workflow triggers on `push:` for tags matching `v*.*.*`. It checks out the
-**tagged commit** (not `main` HEAD), verifies that all four version sources in
+**tagged commit** (not `main` HEAD), verifies that all six version sources in
 that commit — `package.json` `version`, `.claude-plugin/marketplace.json`
 `metadata.version` and `plugins[0].version`, and `.claude-plugin/plugin.json`
 `version` — equal the tag without its leading `v`, then creates the GitHub release
@@ -99,7 +106,7 @@ needed). The release body combines the committed
 changelog. The workflow does not run `npm publish` (§6).
 
 A mistyped or mismatched tag does not produce a release. The trigger's `v*.*.*`
-filter ignores non-version tags, and the four-source version gate runs **before**
+filter ignores non-version tags, and the six-source version gate runs **before**
 the release step — if any source disagrees with the tag, or the tag is malformed,
 the job fails and no release is created. Because the gate reads the tagged
 commit's tree rather than `main`, pushing a tag on an older release commit after

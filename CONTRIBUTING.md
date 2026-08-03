@@ -37,53 +37,22 @@ Validate JSON files:
 node -e "for (const f of ['package.json','registry.json','.claude-plugin/marketplace.json','.claude-plugin/plugin.json']) JSON.parse(require('fs').readFileSync(f))"
 ```
 
-Validate registry reachability:
+Validate registry reachability — both directions (every `registry.json` path resolves to a real file under `rules/`, every `rules/**/*.md` is reachable from the registry, `fragments.{lang}.{flag}` included):
 
 ```bash
-node --input-type=module <<'NODE'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
-
-const registry = JSON.parse(readFileSync('registry.json', 'utf8'));
-const reachable = new Set();
-const errors = [];
-
-for (const [lang, dials] of Object.entries(registry)) {
-  for (const [dial, rulePath] of Object.entries(dials)) {
-    const normalized = String(rulePath).trim();
-    if (!normalized.startsWith('rules/')) errors.push(`${lang}.${dial} outside rules/: ${normalized}`);
-    else if (!existsSync(normalized) || !statSync(normalized).isFile()) errors.push(`${lang}.${dial} missing: ${normalized}`);
-    else reachable.add(path.normalize(normalized));
-  }
-}
-
-function listMarkdownFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const filePath = path.join(dir, entry.name);
-    if (entry.isDirectory()) return listMarkdownFiles(filePath);
-    if (entry.isFile() && entry.name.endsWith('.md')) return [filePath];
-    return [];
-  });
-}
-
-for (const filePath of listMarkdownFiles('rules')) {
-  if (!reachable.has(path.normalize(filePath))) errors.push(`unreachable rule: ${filePath}`);
-}
-
-if (errors.length) {
-  console.error(errors.join('\n'));
-  process.exit(1);
-}
-NODE
+node --test tests/test_registry_parity.js
 ```
 
-GitHub branch protection should require the `CI / verify` workflow before merging to `main`. That makes test, markdownlint, registry, and JSON failures block merges.
+`npm test` already runs it. `tests/test_registry_parity.js` is the single source for this check — it also guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness, so keep new checks there instead of adding another copy to a doc or workflow.
+
+GitHub branch protection should require the `CI / verify` workflow before merging to `main`. That makes test (registry reachability included), markdownlint, and JSON failures block merges.
 
 ## Bilingual + Dial Parity
 
 Use [CLAUDE.md Conventions](CLAUDE.md#conventions) as the source of truth. In short:
 
 - User-facing docs stay mirrored across English and Korean. Japanese and Chinese ship as lightweight `README.ja.md` / `README.zh.md` landings (value + install + one example), not full mirrors — canonical docs are English/Korean.
+- **Hindi ships as a register only, with no README landing.** That is a decision, not a gap: `rules/hi/*` and the `LANG_META.hi` row are complete and guarded by the same tests as every other language, but there is no `README.hi.md` and none is planned until there is demand. Do not open a PR adding one as a parity fix.
 - Substantive rule changes stay mirrored across `ko`/`en`/`ja`/`hi`/`zh` and `lite`/`full`, or the PR explains why parity is intentionally not changed.
 - Renaming or moving `rules/**` requires the matching `registry.json` edit in the same PR.
 - Safety auto-clarity must remain in every dial.

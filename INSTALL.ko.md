@@ -68,10 +68,16 @@ npx skills add Kir93/scrooge-mode --list
 
 ## One-Line Installer
 
-대부분 사용자 권장 경로. Claude Code, Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI 자동 감지 후 맞는 integration 설치.
+대부분 사용자 권장 경로. Claude Code, Codex, Cursor, Windsurf, Cline, Continue를 자동 감지해 맞는 integration을 설치합니다.
 
 ```bash
 npx -y github:Kir93/scrooge-mode
+```
+
+**Gemini CLI는 자동 감지 대상이 아니라 opt-in입니다.** 탐지가 best-effort라 기본 실행에서는 제외되며, 설치하려면 직접 지정해야 합니다.
+
+```bash
+npx -y github:Kir93/scrooge-mode -- --only gemini
 ```
 
 macOS / Linux shell 대안:
@@ -97,10 +103,10 @@ release 버전 핀(재현 가능한 설치 — 원하는 release tag로 교체):
 
 ```bash
 # curl|bash / npx — npm git-ref로 직접 핀(보장)
-npx -y github:Kir93/scrooge-mode#v0.6.1
+npx -y github:Kir93/scrooge-mode#v0.21.0
 
 # installer가 구동하는 marketplace / skills 채널에도 tag 전달
-npx -y github:Kir93/scrooge-mode#v0.6.1 -- --tag v0.6.1
+npx -y github:Kir93/scrooge-mode#v0.21.0 -- --tag v0.21.0
 ```
 
 | 채널 | tag 핀 |
@@ -129,9 +135,31 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## 설정 파일 안전장치
+
+설치·제거는 사용자 소유 파일 2개를 수정합니다.
+
+| 파일 | 수정 시점 |
+| ---- | --------- |
+| `<claude-config>/settings.json` (기본값 `~/.claude/settings.json`) | 설치 시 statusline 연결, 제거 시 statusline 해제 |
+| `~/.codex/config.toml` | 설치 시 Codex hook 연결, 제거 시 hook 해제 |
+
+두 파일 중 하나를 처음 수정하기 전에 설치 프로그램이 `<path>.bak`으로 복사합니다. 이 복사본은 **한 번만** 만들어집니다 — 설치 이전 상태의 스냅샷이며, 이후의 설치나 제거가 덮어쓰지 않습니다. 제거 시에도 `.bak`은 일부러 남겨두므로, 더 이상 필요 없으면 직접 삭제하세요.
+
+수정은 같은 디렉터리의 임시 파일에 쓴 뒤 대상 파일로 rename하는 방식입니다. 따라서 쓰기가 중단되어도(크래시, 디스크 가득 참, Ctrl-C) 원본이 잘리지 않고 그대로 남습니다. 파일 권한도 유지됩니다.
+
+두 경로 중 하나가 심볼릭 링크인 경우 — dotfiles 저장소를 `~/.claude/settings.json`으로 연결한 구성 — 설치 프로그램은 링크를 따라가 실체 파일을 수정하고 링크 자체는 그대로 둡니다. 이때 `.bak`은 링크가 아니라 **실체 파일** 옆에 생성되므로 복구도 그 위치에서 하세요.
+
+복구 방법:
+
+```bash
+mv ~/.claude/settings.json.bak ~/.claude/settings.json
+mv ~/.codex/config.toml.bak ~/.codex/config.toml
+```
+
 ## 플래그 (lean 기본 on)
 
-`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜어 ~21% 더 깎되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). 기본값 변경:
+`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +34.6%**(n=22) / **EN +10.3%**(n=21), est·prose-only·`claude-opus-4-8`. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`. 기본값 변경:
 
 - 세션 단위: `/scrooge … nolean`(lean 해제).
 - shell 프로필로 전역:
@@ -221,10 +249,11 @@ node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 
 ## Platform support
 
-Linux·macOS가 CI 검증 플랫폼 — 매 push마다 `ubuntu-latest`에서 `npm test` 실행. **Windows는 best-effort, CI 미검증.** installer에 Windows 분기(경로 처리, `where` 프로브, shell spawn, `EPERM`/`EISDIR` 정리)와 PowerShell shim이 있으나 `windows-latest` job이 이를 실행하지 않으므로 릴리스 보장 대상에서 Windows는 unsupported로 간주. 두 known-limit는 닫지 않고 문서화만:
+Linux·macOS가 CI 검증 플랫폼 — 매 push마다 `ubuntu-latest`에서 `npm test` 실행. **Windows는 best-effort, CI 미검증.** installer에 Windows 분기(경로 처리, `where` 프로브, shell spawn, `EPERM`/`EISDIR` 정리)와 PowerShell shim이 있으나 `windows-latest` job이 이를 실행하지 않으므로 릴리스 보장 대상에서 Windows는 unsupported로 간주. 세 known-limit는 닫지 않고 문서화만:
 
 - **`install.ps1` / `uninstall.ps1`**은 `node bin/install.js`로 위임하는 얇은 shim. CI 미실행 — Windows에서 수동 검증 필요.
 - **Windows에선 symlink 보호가 약함.** atomic state writer는 symlink로 바꿔치기된 target을 거부하려 `O_NOFOLLOW`로 open하지만, Windows엔 `fs.constants.O_NOFOLLOW`가 없어 `0`으로 폴백(`hooks/scrooge-config.js`)돼 open 시점 symlink 거부가 no-op. sanitized-key 경로 격리는 유지되고 symlink-swap 가드만 상실.
+- **Windows에서는 statusline 배지가 동작하지 않음.** installer가 `statusLine`을 `bash "<config>/hooks/scrooge-statusline.sh"`로 배선하는데, `bash`는 기본 Windows PATH에 없음. 영향 범위는 배지뿐 — 활성화·매 턴 reinject hook·`/scrooge-stats`는 순수 Node라 정상 동작하고, 상태 표시줄에 토큰 카운터만 안 뜸. Git Bash(또는 WSL)를 설치해 `bash`를 PATH에 올리면 동작.
 
 ## Troubleshooting
 

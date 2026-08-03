@@ -37,53 +37,22 @@ JSON 파일 검증:
 node -e "for (const f of ['package.json','registry.json','.claude-plugin/marketplace.json','.claude-plugin/plugin.json']) JSON.parse(require('fs').readFileSync(f))"
 ```
 
-registry reachability 검증:
+registry reachability 검증 — 양방향(`registry.json`의 모든 경로가 `rules/` 아래 실재 파일을 가리키는지, `rules/**/*.md`가 전부 registry에서 도달 가능한지, `fragments.{lang}.{flag}` 포함):
 
 ```bash
-node --input-type=module <<'NODE'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
-
-const registry = JSON.parse(readFileSync('registry.json', 'utf8'));
-const reachable = new Set();
-const errors = [];
-
-for (const [lang, dials] of Object.entries(registry)) {
-  for (const [dial, rulePath] of Object.entries(dials)) {
-    const normalized = String(rulePath).trim();
-    if (!normalized.startsWith('rules/')) errors.push(`${lang}.${dial} outside rules/: ${normalized}`);
-    else if (!existsSync(normalized) || !statSync(normalized).isFile()) errors.push(`${lang}.${dial} missing: ${normalized}`);
-    else reachable.add(path.normalize(normalized));
-  }
-}
-
-function listMarkdownFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const filePath = path.join(dir, entry.name);
-    if (entry.isDirectory()) return listMarkdownFiles(filePath);
-    if (entry.isFile() && entry.name.endsWith('.md')) return [filePath];
-    return [];
-  });
-}
-
-for (const filePath of listMarkdownFiles('rules')) {
-  if (!reachable.has(path.normalize(filePath))) errors.push(`unreachable rule: ${filePath}`);
-}
-
-if (errors.length) {
-  console.error(errors.join('\n'));
-  process.exit(1);
-}
-NODE
+node --test tests/test_registry_parity.js
 ```
 
-GitHub branch protection은 `main` merge 전 `CI / verify` workflow 필수로 설정. test, markdownlint, registry, JSON 실패가 merge 차단하도록 함.
+`npm test`가 이미 이 파일을 실행함. `tests/test_registry_parity.js`가 이 검사의 단일 정본 — `registry ↔ LANG_META ↔ VALID_DIALS` 완전성도 함께 가드하므로, 검사를 추가할 때 문서나 workflow에 사본을 만들지 말고 이 파일에 넣을 것.
+
+GitHub branch protection은 `main` merge 전 `CI / verify` workflow 필수로 설정. test(registry reachability 포함), markdownlint, JSON 실패가 merge 차단하도록 함.
 
 ## Bilingual + Dial Parity
 
 Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 
 - User-facing docs는 English/Korean mirror 유지. 일본어·중국어는 경량 `README.ja.md`·`README.zh.md` 랜딩(가치 + 설치 + 예시 1개)으로 출하 — 풀 미러 아님, canonical은 영문/국문.
+- **힌디어는 register만 출하하며 README 랜딩이 없음.** 누락이 아니라 결정임: `rules/hi/*`와 `LANG_META.hi` 행은 완비돼 다른 언어와 동일한 테스트로 가드되지만, `README.hi.md`는 없고 수요가 생기기 전까지 만들지 않음. parity 수정 명목으로 추가 PR을 열지 말 것.
 - 실질 rule 변경은 `ko`/`en`/`ja`/`hi`/`zh`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
 - `rules/**` rename/move는 같은 PR에서 `registry.json` 수정.
 - Safety auto-clarity는 모든 dial에 유지.

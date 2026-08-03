@@ -68,10 +68,16 @@ Uninstall depends on the target agent's `skills` manager layout. Remove the inst
 
 ## One-Line Installer
 
-Recommended for most users. It detects Claude Code, Codex, Cursor, Windsurf, Cline, Continue, and Gemini CLI, then installs the matching integration.
+Recommended for most users. It auto-detects Claude Code, Codex, Cursor, Windsurf, Cline, and Continue, then installs the matching integration.
 
 ```bash
 npx -y github:Kir93/scrooge-mode
+```
+
+**Gemini CLI is opt-in, not auto-detected.** Its probe is best-effort, so the installer leaves it out of a plain run — name it to install it:
+
+```bash
+npx -y github:Kir93/scrooge-mode -- --only gemini
 ```
 
 macOS / Linux shell alternative:
@@ -97,10 +103,10 @@ Pin a released version (reproducible installs — swap the tag for the release y
 
 ```bash
 # curl|bash / npx — pins directly via the npm git-ref (guaranteed)
-npx -y github:Kir93/scrooge-mode#v0.6.1
+npx -y github:Kir93/scrooge-mode#v0.21.0
 
 # forward the tag to the marketplace / skills channels the installer drives
-npx -y github:Kir93/scrooge-mode#v0.6.1 -- --tag v0.6.1
+npx -y github:Kir93/scrooge-mode#v0.21.0 -- --tag v0.21.0
 ```
 
 | Channel | Tag pinning |
@@ -129,9 +135,31 @@ Windows PowerShell:
 ./uninstall.ps1
 ```
 
+## Config File Safety
+
+Installing and uninstalling edit two files you own:
+
+| File | Touched by |
+| ---- | ---------- |
+| `<claude-config>/settings.json` (default `~/.claude/settings.json`) | statusline wiring on install, statusline removal on uninstall |
+| `~/.codex/config.toml` | Codex hook wiring on install, hook removal on uninstall |
+
+Before the first edit to either file, the installer copies it to `<path>.bak`. That copy is written **once** — it is your pre-install snapshot, and no later install or uninstall overwrites it. Uninstall deliberately leaves the `.bak` in place; delete it yourself when you no longer want it.
+
+Edits are written to a temp file in the same directory and then renamed over the target, so an interrupted write (crash, full disk, Ctrl-C) leaves the original intact rather than truncated. File permissions are preserved.
+
+If one of those paths is a symlink — a dotfiles setup pointing `~/.claude/settings.json` at a tracked repo — the installer follows it and edits the real file, leaving the symlink in place. The `.bak` is then created next to the **real** file, not next to the link, so restore from that location.
+
+To restore a file:
+
+```bash
+mv ~/.claude/settings.json.bak ~/.claude/settings.json
+mv ~/.codex/config.toml.bak ~/.codex/config.toml
+```
+
 ## Flags (lean on by default)
 
-`lean` (minimal code output) is **on by default** — `/scrooge` cuts ~21% more by trimming over-engineering and narration, never correctness (its fragment pins the safety floor). To change the default:
+`lean` (minimal code output) is **on by default** — `/scrooge` trims over-engineering and narration, never correctness (its fragment pins the safety floor). Measured on top of `full`, paired against the same register without the flag: **KO +34.6%** (n=22) / **EN +10.3%** (n=21), est, prose-only, `claude-opus-4-8`. Reproduce with `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`. To change the default:
 
 - Per session: `/scrooge … nolean` (drop lean).
 - Globally via your shell profile:
@@ -221,10 +249,11 @@ node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 
 ## Platform support
 
-Linux and macOS are the CI-verified platforms — every push runs `npm test` on `ubuntu-latest`. **Windows is best-effort, not CI-verified.** The installer carries Windows branches (path handling, `where` probe, shell spawn, `EPERM`/`EISDIR` cleanup) and a PowerShell shim, but no `windows-latest` job exercises them, so treat Windows as unsupported for release guarantees. Two known limits are documented, not closed:
+Linux and macOS are the CI-verified platforms — every push runs `npm test` on `ubuntu-latest`. **Windows is best-effort, not CI-verified.** The installer carries Windows branches (path handling, `where` probe, shell spawn, `EPERM`/`EISDIR` cleanup) and a PowerShell shim, but no `windows-latest` job exercises them, so treat Windows as unsupported for release guarantees. Three known limits are documented, not closed:
 
 - **`install.ps1` / `uninstall.ps1`** are thin shims that delegate to `node bin/install.js`. They are not run in CI; validate them manually on Windows.
 - **Symlink hardening is weaker on Windows.** The atomic state writer opens with `O_NOFOLLOW` to refuse a target swapped for a symlink, but `fs.constants.O_NOFOLLOW` is absent on Windows and falls back to `0` (`hooks/scrooge-config.js`), so that open-time symlink refusal is a no-op there. The sanitized-key path containment still applies; only the symlink-swap guard is lost.
+- **The statusline badge does not run on Windows.** The installer wires `statusLine` as `bash "<config>/hooks/scrooge-statusline.sh"` — a shell script invoked through `bash`, which is not on a stock Windows PATH. Scope: the badge only. Activation, the per-turn reinject hook, and `/scrooge-stats` are plain Node and work normally; you simply see no token counter in the status bar. Installing Git Bash (or WSL) and putting `bash` on PATH makes it work.
 
 ## Troubleshooting
 
