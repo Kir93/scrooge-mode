@@ -10,6 +10,16 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
+    # Both ends of the supported range. 18 is what `engines` declares, so it is the
+    # version a user on the floor actually runs; 22 is the release/dev version. A
+    # post-18 API slipping into the code is otherwise invisible until someone on
+    # the declared minimum hits it. If 18 goes red, the fix is to raise `engines`
+    # to the real minimum — not to keep the code artificially old.
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 22]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: npm
 
       - name: Install dependencies
@@ -29,64 +39,11 @@ jobs:
       - name: Markdown lint
         run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
 
-      - name: Verify registry paths
-        run: |
-          node --input-type=module <<'NODE'
-          import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-          import path from 'node:path';
+      # registry 경로/도달성 검증은 `npm test`의 tests/test_registry_parity.js가 단일 정본으로
+      # 수행한다 (integrity-sweep Task 1). 여기에 사본을 다시 만들지 말 것.
 
-          const registry = JSON.parse(readFileSync('registry.json', 'utf8'));
-          const reachable = new Set();
-          const errors = [];
-
-          function checkRulePath(label, rulePath) {
-            const normalized = String(rulePath).trim();
-            if (!normalized.startsWith('rules/')) {
-              errors.push(`${label} points outside rules/: ${normalized}`);
-              return;
-            }
-            if (!existsSync(normalized) || !statSync(normalized).isFile()) {
-              errors.push(`${label} missing file: ${normalized}`);
-              return;
-            }
-            reachable.add(path.normalize(normalized));
-          }
-
-          for (const [lang, dials] of Object.entries(registry)) {
-            // `fragments` nests one level deeper: fragments[lang][flag] = path.
-            if (lang === 'fragments') {
-              for (const [fragLang, flags] of Object.entries(dials)) {
-                for (const [flag, rulePath] of Object.entries(flags)) {
-                  checkRulePath(`fragments.${fragLang}.${flag}`, rulePath);
-                }
-              }
-              continue;
-            }
-            for (const [dial, rulePath] of Object.entries(dials)) {
-              checkRulePath(`${lang}.${dial}`, rulePath);
-            }
-          }
-
-          function listMarkdownFiles(dir) {
-            return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-              const filePath = path.join(dir, entry.name);
-              if (entry.isDirectory()) return listMarkdownFiles(filePath);
-              if (entry.isFile() && entry.name.endsWith('.md')) return [filePath];
-              return [];
-            });
-          }
-
-          for (const filePath of listMarkdownFiles('rules')) {
-            if (!reachable.has(path.normalize(filePath))) {
-              errors.push(`rules file is not reachable from registry.json: ${filePath}`);
-            }
-          }
-
-          if (errors.length > 0) {
-            console.error(errors.join('\n'));
-            process.exit(1);
-          }
-          NODE
+      - name: Verify package file list
+        run: node .github/scripts/verify-pack.mjs
 
       - name: Verify JSON files
         run: |

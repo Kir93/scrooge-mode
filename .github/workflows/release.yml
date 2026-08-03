@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           # Check out the tagged commit, not main HEAD, so the version gate below
-          # reads the four sources from the tag's tree and compares them to the
+          # reads the six sources from the tag's tree and compares them to the
           # tag name — a tag on an older release commit still verifies correctly
           # after main has moved on to the next bump.
           ref: ${{ github.ref }}
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify version quadruple against tag
+      - name: Verify version sources against tag
         env:
           TAG: ${{ github.ref_name }}
         run: |
@@ -44,11 +44,14 @@ jobs:
           const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
           const marketplace = JSON.parse(readFileSync('.claude-plugin/marketplace.json', 'utf8'));
           const plugin = JSON.parse(readFileSync('.claude-plugin/plugin.json', 'utf8'));
+          const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
           const actual = {
             'package.json version': pkg.version,
             'marketplace metadata.version': marketplace.metadata?.version,
             'marketplace plugins[0].version': marketplace.plugins?.[0]?.version,
             'plugin.json version': plugin.version,
+            'package-lock.json version': lock.version,
+            'package-lock.json packages[""].version': lock.packages?.['']?.version,
           };
 
           const mismatches = Object.entries(actual)
@@ -60,6 +63,22 @@ jobs:
             process.exit(1);
           }
           NODE
+
+      # A tag push is the last chance to stop a bad release: the previous gate only
+      # compared version strings, so a tag on a commit with failing tests or a
+      # broken package file list still published. These run before creation, so a
+      # failure here means no release object is ever made.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
+
+      - name: Verify package file list
+        run: node .github/scripts/verify-pack.mjs
 
       - name: Create GitHub release
         env:
