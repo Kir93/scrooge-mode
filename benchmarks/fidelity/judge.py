@@ -32,6 +32,14 @@ from typing import Optional
 
 CHECKS_JS = Path(__file__).resolve().parent / "checks.js"
 
+# Judge calls run in a scratch cwd OUTSIDE the repo, for the same reason
+# benchmarks/run.py defaults `--cwd` to ~/.cache/scrooge-bench: the CLI writes one
+# session JSONL per call into ~/.claude/projects/<cwd-slug>/, so inheriting the repo
+# cwd buries the repo's interactive session list under hundreds of judge transcripts.
+# It also keeps the repo's own CLAUDE.md and project settings out of the impartial
+# judge's context.
+JUDGE_CWD = Path.home() / ".cache" / "scrooge-bench" / "judge"
+
 # The judge's system prompt. Replaces the default system prompt so the judge is a
 # stock impartial evaluator, not the scrooge register. Demands JSON only so the
 # reply is machine-parseable by checks.js `parseVerdict` (which still tolerates
@@ -77,14 +85,17 @@ def call_judge(baseline: str, candidate: str, model: Optional[str],
 
     Uses `claude --print --system-prompt JUDGE_SYSTEM -- <prompt>`. The `--`
     separator guards prompts beginning with `-`. No API key (subscription auth).
+    Runs in JUDGE_CWD so the per-call session JSONL lands outside the repo.
     """
     prompt = build_judge_prompt(baseline, candidate)
     cmd = ["claude", "--print", "--system-prompt", JUDGE_SYSTEM]
     if model:
         cmd += ["--model", model]
     cmd += ["--", prompt]
+    JUDGE_CWD.mkdir(parents=True, exist_ok=True)
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                           cwd=JUDGE_CWD)
     except subprocess.TimeoutExpired:
         return None, "judge timeout"
     if r.returncode != 0:

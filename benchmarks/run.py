@@ -866,6 +866,13 @@ def main() -> int:
     # so any call that left debug output behind is preserved. resume is
     # unaffected: it keys off the output JSONL (load_success_keys), not these
     # dirs, which mkdir recreates each run.
+    #
+    # Each per-call cwd also gets its own ~/.claude/projects/<slug>/ transcript
+    # dir, so without this a parallel run leaves one stale project entry per call
+    # behind in the interactive session list (hundreds after a few runs). Drop
+    # them once the run is over: every measurement they held has already been
+    # extracted into the output JSONL. The path is derived from a call-NNNN dir we
+    # created ourselves, so nothing outside this run's own slugs is reachable.
     if args.workers > 1:
         for d in sorted(cwd_base.glob("call-*")):
             if d.is_dir() and d.name[len("call-"):].isdigit():
@@ -873,6 +880,7 @@ def main() -> int:
                     d.rmdir()
                 except OSError:
                     pass
+                shutil.rmtree(cwd_session_dir(d), ignore_errors=True)
     return 0
 
 
