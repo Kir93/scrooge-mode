@@ -41,7 +41,11 @@ function median(values) {
 export function classifySession(analysis, thresholds = DEFAULT_THRESHOLDS) {
   const prose = analysis.trajectory.prose;
   const base = {
-    file: analysis.file,
+    // Basename only. The input is a private session transcript under the user's
+    // home directory, so emitting the full path would put a local absolute path
+    // into a committed artefact (and fail benchmarks/scrub.js). The basename is
+    // the session id, which is all a reader needs to line rows up.
+    file: analysis.file.replace(/^.*[/\\]/, ''),
     proseTurns: prose.length,
     earlyMedian: null,
     lateMedian: null,
@@ -91,6 +95,11 @@ export function buildReport(analyses, thresholds = DEFAULT_THRESHOLDS) {
       retained: conclusive.length - drifting.length,
       drifting: drifting.length,
       inconclusive: sessions.length - conclusive.length,
+      // The README quotes this alongside the counts above and says all four can
+      // be checked against the committed results.json — so it has to BE in the
+      // file, not something a reader re-derives from `sessions[]`. Median over
+      // conclusive sessions only: an inconclusive one carries no ratio at all.
+      medianRatio: median(conclusive.map((s) => s.ratio)),
       verdict,
     },
     subagent: complianceReadout(analyses.flatMap((a) => a.subagentTurns || [])),

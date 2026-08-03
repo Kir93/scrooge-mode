@@ -70,7 +70,7 @@
       "source": "self-repo",
       "labeled": false,
       "live": true,
-      "baselineTokens": 1083,
+      "baselineTokens": 1114,
       "counts": {
         "dup": 0,
         "dead": 0,
@@ -102,7 +102,7 @@
       "source": "self-repo",
       "labeled": false,
       "live": true,
-      "baselineTokens": 1151,
+      "baselineTokens": 1207,
       "counts": {
         "dup": 0,
         "dead": 0,

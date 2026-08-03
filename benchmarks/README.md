@@ -146,20 +146,23 @@ as the model pin:
 
 ### Use the right statistic
 
-`report.py` computes **ratio-of-medians** savings by default (median each arm,
-then take the ratio). The paired median is a *different* statistic, and the
-per-prompt median is a third one `report.py` does not compute:
+Every published table number is the **ratio of medians** over fully paired
+prompts — median each arm, then `1 − median(scrooge) / median(normal)`. The
+per-prompt median is a different statistic that `report.py` does not compute, and
+the README quotes both for JA/HI/ZH:
 
 | Published number | Statistic | How |
 | ---------------- | --------- | --- |
-| KO/EN conversational, KO/EN/JA held-out | paired median | `report.py --input <file> --baseline normal --paired` |
-| JA/HI/ZH table savings (~65 / ~63 / ~67%) | ratio-of-medians | `report.py --input <file> --baseline normal` |
-| HI/ZH per-prompt median (66.6% / 62.9%) | median-of-ratios | **not produced by `report.py`** — for each prompt compute `1 − scrooge/normal`, then take the median of those ratios |
+| Every language table (KO ~70%, EN ~66%, JA ~64%, HI ~63%, ZH ~67%) and the KO/EN held-out cross-check | ratio of medians, paired | `report.py --input <file> --baseline normal --paired` |
+| `lean` flag (KO +34.6%, EN +10.3%) | same, but the baseline is the register without the flag | `report.py --input <file> --baseline scrooge:{lang}/full --paired` |
+| JA/HI/ZH per-prompt medians (69.6% / 66.6% / 62.9%) | median of per-prompt ratios | **not produced by `report.py`** — for each prompt compute `1 − scrooge/normal`, then take the median of those ratios |
 
-So HI has two honest readings of the same rows: **~63%** (ratio-of-medians,
-`report.py` default) and **66.6%** (per-prompt median-of-ratios, computed
-separately). Both appear in the README — different aggregations, not a
-discrepancy.
+So each of JA/HI/ZH has two honest readings of the same rows — HI is **~63%**
+(ratio of medians) and **66.6%** (per-prompt median). Both appear in the README:
+different aggregations of one dataset, not a discrepancy. Note the two can point
+opposite ways — ZH reads higher by ratio of medians (66.8%) and lower per prompt
+(62.9%), because the medians land on different prompts under a heavy-tailed
+spread.
 
 ### Fidelity numbers
 
@@ -168,6 +171,84 @@ Fidelity rows carry `score`, the safety/equivalence flags (`safety_pass`,
 judged prose (baseline/candidate answers and the `missing_claims` text) is
 excluded. Median claim-preservation = median of `score`; safety ratio = count of
 `safety_pass:true` over N; judge N=3 (majority verdict per pair).
+
+**Filter to `judge_runs == 3` first.** A row that got fewer judge runs is a
+partial verdict, and the README headline excludes it. This matters for KO:
+[`results-ko-fidelity.jsonl`](./published/results-ko-fidelity.jsonl) has 18 rows
+but only 16 with three runs, and the two sets disagree (0.68 / safety 12-of-16
+vs 0.69 / 13-of-18). Every other published fidelity file is `judge_runs == 3`
+throughout, so the filter is a no-op there.
+
+### The `lite` dial — measured, then not adopted
+
+`lite` ships in all five languages and carries **no savings estimate**. That is a
+decision, not a gap: it was measured on the held-out report corpus (N=19,
+judge N=3, 2026-07-20) and lost on both axes at once.
+
+| Arm | Savings vs `normal` | vs `terse` | Fidelity (claim-preservation) |
+| --- | ------------------: | ---------: | ----------------------------: |
+| `scrooge:ko/lite` | +43.8% | +24.6% (win 17/19) | 0.650 |
+| `scrooge:ko/full` | +63.8% | — | **0.690** |
+| `scrooge:en/lite` | +60.3% | +26.2% (win 15/19) | 0.700 |
+| `scrooge:en/full` | +72.0% | — | **0.720** |
+
+A middle dial only earns its place by trading compression for fidelity. `lite`
+compresses **less** than `full` and preserves **less** — a Pareto loss in both
+languages — so the verdict was **NO-GO**. The dial stays shipped (removing a
+shipped surface is expensive and needs its own decision), but no `lite` ratio is
+injected into `LANG_META` or `/scrooge-stats`: publishing an estimate would
+advertise a dial the measurement rejected. A lite session therefore shows measured
+tokens with no estimate, and says why.
+
+### The `terse` control for HI and ZH
+
+Every language table measures `scrooge` against `normal`. Three languages also had
+a `terse` control ("answer concisely") separating the register from plain brevity;
+HI and ZH did not, so their savings had no such separation. Measured 2026-07-31 on
+the **dev/tuning** corpus (`prompts/{hi,zh}.txt`, 16 prompts, 3 arms):
+
+| Arm | HI median | ZH median | vs `normal` | vs `terse` | `scrooge` < `terse` |
+| --- | --------: | --------: | ----------: | ---------: | :-----------------: |
+| `normal` | 2761 | 3305 | (baseline) | — | — |
+| `terse` | 1632 | 1577 | HI 40.9% · ZH 52.3% | (control) | — |
+| **`scrooge:{hi,zh}/full`** | **864** | **805** | **HI 68.7% · ZH 75.6%** | **HI 47.0% · ZH 49.0%** | HI 16/16 · ZH 15/15 |
+
+So the register beats the brevity instruction by ~47-49% on both, winning every
+single prompt — the same conclusion the other three languages already had evidence
+for. Reproduce:
+
+```sh
+python3 benchmarks/report.py --input benchmarks/published/results-hi-tuning.jsonl --baseline normal --paired
+python3 benchmarks/report.py --input benchmarks/published/results-zh-tuning.jsonl --baseline normal --paired
+```
+
+Two caveats, both load-bearing. **This is the tuning corpus, not the held-out
+one** — ADR-003 keeps them separate, so these figures stay here as the control
+evidence and are never promoted to a language headline (which is why HI still
+reads ~63% and ZH ~67% above, from the held-out rows). And **ZH excludes prompt
+15**: its `normal` and `terse` runs never answered, delegating to a background
+workflow and returning a stub instead. That is host behaviour leaking into the
+benchmark child, not a register effect; the harness's contamination detector only
+recognises register-hook injection, so the exclusion is manual and recorded in
+[`published/README.md`](./published/README.md).
+
+### The `lean` flag numbers
+
+`lean` is a behavior flag, not a dial, so its A/B baseline is the same register
+*without* the flag — not `normal`. That makes it a different comparison from
+every table above, and the savings compose on top of the language headline
+rather than replacing it:
+
+```sh
+python3 benchmarks/report.py --input benchmarks/published/results-lean2-ko.jsonl \
+  --baseline scrooge:ko/full --paired    # KO +34.6% (n=22)
+python3 benchmarks/report.py --input benchmarks/published/results-lean2-en.jsonl \
+  --baseline scrooge:en/full --paired    # EN +10.3% (n=21)
+```
+
+The 24pp gap between the two languages is why the README quotes both rather than
+an average. Both corpora ran 24 prompt/run pairs; the usable n differs only
+because of failed runs (KO 2, EN 3).
 
 ### Expected variance
 
@@ -181,6 +262,39 @@ headline percentages as **one-significant-figure estimates** (`~70%`, not
 Background runs get killed at session boundaries in this harness, which silently
 truncates a run and biases the medians. Always run the benchmark **foreground**
 and pass `--resume` to pick up any prompts that timed out — never background it.
+
+### caveman fidelity — the differentiation, measured
+
+The README says scrooge trades tokens for a more faithful answer than caveman.
+Until 2026-07-31 that claim had **no caveman-side measurement**: every fidelity row
+judged a scrooge arm. Both arms are now judged on the same corpus, same judge
+(N=3), same model, restricted to the prompts both arms cover:
+
+| Corpus | Arm | Median claim-preservation | Safety preserved | Median saved |
+| ------ | --- | ------------------------: | ---------------: | -----------: |
+| KO held-out (n=16) | `scrooge:ko/full` | **0.68** | 12/16 | 66.6% |
+| KO held-out (n=16) | `caveman:full` | 0.60 | 12/16 | 68.6% |
+| EN held-out (n=11) | `scrooge:en/full` | **0.72** | 9/11 | 67.4% |
+| EN held-out (n=11) | `caveman:full` | 0.69 | 9/11 | 57.7% |
+
+Read it honestly, in three parts:
+
+- **The direction holds.** scrooge preserves more claims in both languages, and
+  wins per prompt 8-of-16 (4 ties) in KO and 9-of-11 in EN.
+- **The margin is modest, and much smaller in English** — +0.08 median in KO but
+  only +0.03 in EN. "caveman discards information, scrooge keeps it" overstates a
+  0.03 gap; on this corpus the two are close.
+- **Safety preservation does not separate them at all** — identical in both
+  languages (12/16, 9/11). Whatever distinguishes the two registers, it is not the
+  safety-prose escape.
+
+Raw rows: [`results-{ko,en}-caveman-fidelity.jsonl`](./published/). Reproduce:
+
+```sh
+python3 benchmarks/fidelity/run.py --results benchmarks/results-ko-report.jsonl \
+  --candidate-arm caveman:full --model claude-opus-4-8 --judge-runs 3 \
+  --output benchmarks/fidelity/results-ko-caveman-fidelity.jsonl
+```
 
 ### Reproduce the caveman comparison
 
@@ -201,6 +315,65 @@ Then look at the fidelity gap ([`fidelity/`](./fidelity/)) — that is where the
 diverge: a similar token ballpark, very different claim-preservation. We cite
 caveman as the origin of the token-miser idea and the strongest compression
 baseline, and copy none of its text.
+
+## Per-language detail
+
+The root README carries one table per language plus a combined JA/HI/ZH table. This section holds the per-register design notes and the isolation caveat each measurement needs — moved here so the README stays a summary.
+
+**Mini English sample (`en/full`)**
+
+> Explain why a database index speeds up reads and slows down writes.
+
+```text
+Index = extra lookup structure.
+
+Reads: planner searches index keys, then fetches matching rows; avoids full table scan when predicate is selective.
+Writes: INSERT/UPDATE/DELETE must maintain index pages, maybe split/rebalance B-tree, write more WAL, and consume cache/disk.
+
+Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-heavy tables.
+```
+
+### Japanese
+
+`scrooge:ja/full` maps the Korean mechanism onto Japanese — keigo stripping, 体言止め (noun-stop endings), 助詞 (particle) drop — while keeping kanji as normal orthography (the inverse of KO's Hangul-only rule).
+
+| Mode                  | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --------------------- | -----------------------------------: | ------------------: |
+| `normal`              |                                 2477 |          (baseline) |
+| `terse`               |                                 1629 |                ~34% |
+| **`scrooge:ja/full`** |                              **880** |            **~64%** |
+
+`scrooge:ja/full` cuts Japanese output by **~64%** vs the verbose default (per-prompt median 69.6%), and beats the `terse` "answer concisely" control by **+46%** (11/11 prompt wins) — so the gain is the register, not generic brevity. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-ja-report.jsonl`](./published/results-ja-report.jsonl) · [`results-ja-fidelity.jsonl`](./published/results-ja-fidelity.jsonl).
+
+> **Corpus note**: this table is the held-out corpus (`prompts/ja-report.txt`), the only JA measurement published. An earlier tuning-corpus table (N=15, ~70%) was removed — its rows are gitignored, so no reader could recompute it, and its quoted "15/15 prompt wins" was itself wrong (the corpus gives 14/0/1).
+>
+> **Measurement note**: the `normal` baseline is measured with host memory files (`~/.claude/CLAUDE.md`, project `CLAUDE.local.md`) isolated, so it answers in the prompt's language (Japanese) — otherwise a host "respond in Korean" instruction makes the baseline answer in Korean, whose different token efficiency inflates the savings.
+
+### Hindi
+
+`scrooge:hi/full` maps the Korean mechanism onto Hindi — honorific leveling (`कीजिए` → `करो`), noun-stop / verbal-noun endings, and optional postposition drop (`को`/`में`/`से`; the `ने` ergative marker is kept, since dropping it can shift meaning) — while keeping a Devanagari body with English technical terms code-mixed verbatim.
+
+| Mode                  | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --------------------- | -----------------------------------: | ------------------: |
+| `normal`              |                                 2436 |          (baseline) |
+| **`scrooge:hi/full`** |                              **897** |            **~63%** |
+
+`scrooge:hi/full` cuts Hindi output by a **66.6% per-prompt median** (ratio of medians ~63%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.76 median claim-preservation, safety preserved 10/11** — better claim retention than JA; the single safety-check miss is a heuristic false-positive on a rate-limiting prompt with no security/irreversible content (the compressed answer keeps its technical caveat), and the loss elsewhere is breadth, not wrong information. Measured on both corpora: the held-out numbers above are the headline, and a `normal`/`terse`/`scrooge` tuning run now exists too (see [The `terse` control for HI and ZH](#the-terse-control-for-hi-and-zh)). Raw rows: [`results-hi-report.jsonl`](./published/results-hi-report.jsonl) · [`results-hi-fidelity.jsonl`](./published/results-hi-fidelity.jsonl).
+
+> **Measurement note**: same cwd-isolation as Japanese — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Hindi, not the host "respond in Korean" default, which would otherwise inflate the savings.
+
+### Chinese
+
+`scrooge:zh/full` is a **zh-native** register, not a port of the Korean mechanism: Chinese is an isolating language with no honorifics or case particles to strip, so it drops politeness (`请`/`您`), conservatively drops redundant structural particles (`的`/`了`/`着`) and measure words, and cuts connective filler — keeping a Simplified-Chinese body with English technical terms code-mixed verbatim. Modern concise prose, not caveman's wenyan.
+
+| Mode | Median output tokens (held-out N=11) | Savings vs `normal` |
+| --- | ---: | ---: |
+| `normal` | 2703 | (baseline) |
+| **`scrooge:zh/full`** | **897** | **~67%** |
+
+`scrooge:zh/full` cuts Chinese output by a **62.9% per-prompt median** (ratio of medians ~67%) vs the verbose default, smaller on **11/11** held-out prompts. Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 11/11** — higher claim retention than JA and no safety miss; the loss is breadth (secondary detail dropped under heavier compression), not wrong information (0 fully-equivalent is the expected independent-generation signal, not corruption). Measured on both corpora: the held-out numbers above are the headline, and a `normal`/`terse`/`scrooge` tuning run now exists too (see [The `terse` control for HI and ZH](#the-terse-control-for-hi-and-zh)). Before/after: [`benchmarks/examples/zh-foreach-async.*`](./examples/) (`normal` 1221 → `scrooge` 466 tokens, same forEach-async diagnosis). Raw rows: [`results-zh-report.jsonl`](./published/results-zh-report.jsonl) · [`results-zh-fidelity.jsonl`](./published/results-zh-fidelity.jsonl).
+
+> **Measurement note**: same cwd-isolation as Japanese/Hindi — the `normal` baseline runs with host memory files (`~/.claude/CLAUDE.md`) isolated so it answers in Chinese, not the host "respond in Korean" default, which would otherwise inflate the savings.
 
 ## Document-generation corpus
 
@@ -239,6 +412,12 @@ is 800), so per-cell numbers are noisier than the conversational headline and a 
 longest baselines drop on timeout. Report the **per-prompt win-rate and median** rather than
 the mean, and treat the percentage as an estimate. Committed before/after samples live in
 [`examples/`](./examples/).
+
+These doc-generation numbers are **noisier than the conversational headline** — treat them as estimates:
+
+- **Single run, high variance.** Document length varies a lot run-to-run; per-prompt savings here ranged from 7% (a dense feature spec — mostly required content) to 92% (a verbose baseline). The stable signal is the per-prompt win-rate, not the exact percentage.
+- **Conservative.** A few `normal`/`terse` prompts were dropped from the paired set because their documents were too long to finish within the timeout — i.e. the most verbose baselines are **excluded**, not counted.
+- **Clean baseline.** Unlike the conversational headline, this run additionally neutralizes the host `CLAUDE.md` and forces inline output, so the baseline reflects a default assistant rather than one shaped by the local `CLAUDE.md` or a file-writing tool. (The per-machine `settings.json` hooks/plugins still load, but apply equally to every arm.) Full methodology in this file.
 
 ## Fidelity bench (verified equivalence)
 

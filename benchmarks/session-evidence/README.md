@@ -62,10 +62,43 @@ Known limitation (measurement-gated, spec Open Questions): per-turn output
 tracks request complexity as much as register adherence; the median-based
 ratio dampens but does not remove that confound.
 
-### Measured (2026-07-27)
+### Measured
 
-First run over 372 scrooge-active dogfood sessions (4 projects): 134
-conclusive → 103 retained / 31 drifting (23% ≤ 50% share), median late/early
-ratio 0.845 → **verdict `caveat-relax`**, applied to the README
-"Register-only isolation" caveat (retention axis only). Subagent readout:
-2,488 turns (271 prose), safety signals in 224, verbatim spans in 666.
+Committed aggregate: [`results.json`](./results.json) — the report output, so the
+README's retention numbers can be checked against a file in the repo rather than
+against prose. Session selection and command:
+
+```sh
+# every transcript whose text carries the activation marker
+grep -rl "SCROOGE MODE ACTIVE" --include="*.jsonl" ~/.claude/projects > /tmp/scrooge-sessions.txt
+tr '\n' '\0' < /tmp/scrooge-sessions.txt \
+  | xargs -0 node benchmarks/session-evidence/report.js --subagents \
+  > benchmarks/session-evidence/results.json
+```
+
+| Run | Sessions | Conclusive | Retained / drifting | Median late/early | Verdict |
+| --- | -------: | ---------: | ------------------- | ----------------: | ------- |
+| 2026-07-27 (first) | 372 | 134 | 103 / 31 | 0.845 † | `caveat-relax` |
+| 2026-07-31 (committed) | 744 | 177 | 136 / 41 | 0.834 | `caveat-relax` |
+
+Every cell in the committed row is a field of [`results.json`](./results.json) —
+`main.total`, `main.conclusive`, `main.retained` / `main.drifting`,
+`main.medianRatio`, `main.verdict`. The median is over conclusive sessions only.
+
+† The first run predates the committed artefact, so its numbers cannot be checked
+against a file; it is kept for the run-to-run comparison, not as evidence.
+
+The corpus is **live** — it is the maintainer's own session directory, which grows
+and rotates, so a re-run never reproduces the committed row exactly (an in-progress
+session's own transcript is part of the input). Treat the committed numbers as a
+dated snapshot; the stable finding is the verdict, which has held across both runs.
+
+The current run's subagent readout: 3,449 turns (395 prose), safety signals in
+293, verbatim spans in 787. The verdict is unchanged between runs and is applied
+to the README "Register-only isolation" caveat — retention axis only.
+
+> **Reproducibility limit.** The input is the maintainer's own private session
+> transcripts, so a third party cannot re-run this. Committing `results.json`
+> does not make it reproducible; it makes the README's four retention numbers
+> checkable against a committed field instead of against prose. Rows carry the
+> session-id basename only — never a path, and never message content.

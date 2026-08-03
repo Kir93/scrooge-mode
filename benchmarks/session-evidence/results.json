@@ -1,0 +1,5976 @@
+{
+  "thresholds": {
+    "minProseTurns": 5,
+    "driftRatio": 1.5,
+    "driftShare": 0.5
+  },
+  "sessions": [
+    {
+      "file": "e9e21b21-d404-4be2-a156-73506c598761.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f8061ab9-1da3-4796-a5fa-821984627064.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "74454006-e566-46a7-841f-7cc61a70af19.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e01b7562-1a7d-49fc-9235-3cb4ac16bcf5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d666e8d8-3954-4022-93ff-c081433b4d38.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4db1a160-d118-4e5b-9993-61ec001cc7f1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f7c7dbf5-259f-48db-93ee-83cffe8cd664.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4f9580e1-5764-48d5-a028-a0eac2edd7c2.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "91be0238-dbf1-4804-82d0-7b6758a68e66.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d7c49831-0aea-4973-acae-312bbd74575c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "465ff579-0227-4b4d-b4d9-99f3c3f5471e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f9160676-b7a1-494d-ad5c-33dda3885811.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f34cdf60-49c9-4e5b-a667-b852f7636216.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c5fa0369-4798-41a4-9151-8ebe993ec472.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0912668a-0c93-431d-9271-72e2c7ff7d27.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3ef788a0-bf92-4b88-a3ed-33cbb465ebf1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "261df5c2-ee67-4613-9af8-1f1499b62c9b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4263260d-6e75-48ca-bffd-1876e305f79d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "54d85f1f-0803-463f-b4a2-e0d97a012627.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4b433fc3-23ea-4fa9-affc-d4b7cc0cac99.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "48248a31-9bc8-43b4-98eb-5adeff69858a.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f7765b0a-cfa8-4ba5-9407-84a26ecbf97e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7780f98e-62af-41af-a4d9-26e839fd70a2.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "06c5e42a-15a1-4e25-bd57-6a6a33a7311d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "142c261c-c90f-43e1-803e-db56ade6c621.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "82bf2f2d-8f21-4749-ba68-5ea2a61247d8.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0372b13f-698e-44a8-ad89-e18406b526de.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e02aed06-0a1c-433c-ae3a-d5962c508fdf.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2126,
+      "lateMedian": 1638,
+      "ratio": 0.7704609595484478,
+      "verdict": "retained"
+    },
+    {
+      "file": "219c2067-1c58-4ae7-9aa9-53a044d4ca65.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "94a28b9d-d498-4e8e-ae41-938033437777.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9229b0ee-6436-443f-9693-5eec20a8cb0e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f2905935-63f5-4e49-8e85-c713913d9e3a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "644faaa4-2cb7-46be-8d82-a2a4724678be.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b7a8ab5b-f98b-452b-887e-7eb6d5315f6a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b27e1b33-5b1d-4473-8feb-42a72f9224c1.jsonl",
+      "proseTurns": 25,
+      "earlyMedian": 2286.5,
+      "lateMedian": 1571,
+      "ratio": 0.687076317515854,
+      "verdict": "retained"
+    },
+    {
+      "file": "cfa5b42c-c965-4a6b-ac79-f827ff55a9a0.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 516,
+      "lateMedian": 1002,
+      "ratio": 1.941860465116279,
+      "verdict": "drifting"
+    },
+    {
+      "file": "571933bc-d441-4da2-bfcb-b399d4085708.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "06901b48-f1fa-4b86-8fa0-b6d8e65a5b4f.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b41279ec-aee4-4572-b6f6-b6a6fb3b5a22.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "33b98680-e2d2-446b-baf7-1f4ed80e8b0a.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1439.5,
+      "lateMedian": 1307,
+      "ratio": 0.9079541507467871,
+      "verdict": "retained"
+    },
+    {
+      "file": "9e32d6e3-0d3f-4ab3-8937-80000981e763.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4e5d9b68-e992-4a6c-bd22-fb7bed10b061.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 2438,
+      "lateMedian": 959,
+      "ratio": 0.3933552091878589,
+      "verdict": "retained"
+    },
+    {
+      "file": "5f6bbc1a-aa44-4b1c-b31f-f451b908ea8d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a9d9d7e7-fafa-4c3a-a412-7bb19f8d564b.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6adc20cc-12cc-4ee0-9be1-f1539f9737ce.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1680.5,
+      "lateMedian": 4664,
+      "ratio": 2.775364474858673,
+      "verdict": "drifting"
+    },
+    {
+      "file": "75c259e7-34c1-484e-9c51-299efe10cb57.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2eb621ac-46d1-4ff7-9636-4ad23bc76783.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 1007,
+      "lateMedian": 289.5,
+      "ratio": 0.2874875868917577,
+      "verdict": "retained"
+    },
+    {
+      "file": "08a7ac9f-02c9-4b12-b18a-6f971cff7134.jsonl",
+      "proseTurns": 39,
+      "earlyMedian": 1729,
+      "lateMedian": 2202,
+      "ratio": 1.2735685367264316,
+      "verdict": "retained"
+    },
+    {
+      "file": "e7df5f2c-fa59-4c0f-894c-1bfdf200f516.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2282.5,
+      "lateMedian": 1693,
+      "ratio": 0.7417305585980285,
+      "verdict": "retained"
+    },
+    {
+      "file": "77347c67-9ea9-415f-a136-70437db8b032.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d39225d1-54ea-45ce-bc8f-a01b9423dc3f.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1591,
+      "lateMedian": 1345,
+      "ratio": 0.8453802639849152,
+      "verdict": "retained"
+    },
+    {
+      "file": "6b75164d-f1a3-4b1c-a644-12dd7eb01173.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b5cca061-f3e3-47e6-bf9f-fdc7cbd042d2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3f6462e5-6902-458f-b05e-a95535ddb1ed.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1426.5,
+      "lateMedian": 942,
+      "ratio": 0.6603575184016824,
+      "verdict": "retained"
+    },
+    {
+      "file": "fc8054d3-1fe8-4979-806d-c8931ef6d769.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 1978.5,
+      "lateMedian": 992,
+      "ratio": 0.501389941875158,
+      "verdict": "retained"
+    },
+    {
+      "file": "bcbb5ffd-66ad-4992-aa55-225b4df4d3a8.jsonl",
+      "proseTurns": 27,
+      "earlyMedian": 1741,
+      "lateMedian": 3827,
+      "ratio": 2.198161975875933,
+      "verdict": "drifting"
+    },
+    {
+      "file": "9022f500-4519-4d2a-93cd-cfdeb6c7d615.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0c3f6729-d076-4a97-953c-b1db379a9cb7.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "329fb184-28a7-49b5-a889-1790d2599a48.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c8ea7698-d5db-40ac-a7d7-c14ca0f2ce5b.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0956d587-a1f6-4909-a119-f7f32e7bdf07.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0f4f3810-f24a-415b-a48f-5b2d9d7cf7fe.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "207ebd03-ff69-4497-a651-5c59f94e9412.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 888,
+      "lateMedian": 526.5,
+      "ratio": 0.5929054054054054,
+      "verdict": "retained"
+    },
+    {
+      "file": "293d88ac-fc3a-42d2-b6f3-c7a7eb7c57c1.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8737c6ff-050e-4e98-864e-f34623f3fdfc.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "727fa2a8-030e-4381-ae97-8927a0dfd36f.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1b6063b7-6ea8-43f0-8bf3-9725389ffba8.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bf483a3c-b942-4eea-ba03-6f3f4a45c43e.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "08689c3a-a3eb-4017-b40d-439c18a88ce8.jsonl",
+      "proseTurns": 11,
+      "earlyMedian": 927,
+      "lateMedian": 444.5,
+      "ratio": 0.47950377562028046,
+      "verdict": "retained"
+    },
+    {
+      "file": "e8291518-7bc2-4d98-b47d-e427d812db2f.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "730e6409-cdef-4000-aa80-f655cac5e5b1.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a4167c62-01af-4708-a68f-fe8668001934.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3aa372db-2224-4cba-a647-1a4735e6c799.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9a52f6bd-546c-4ba2-accb-e382d95b0565.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "30df226c-f199-4ca0-ab39-adbc4ca4b34e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0b3dca8-94bb-40e2-a36d-3fb805db7c49.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8160ddeb-e40e-4b69-9db4-b939d26835dd.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 381,
+      "lateMedian": 720,
+      "ratio": 1.889763779527559,
+      "verdict": "drifting"
+    },
+    {
+      "file": "4015a001-2e56-4318-b689-0c67c38ff994.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6f79f80f-991c-41e0-9420-d02bfe303b6c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "57aa3cb9-dcff-4449-92ce-2b2c3b2ae737.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 1448.5,
+      "lateMedian": 441,
+      "ratio": 0.3044528822920262,
+      "verdict": "retained"
+    },
+    {
+      "file": "3ffa8d46-36ea-4e3d-92f9-28a985e028db.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bb4a6891-c97c-495d-b5d1-907365246e78.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "841550d2-a82f-43ed-ad8d-ae749f49cad7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bab8460f-452c-4f48-a841-83e58df827d5.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e5d4d67c-4901-4b74-b30d-e04b6e044172.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7387a20d-a2c6-42d9-a319-030d0b67eab3.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d978933e-b66e-4957-a64b-3e401836f9fe.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "32035cf7-1f43-4634-8950-b6fd82bd0565.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5ad81dd4-de75-43a4-9ac8-97f3abf845d8.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "053738eb-40da-4d08-980b-67dc3a104275.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 2278,
+      "lateMedian": 2303,
+      "ratio": 1.0109745390693592,
+      "verdict": "retained"
+    },
+    {
+      "file": "30eda997-753d-4374-b11f-a6af6d69aa88.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 4945.5,
+      "lateMedian": 3460,
+      "ratio": 0.6996259225558589,
+      "verdict": "retained"
+    },
+    {
+      "file": "be0a9e00-95f3-4eb3-9813-07ef0b4e65b2.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 1074,
+      "lateMedian": 1070,
+      "ratio": 0.9962756052141527,
+      "verdict": "retained"
+    },
+    {
+      "file": "0f72b776-0559-428f-a1c0-c144262241b4.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9d1d847c-e60e-420f-815c-77b47ebb5665.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 2275,
+      "lateMedian": 1404.5,
+      "ratio": 0.6173626373626374,
+      "verdict": "retained"
+    },
+    {
+      "file": "6b3efe77-563b-4d9e-b979-296417d3a811.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8f854931-f7d9-4ec6-8245-9d4a2fecf528.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ed897f6c-8948-414d-82b0-ccb7b7613765.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "03e4edd4-075c-483a-9041-0ccb9b03010e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "448d6d02-bb00-4b6c-af20-f6322d6b5c0b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fc75a904-aa8e-4916-9089-fa524d16aa4d.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 1081.5,
+      "lateMedian": 989,
+      "ratio": 0.9144706426259824,
+      "verdict": "retained"
+    },
+    {
+      "file": "93b96281-6aab-4715-8d08-b35142440f5c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6818f641-7b70-4ba9-af04-6659f396edc8.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "31cad088-cfe8-4c3e-b370-c641d38f9efd.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 919.5,
+      "lateMedian": 1428,
+      "ratio": 1.5530179445350734,
+      "verdict": "drifting"
+    },
+    {
+      "file": "784af849-45c9-4ee0-8ce0-5ad48ff993cc.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "dba6c2b2-fe8e-4c7d-9b4f-240b2064572b.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1c8f203f-d70c-4435-be17-be4351c50fb6.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "75f631a5-7b93-415c-a09f-f99254a318d9.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "18776e2b-e0da-4d6c-92cc-fb9ff27b8d8a.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 493.5,
+      "lateMedian": 1420,
+      "ratio": 2.877406281661601,
+      "verdict": "drifting"
+    },
+    {
+      "file": "f2aa6418-4f8a-4bdc-bd82-9438b3ce3181.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1932.5,
+      "lateMedian": 1016,
+      "ratio": 0.5257438551099612,
+      "verdict": "retained"
+    },
+    {
+      "file": "03557b6e-b27c-475e-9201-908db4104f19.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f98f6e4a-a8c4-4cdf-bbf8-ca43bdee24e0.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 2395.5,
+      "lateMedian": 2370,
+      "ratio": 0.989355040701315,
+      "verdict": "retained"
+    },
+    {
+      "file": "bfe91416-2239-4bf9-8df2-1182d2de66e9.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1610.5,
+      "lateMedian": 2212,
+      "ratio": 1.3734864948773673,
+      "verdict": "retained"
+    },
+    {
+      "file": "ca47cf0e-2ffb-4ab5-8266-1f6701d03917.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5f319519-e0c2-43b1-a5f2-ce4d32baba94.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "96075e55-aef6-4c94-a618-9ca98c3976ff.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 2584.5,
+      "lateMedian": 3731,
+      "ratio": 1.4436061133681564,
+      "verdict": "retained"
+    },
+    {
+      "file": "2e76ff7b-f671-4317-be7d-dd14a7ab14bf.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 2178,
+      "lateMedian": 1950,
+      "ratio": 0.8953168044077136,
+      "verdict": "retained"
+    },
+    {
+      "file": "6da47356-675a-46c2-8c8a-4ff003465620.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ccb4c6bb-4a61-4c50-853e-b045f240fd91.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "617b1d79-1c4e-4a1a-a2ad-040851bf9f96.jsonl",
+      "proseTurns": 28,
+      "earlyMedian": 3246.5,
+      "lateMedian": 3362.5,
+      "ratio": 1.035730787001386,
+      "verdict": "retained"
+    },
+    {
+      "file": "66787644-893e-4a7d-a1ec-c9062e1927b6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f7dcf10f-ce01-487e-a20a-653f0b63e798.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5a87cc0e-1cb2-43dc-bec2-56a216bfe68f.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 3721.5,
+      "lateMedian": 870,
+      "ratio": 0.23377670294236194,
+      "verdict": "retained"
+    },
+    {
+      "file": "7fbf78df-e08a-45d2-956a-e2a9b652cb80.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "88f4a89a-94be-4bb2-ac53-6e8d7ba58726.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f57bb6ac-8c6d-43ce-acb3-957c402c42b7.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9c237d3f-45cd-47d2-b75d-61a5f2f8ce53.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2737.5,
+      "lateMedian": 2036,
+      "ratio": 0.7437442922374429,
+      "verdict": "retained"
+    },
+    {
+      "file": "feaf8fc4-1d0b-4e70-9922-f3939b6c51c7.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1f675076-9923-475e-aed9-6dbc5483c84a.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 335,
+      "lateMedian": 1495,
+      "ratio": 4.462686567164179,
+      "verdict": "drifting"
+    },
+    {
+      "file": "1a6bc7b0-33c5-4efa-af2f-41abf1617651.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5d7c5e54-f10c-4fac-8082-10729c7d4578.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 979.5,
+      "lateMedian": 848,
+      "ratio": 0.8657478305257784,
+      "verdict": "retained"
+    },
+    {
+      "file": "a2bccda4-7593-4a27-8521-0acea96d798a.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1423,
+      "lateMedian": 1270,
+      "ratio": 0.8924806746310612,
+      "verdict": "retained"
+    },
+    {
+      "file": "9173382d-6dfa-4d6c-bf9e-c22d4bdcff29.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5f803371-ba1b-4cf0-b77a-7afd79033915.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "22562d62-0b88-475b-a1c2-3c15662538fa.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 2846.5,
+      "lateMedian": 1839.5,
+      "ratio": 0.6462322150008782,
+      "verdict": "retained"
+    },
+    {
+      "file": "c08b4435-dd49-431f-9253-a4a26311ad6f.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "000efbd2-cf58-43de-aa8d-356ebcd53b85.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "335ac3ce-6784-49ec-9fea-d4a5a0386684.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 3692,
+      "lateMedian": 618,
+      "ratio": 0.1673889490790899,
+      "verdict": "retained"
+    },
+    {
+      "file": "5ecc1bce-4c81-4523-9569-c7d68cd495c5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2af75bd2-01b6-4b8f-9e84-0af55b19da71.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ef2f08f4-7d2b-41cb-8582-843d28061264.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9f7dc8f5-e1e1-4e82-a109-5bde6ab510ed.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 746.5,
+      "lateMedian": 692.5,
+      "ratio": 0.927662424648359,
+      "verdict": "retained"
+    },
+    {
+      "file": "0dd60eb8-0b6c-488f-8574-178f072b60e8.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 1332,
+      "lateMedian": 462,
+      "ratio": 0.34684684684684686,
+      "verdict": "retained"
+    },
+    {
+      "file": "dd793408-5c26-4a64-963e-545d3b480975.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c8153c93-7435-467e-bf8f-bb1c9e2561a1.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8a2a87e0-9081-4bcf-805a-32495e99d22e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ef1821d1-4a9c-4330-97cf-bd1cab021a61.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "37915ca1-188e-413f-8b05-168bb37f349d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c6d0e944-66b4-4bbc-b4a2-94d9914f08ae.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5fd1772f-7b48-4b27-aec8-159f157f3b3c.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c1170593-5c0a-4b27-be19-c7eaaea4d370.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "92bf23da-eec7-4048-b281-1f24afcb28c6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a076ecb3-1c61-4f13-bff3-362e3ac588e1.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d18f5389-da95-42f2-bb67-00635f405a4a.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "92f1e7cc-02b2-4257-bd90-97220e3aa439.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1382,
+      "lateMedian": 1489,
+      "ratio": 1.077424023154848,
+      "verdict": "retained"
+    },
+    {
+      "file": "08f1f2e2-0f4c-4e37-b2c3-7435635c60d5.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "de99579a-8533-4d8d-851c-77ea30588e1b.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a42e13b3-09d3-45b6-bbd1-e5a71e147fd4.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 4373,
+      "lateMedian": 1653,
+      "ratio": 0.3780013720557969,
+      "verdict": "retained"
+    },
+    {
+      "file": "3ea158e0-3b41-4fd5-8d28-b54bef65d126.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "91d5195e-d1ff-40d9-9bf0-6f90523188aa.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9530b675-b7de-400c-a024-d8cbaa54d59e.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 2508.5,
+      "lateMedian": 2607.5,
+      "ratio": 1.0394658162248356,
+      "verdict": "retained"
+    },
+    {
+      "file": "7b5eb888-76e3-4f49-a055-4a200633a14f.jsonl",
+      "proseTurns": 11,
+      "earlyMedian": 2939,
+      "lateMedian": 2367.5,
+      "ratio": 0.8055461041170466,
+      "verdict": "retained"
+    },
+    {
+      "file": "16176e18-0a30-4036-b16c-f9952547bcc4.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f0c481bd-8831-4033-bfef-99eb587ce71b.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2104,
+      "lateMedian": 1562,
+      "ratio": 0.7423954372623575,
+      "verdict": "retained"
+    },
+    {
+      "file": "762baa26-739e-4a58-b6d8-2f12cf6ed78a.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2845,
+      "lateMedian": 1330,
+      "ratio": 0.46748681898066785,
+      "verdict": "retained"
+    },
+    {
+      "file": "16f25065-8990-43cb-a687-4fc9dd185639.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1140,
+      "lateMedian": 429,
+      "ratio": 0.3763157894736842,
+      "verdict": "retained"
+    },
+    {
+      "file": "71bda186-ae72-42e2-9265-b8e3132b489b.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 37,
+      "lateMedian": 298.5,
+      "ratio": 8.067567567567568,
+      "verdict": "drifting"
+    },
+    {
+      "file": "5ad40a9d-e68d-4665-be25-4f871c5551b8.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 3760.5,
+      "lateMedian": 2137,
+      "ratio": 0.568275495279883,
+      "verdict": "retained"
+    },
+    {
+      "file": "f012ace6-150a-4248-a61f-a5a6df81277f.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1114.5,
+      "lateMedian": 1396,
+      "ratio": 1.2525796321220277,
+      "verdict": "retained"
+    },
+    {
+      "file": "0a401dc6-9769-46b2-942b-2f44b8783738.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 997,
+      "lateMedian": 1766,
+      "ratio": 1.7713139418254764,
+      "verdict": "drifting"
+    },
+    {
+      "file": "47c2f26c-670f-4fec-8c02-2307f0260fb4.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "883fdb63-dbbb-4462-be2d-173ac58653c7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "139e056a-36a6-467b-9db2-440d613011ce.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9d2ce534-6629-4290-a8c4-988abb66bcbd.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1bf067f1-f786-45de-bf9a-9ae58ba8bb69.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2410,
+      "lateMedian": 969,
+      "ratio": 0.4020746887966805,
+      "verdict": "retained"
+    },
+    {
+      "file": "429f0ab0-8fed-43f6-9ae0-f4459d4fadaf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "09a51f16-77ce-4343-9e80-a3593bcd99d4.jsonl",
+      "proseTurns": 26,
+      "earlyMedian": 3534,
+      "lateMedian": 1230,
+      "ratio": 0.34804753820033957,
+      "verdict": "retained"
+    },
+    {
+      "file": "9499d228-44d6-4e56-98d6-ff6afbe551a3.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 608.5,
+      "lateMedian": 635,
+      "ratio": 1.0435497124075597,
+      "verdict": "retained"
+    },
+    {
+      "file": "800521e4-6ed0-462b-a840-6a9349d79ada.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0572643d-5a7a-46b4-85f6-90d1ec1d4dbb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "522b7232-cd61-4dd2-a026-925d50e59da2.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3cb9ad75-6a3f-4a81-843f-e59f08b99f81.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 3920,
+      "lateMedian": 4766.5,
+      "ratio": 1.2159438775510205,
+      "verdict": "retained"
+    },
+    {
+      "file": "43f1603a-c165-4879-b0d4-1cdcbddaa4ff.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e6f97aa8-5b56-49fd-864a-59343aa9e3d8.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2001,
+      "lateMedian": 1528.5,
+      "ratio": 0.7638680659670165,
+      "verdict": "retained"
+    },
+    {
+      "file": "c849998c-8f10-4eb7-a344-6e91f45c647e.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1499,
+      "lateMedian": 846,
+      "ratio": 0.5643762508338893,
+      "verdict": "retained"
+    },
+    {
+      "file": "afbf1f18-151c-4aec-9d0f-e04e50f64627.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "18f69075-99e4-429f-bed2-cd7e9f728afb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7c80320d-10dc-4aa4-96ec-a6f551e9e102.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4f57ee55-665c-4808-9072-b6b8b7b0fcf4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "21d96ff4-d45a-49dd-9ffa-53e3bfaa981f.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b9c008c8-b955-4d87-b0c2-84ece7101594.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5e8e453a-de31-44dd-9471-8822758c7af2.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7d1720b7-1f24-473d-b49b-d283bc4bd27e.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 3709.5,
+      "lateMedian": 2129,
+      "ratio": 0.5739317967381049,
+      "verdict": "retained"
+    },
+    {
+      "file": "7871de52-848e-47da-a452-13e9cf2c7e8b.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5e7fd37e-7765-4236-a3ea-981bbeef7551.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7750a984-70eb-4b94-8163-7079bf4f6c7f.jsonl",
+      "proseTurns": 15,
+      "earlyMedian": 1973,
+      "lateMedian": 949.5,
+      "ratio": 0.48124683223517484,
+      "verdict": "retained"
+    },
+    {
+      "file": "dd8b8def-1f56-457b-9d3e-2c9bab1ffd61.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "151d2e9d-bd0d-4163-ad1f-b974e8292190.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ea51d1ab-f557-4005-9b80-a876f906967e.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "34f18384-3076-4d30-80da-00bf94df2039.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "27157c07-f93f-4974-ba99-f0daca4aa88a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6be7cb99-17a0-4d3d-85d8-530079c003ef.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a406c8c0-51e2-4cab-b52c-64e2fdc9221e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f7933e76-7f2c-4bf4-be33-8d3b95db0db6.jsonl",
+      "proseTurns": 19,
+      "earlyMedian": 1590,
+      "lateMedian": 2991.5,
+      "ratio": 1.8814465408805032,
+      "verdict": "drifting"
+    },
+    {
+      "file": "309d20d6-3a8e-48ef-aab6-914541809af4.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 5043,
+      "lateMedian": 2012,
+      "ratio": 0.3989688677374579,
+      "verdict": "retained"
+    },
+    {
+      "file": "9bc39abc-7226-4d99-bb91-ea8ed5e1f726.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "985b2eed-5233-425b-b743-71e69ff917f8.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 4797,
+      "lateMedian": 2482,
+      "ratio": 0.5174067125286638,
+      "verdict": "retained"
+    },
+    {
+      "file": "4597655f-8bc2-46c8-b955-ba16ad1ff913.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e878560e-a375-44c4-b3f2-bf4485038bc5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cf8c8390-4cbf-42b1-a6f4-f3e97aed56e6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c0c8fd27-6b3c-41c6-aecd-44bf9d5e098a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ad36095f-b851-4b8f-a34b-37b0076c4dcc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4716ba66-fbbc-4863-a7d1-5db756b43c34.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4c6f3110-7112-4cbc-ac9c-1ba13c4a9a61.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 655,
+      "lateMedian": 1777,
+      "ratio": 2.712977099236641,
+      "verdict": "drifting"
+    },
+    {
+      "file": "29f7639a-5196-42c0-81b2-2f04549f0ce7.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 946,
+      "lateMedian": 1442,
+      "ratio": 1.5243128964059196,
+      "verdict": "drifting"
+    },
+    {
+      "file": "162b98a4-ea58-46f4-a8c9-c7490d707cf3.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 1334,
+      "lateMedian": 422,
+      "ratio": 0.31634182908545727,
+      "verdict": "retained"
+    },
+    {
+      "file": "2b28ec80-2bd7-4f64-a4b1-b267890398f5.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2273,
+      "lateMedian": 732,
+      "ratio": 0.3220413550373955,
+      "verdict": "retained"
+    },
+    {
+      "file": "09b4758f-28a8-47f2-acee-03245ab5c5b1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3c68a981-fb8d-4d0c-9cdc-04ffc34aaf1b.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "78ccffe8-9281-4b53-9ee5-829d3c8f6811.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2378,
+      "lateMedian": 779.5,
+      "ratio": 0.3277964676198486,
+      "verdict": "retained"
+    },
+    {
+      "file": "81529950-9fc1-4495-9d15-4553384c1ab9.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1540,
+      "lateMedian": 1595,
+      "ratio": 1.0357142857142858,
+      "verdict": "retained"
+    },
+    {
+      "file": "6e53aeb4-1cf6-4347-92ab-69d1def5f6bf.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 1397,
+      "lateMedian": 3626,
+      "ratio": 2.595561918396564,
+      "verdict": "drifting"
+    },
+    {
+      "file": "0e57a0e5-314e-4026-ad5e-becded56d842.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 3916.5,
+      "lateMedian": 3916.5,
+      "ratio": 1,
+      "verdict": "retained"
+    },
+    {
+      "file": "33f58fcb-4458-4884-bb14-4428d25ed7ec.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ca3df59f-17d6-4ee6-91a2-5154e39cba3b.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "49582f01-635f-4487-83d8-2a71546d3ec3.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "516720a1-5307-4f39-b6e9-850010e27e4d.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 1495,
+      "lateMedian": 1338,
+      "ratio": 0.8949832775919733,
+      "verdict": "retained"
+    },
+    {
+      "file": "e831100d-ad22-4684-aa30-76b96caf7187.jsonl",
+      "proseTurns": 17,
+      "earlyMedian": 561,
+      "lateMedian": 1976,
+      "ratio": 3.522281639928699,
+      "verdict": "drifting"
+    },
+    {
+      "file": "5d2dd1b5-bb3b-42cf-a101-8cd5cacccd4c.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 2073,
+      "lateMedian": 1154,
+      "ratio": 0.5566811384466956,
+      "verdict": "retained"
+    },
+    {
+      "file": "2895e347-fb18-498b-94ce-6b0165521dc7.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5615f773-ab00-48db-a1ad-75d5f3c247c6.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 3928,
+      "lateMedian": 1813,
+      "ratio": 0.4615580448065173,
+      "verdict": "retained"
+    },
+    {
+      "file": "0f477ba3-f863-420e-b18b-934bf8fe2c71.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 726,
+      "lateMedian": 400,
+      "ratio": 0.5509641873278237,
+      "verdict": "retained"
+    },
+    {
+      "file": "9504cd5d-73f2-4f80-b522-d0c5de92da47.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "00ffe452-cc02-4519-bffa-e9065fe106a0.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1266,
+      "lateMedian": 1410,
+      "ratio": 1.113744075829384,
+      "verdict": "retained"
+    },
+    {
+      "file": "91eb4e02-63d3-45ce-bb68-19a4044d2b28.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5b14fe8a-236d-40e2-8db0-7f7dd1059543.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a32b3121-8f0d-46ea-95dd-116e928b420c.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5000bdaf-4fe6-43f1-b33d-65889fc20382.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0abd205-3b0e-4a61-bd40-ab2ca5c8e03d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f504031f-5901-448f-99ad-67c856d247ba.jsonl",
+      "proseTurns": 19,
+      "earlyMedian": 1893,
+      "lateMedian": 1358,
+      "ratio": 0.7173798203909139,
+      "verdict": "retained"
+    },
+    {
+      "file": "8262f787-5c2d-490e-b665-dba31ea495cb.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "af478c4c-56b0-43d2-8f39-ea7ace21074f.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1618.5,
+      "lateMedian": 1480,
+      "ratio": 0.914426938523324,
+      "verdict": "retained"
+    },
+    {
+      "file": "bb7a291b-2d88-49c2-8fde-a21e31f0f1f2.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "226bde27-906d-48d6-8095-9b9a84139a19.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b0783c5a-36a3-4bc5-a25c-1ac5f574131c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "160cf8ea-8af1-415d-909c-7947c1534106.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2186c8db-8121-4113-91c7-a3bf91fe714a.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c28ad3ae-52cf-4a37-87e9-5166759ac0ae.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "20ff946e-6686-440a-b4d2-f342e71861d6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6b647b46-f22d-48d4-8e94-5e49bcc03429.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2114,
+      "lateMedian": 678,
+      "ratio": 0.3207190160832545,
+      "verdict": "retained"
+    },
+    {
+      "file": "2f6ecc4a-7281-4c8a-9df2-8605c8bc9ac0.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 788.5,
+      "lateMedian": 1828,
+      "ratio": 2.318325935320228,
+      "verdict": "drifting"
+    },
+    {
+      "file": "60138476-82d9-40e1-b442-7a6b70d7ee5f.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 1211.5,
+      "lateMedian": 2314,
+      "ratio": 1.9100288898060256,
+      "verdict": "drifting"
+    },
+    {
+      "file": "56ab5129-9012-4203-93ed-ac18a15dbf97.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 2233,
+      "lateMedian": 802,
+      "ratio": 0.35915808329601434,
+      "verdict": "retained"
+    },
+    {
+      "file": "705de8cd-7d1a-4e8b-9074-9973bc03ff50.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4c223979-d05e-448b-a0e9-43c6697d2cf4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0fe0bb73-8dd2-45b7-8821-a20d93c5fecd.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6b80702a-b7f7-40ce-b694-d2bd0fef5bc0.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1690,
+      "lateMedian": 2402,
+      "ratio": 1.421301775147929,
+      "verdict": "retained"
+    },
+    {
+      "file": "c537b72e-bd9c-4ee2-868e-4a90fcc1cb5f.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "75c11bb5-ede1-441f-8b3d-cbe160ff39dc.jsonl",
+      "proseTurns": 22,
+      "earlyMedian": 4234,
+      "lateMedian": 1251,
+      "ratio": 0.2954652810581011,
+      "verdict": "retained"
+    },
+    {
+      "file": "f945c29a-b77b-401b-9507-9c02dc078255.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b1e04a68-6173-4fc5-bf4f-f82f9e7b8dff.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7678c87c-cfba-4670-bc19-830de1a9f526.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 2243,
+      "lateMedian": 1504,
+      "ratio": 0.6705305394560857,
+      "verdict": "retained"
+    },
+    {
+      "file": "6fe67905-fae0-4165-9049-5991187fbd47.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1f13b44d-f225-4a31-aebb-689d5f386954.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 703,
+      "lateMedian": 903,
+      "ratio": 1.2844950213371267,
+      "verdict": "retained"
+    },
+    {
+      "file": "b3deb132-2403-467c-bf6e-717b2fbe722a.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1579.5,
+      "lateMedian": 1149,
+      "ratio": 0.7274453941120608,
+      "verdict": "retained"
+    },
+    {
+      "file": "abfa39b1-a3f5-42a6-83e5-b47162f2a6b1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1d5d071c-8555-405b-9d96-9602993332d8.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 5717,
+      "lateMedian": 5090.5,
+      "ratio": 0.8904145530872836,
+      "verdict": "retained"
+    },
+    {
+      "file": "963f266f-c93d-4730-98d5-4cca2f81c37f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "01300adc-7c05-4795-a2eb-caaebc9dd429.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1902,
+      "lateMedian": 1247,
+      "ratio": 0.6556256572029443,
+      "verdict": "retained"
+    },
+    {
+      "file": "51edcdb5-83f2-4215-9ebb-8530c764a911.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9965a50c-b157-4d32-b947-9cb32b6dfdbd.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "199285a6-215b-4fe2-9684-92c3b7890f0d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fc9852f8-ef1d-471e-b70d-80e1fbdea210.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6254141f-32ab-433b-b9f1-0636bb03844d.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "200d976b-d14a-494c-9b1c-834020b2bb5e.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 1789.5,
+      "lateMedian": 1128,
+      "ratio": 0.6303436714165969,
+      "verdict": "retained"
+    },
+    {
+      "file": "a585cb2a-52f2-4837-8b29-f02bbdd67407.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "67e4dedf-8d18-46e4-bf7b-bbe09b9b66c7.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2177,
+      "lateMedian": 1710,
+      "ratio": 0.7854846118511714,
+      "verdict": "retained"
+    },
+    {
+      "file": "30851bee-9a63-4902-b49d-4a2f86673c77.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5830e5d4-7be9-4fb3-b4d1-b591673a1d68.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 1125,
+      "lateMedian": 736.5,
+      "ratio": 0.6546666666666666,
+      "verdict": "retained"
+    },
+    {
+      "file": "fbe2bada-cb45-441b-a1aa-1707bb7536a9.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b0761d74-771a-4457-af33-8a032b852507.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5eab979b-4d30-4276-9bfb-c01664784f3f.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fd735988-3756-44dd-a5d4-0f7607be6ea5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9bff157f-d261-4e41-bfaa-c4c662ade0cb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0f5e5401-8185-4893-b821-8e788e64428c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fb83e6f0-3f37-48e7-aa6c-c681071b1baf.jsonl",
+      "proseTurns": 27,
+      "earlyMedian": 652,
+      "lateMedian": 1099,
+      "ratio": 1.6855828220858895,
+      "verdict": "drifting"
+    },
+    {
+      "file": "6602e3fc-65ed-4b06-8152-f7b1d9212f0d.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 811,
+      "lateMedian": 1433,
+      "ratio": 1.7669543773119605,
+      "verdict": "drifting"
+    },
+    {
+      "file": "15d02495-6663-413a-b29c-0cfff4bcbed3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "222e0175-0595-4de8-8fed-3c6829cdb16e.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "20ac119e-afcd-4611-a36a-a3e2bdcd4a25.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 2154.5,
+      "lateMedian": 2908,
+      "ratio": 1.3497331167324205,
+      "verdict": "retained"
+    },
+    {
+      "file": "b26730eb-a8ef-40fc-9c58-a2643c2df355.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 1153,
+      "lateMedian": 366,
+      "ratio": 0.31743278404163056,
+      "verdict": "retained"
+    },
+    {
+      "file": "1d111eb0-cb63-4210-aa71-25068ba7f767.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a4747bdc-1702-46c4-a0ea-dca1ecb4a34f.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1028,
+      "lateMedian": 476,
+      "ratio": 0.46303501945525294,
+      "verdict": "retained"
+    },
+    {
+      "file": "1b8dd327-100d-42c1-b733-742eacfa374c.jsonl",
+      "proseTurns": 11,
+      "earlyMedian": 96,
+      "lateMedian": 2890,
+      "ratio": 30.104166666666668,
+      "verdict": "drifting"
+    },
+    {
+      "file": "fe65327b-e643-4ef0-b02f-5ec94c7e970b.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 3469,
+      "lateMedian": 467,
+      "ratio": 0.13462092822138946,
+      "verdict": "retained"
+    },
+    {
+      "file": "1293cabe-c724-4dfd-8caa-f2c425930b08.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1063.5,
+      "lateMedian": 229,
+      "ratio": 0.2153267512929008,
+      "verdict": "retained"
+    },
+    {
+      "file": "89dd7f43-629a-45b1-a7b1-8ad23dceffc2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3ca516fe-846f-47e4-96ec-c8208342961c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f83c426b-7967-41cd-a18f-f1d09994f69d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5f5ea3b2-1033-42f4-af62-f7c50ed194e6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "18f0c82e-0349-4cb8-a8aa-df6697961cef.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2183,
+      "lateMedian": 1315,
+      "ratio": 0.6023820430600092,
+      "verdict": "retained"
+    },
+    {
+      "file": "eef0f67c-af66-41f0-93e3-855ee3b12e4c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "acd91399-4f0c-4c34-a35d-325b92435d29.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ec577e16-9b9a-434c-810e-c70175c81fd8.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b1d74da1-4b78-4593-9943-793dfa9c05cc.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "dce5f5a6-86f2-456f-afea-5fb4320d8ba3.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 875,
+      "lateMedian": 1664.5,
+      "ratio": 1.9022857142857144,
+      "verdict": "drifting"
+    },
+    {
+      "file": "b3ed18fc-83c9-4dea-ae36-031adfebb73e.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "33952bc6-1522-429c-a9e5-601313ce9161.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a64acff1-1d1c-43eb-95f0-eb61a46f8ffd.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "479db89f-ba62-451d-bdb7-6cc3f378b4b5.jsonl",
+      "proseTurns": 16,
+      "earlyMedian": 3625,
+      "lateMedian": 2002.5,
+      "ratio": 0.5524137931034483,
+      "verdict": "retained"
+    },
+    {
+      "file": "920792dd-ea16-4e7e-ad2a-630cf8feedfd.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 3921.5,
+      "lateMedian": 3270,
+      "ratio": 0.833864592630371,
+      "verdict": "retained"
+    },
+    {
+      "file": "828f93f8-113e-4a26-a793-54cac607ec31.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0e222623-fb5f-4663-8a41-720291db27b0.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 606,
+      "lateMedian": 664.5,
+      "ratio": 1.0965346534653466,
+      "verdict": "retained"
+    },
+    {
+      "file": "4456f777-364e-42ff-8cc4-8ce9f2d14266.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "13d711ad-d606-436a-b4be-4a2bc52f8636.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6c84e23e-cdc5-4650-abee-964981646b53.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 178.5,
+      "lateMedian": 392,
+      "ratio": 2.196078431372549,
+      "verdict": "drifting"
+    },
+    {
+      "file": "7563bc99-d072-45b9-8b6b-8fb8cb81ec56.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 3751.5,
+      "lateMedian": 260,
+      "ratio": 0.06930561108889778,
+      "verdict": "retained"
+    },
+    {
+      "file": "dcee4e2b-8516-46af-9bd4-6cd91aee82b4.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e6d115a1-4b65-4e09-b265-dc5e9d339c54.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8bd0bf70-da3d-479c-89bc-6147f08f8ea6.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8c08817f-9cb0-40fd-b15c-9d23d83c347b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8db9c145-3f8d-45d4-8212-38d15f536a4e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1f3b3d15-0a66-4217-942e-b9b456233702.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0659a6d7-6498-4290-a7c4-57c0b3c127cd.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b074838a-fd5e-4bcb-be9b-f57c254b1c0f.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "497e5826-6403-4a64-92e4-1cb46837a72e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "179013d0-e061-4d41-8c29-61c36cb261ca.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "10bd3aa7-fd85-4e35-860e-efac0d7c79cb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "57e6138b-88e8-4066-bb88-24bb526a90a0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "15b82c36-5677-47fb-87e2-121a5d7073ee.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6c102fe2-84a4-43f3-babe-93a874770b75.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1a59e057-c1ca-4fed-8b41-060c02e6bf53.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "07397c1f-471f-473e-8e22-fae610be19bb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "46d6bdf6-f310-4eef-a04f-346e4c191af8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "572b58c1-df8b-49fd-8b2f-a32b3330f28a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d418da9f-94a8-40e1-af29-ff9aa1e8fbc9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a63c870c-03f5-41de-8c5e-a1540d1db4a3.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "724153d5-00c2-4f93-9fa4-87a1c5ba4923.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8d941eb8-ee9d-422c-ac5c-b1959b816308.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0767a8fd-fe31-436b-a21d-d556f780130d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c7d925c2-90d6-46c3-a11f-f85457b6ed3d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "575fbfed-ce1f-41e7-a316-5a24c29e1b62.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "94ec5f80-939b-4379-b893-0efb745e3a15.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b4b3ca43-17e1-4070-bb78-8aea7fb59034.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 362,
+      "lateMedian": 1983,
+      "ratio": 5.4779005524861875,
+      "verdict": "drifting"
+    },
+    {
+      "file": "55c2af5f-6801-4d30-8ab1-7a0d8a94093e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a4e0375e-236b-4bb2-a39b-07b31960dba7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9fd06870-e214-42f2-b230-a630912b2e66.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 1491,
+      "lateMedian": 1315,
+      "ratio": 0.8819584171696848,
+      "verdict": "retained"
+    },
+    {
+      "file": "95c98045-87b5-46a6-bee6-e12b8881d08a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "25e51b4f-e087-4fbf-9579-81acd6fc1c3d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3b490020-13b1-4dc3-98f1-80d185d7f1be.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "107d2363-a4ff-4c76-b506-edc90ba25aaf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "66bd3cf5-d97e-4479-b0b4-351bf03ce654.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "61b3843d-98d6-43c0-b887-42fb1b02ecc3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3a9035ac-ca79-4f9d-93f4-c834f48daf53.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1a9fcfc5-b51b-452c-9a07-24945984a1e7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2a543a56-02da-4dd6-b4b9-c7b379817098.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "15ac485f-4816-4b25-a8d3-6c2d83f9931c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d845afb6-0381-4dcb-9bbe-d1bbd7ccdd84.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "182bc601-dedd-4153-b04a-6131012d4756.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bd293d9e-f6e4-4b7a-bb5c-591ad8043844.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ab445ff1-1fc8-4469-81b7-d13f3c70c950.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8ab20531-5ea0-42d5-86ee-cc6e2ad2c01e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8619edea-731d-435f-ab70-7c802b70fccd.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3498fafc-939b-4907-b363-d490a786edf0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1939d471-7148-4b62-8a26-c0b0e73cea94.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "10b76504-dff9-4b98-884f-2c2ccd0c2d0a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cb5992d2-0023-4528-b871-5609c8be6baa.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f454b24f-783c-4f0f-a89c-bb8deff33c3a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "917b5d2d-3dea-4bf9-a663-70f8727ca1b9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "101ee81e-e7c9-4138-96be-ece7d95a98a4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4773c927-67f9-4b62-b8a9-7ddb241d1e1d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e92c195b-fbd4-4f0f-a0b3-0f96aaca6db6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8248fa73-fc32-4459-a2ec-a2fb95bcfff2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0556a429-be1d-4536-b1ff-9f7e1091709e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8aae59b5-5bc5-4e36-a32d-582bc7541e37.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "98506385-5677-447a-bba1-3df9794c8f86.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c77ddc2f-74f0-4464-9906-0fca26112d50.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "467b99f8-4db2-497f-a8f3-cf4a72b0758b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a183b14f-f5c9-4f98-9651-01da18141cf2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0dd4d71a-e98f-40e5-a28f-d3f271a94221.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "612dcfec-8753-4f9a-9055-d5470c6daed0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1093ec33-a2b1-4383-b13d-0ecd4390234d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6b6567b6-9f87-4990-89a8-27f076e789d3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a192241a-f538-47a5-b5dd-5b0de0dcbe97.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "657c0788-618d-4d38-8b5f-08cac69dfe85.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "67664756-f669-4f78-8e53-6ad6984805fe.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4a78325a-b03e-4ad8-81fa-49650600208c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fa094dde-0914-40f4-b533-d890dfb04ad8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c75f8c4c-0d01-4241-896f-fe6f16ad0155.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4eff2c88-154b-4513-a8e0-beee6f4428a7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4a356654-1909-487a-963f-946718f0b1d7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "966fcdfa-cba2-4efb-8c72-1771ad888e3a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "69829fc4-5b9b-4efa-8999-cb4d8fde8dfe.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "86eb1303-50ae-4107-8093-e8bde576083a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4c3f4ae9-ae60-4d73-b30c-9e5ee863a6c8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "27017b5b-9138-4a3a-8d00-3485cec9ec98.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0dbd3864-0f7d-4f44-9848-99a63b27732b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "775fa82f-32ea-440b-8cb8-193fe28bc977.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d5aab064-0426-4b02-9448-ab5adbbc09d2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5cdcaebf-33fb-4d89-aa05-d0496814c7ba.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "08454b6d-5d3a-4dfd-ac5e-60bebfe8171b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ced35836-9c46-48a1-a9f0-8e704b4b2781.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "15e91be6-f3bd-4340-8938-ce3cee62a65a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "15616ef9-f757-482b-83b9-4ebcd05169b4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e4cecbdf-d627-42da-ad8e-261ee4e8bb92.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "68f7c8f5-1efa-48ff-bef1-7b6e0974c0e1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e4232a36-e419-45f7-b670-d452ab82c1ee.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c54c505b-7c69-4c47-8c8b-83d79cd67fb4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d5d4fad6-d20f-41dd-811a-9ad43a262be7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "13521a06-c45e-43c4-a896-8b990ab6410f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "41ea01b3-81c9-49c4-9304-a39692655184.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b135d2ae-f1eb-4ca6-a65f-2e7cf6ab6879.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4b960f2f-1acb-4413-b88e-1581d63aa7b3.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f9e281ec-3867-4172-8814-fe45b0f604f6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6afbbef3-9d54-436e-9989-7939c428842f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3b1e06e4-da7a-4c42-ab30-bf9bd4bc5d01.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "95dcdeae-15bd-4d57-a6b4-9bf2961af8f9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "39ac0fea-a342-4f6b-8fa2-77b23c5b6f4f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9ad6f6cb-ab40-4814-a4b4-8cd855a3a54c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8b6d09aa-8e1e-4f7b-a984-3a463e9fe41c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ea82fbbf-507f-4f49-a47e-8a57891441a2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "20d762fb-d63b-47b7-a2a2-93e53c6ddead.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "691680d2-728d-4ca5-907f-bb357d318acc.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 73,
+      "lateMedian": 852,
+      "ratio": 11.67123287671233,
+      "verdict": "drifting"
+    },
+    {
+      "file": "324a6971-9112-49df-8e57-c28cdf8de674.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "71d6e5c8-6eef-4a59-9f4e-2e1a58cd5d24.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "df950abf-6e73-4068-8abe-c5989b02d7d1.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c77f0250-2446-4782-b4b2-a42877efacd0.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 847.5,
+      "lateMedian": 1927,
+      "ratio": 2.273746312684366,
+      "verdict": "drifting"
+    },
+    {
+      "file": "5fe38c9e-b63e-4988-bf37-7e3e39082e9e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c7aa57c0-3be7-4505-9981-16d2cf17a999.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5398d664-841f-4731-8f74-25b5c11c465a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1d8ef125-1cb9-4842-909c-a6972bd3940f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "601c027e-032f-4ce2-9704-88f35df342f1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "77874a73-0a4b-4ec4-bccd-2610ffe5f59a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "753cec5d-f1df-4f0d-9c18-116f44276301.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "feb970f9-e92d-44c5-8537-47f040790196.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9e3dd4f0-d1d7-44b8-a53f-6576e769f596.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9d15ab48-d1d7-41af-899e-68f32b6cd44b.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fc146543-002e-4cae-952e-e80ed8e49fa8.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7ceb52d2-11e7-4804-9c1f-1a624cee4560.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0f9795a5-5013-4b3a-a134-867d758e6e5d.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a8b4a065-fce0-4236-8c0f-9a5479936ee6.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5f068fda-d41d-42ce-8afc-6cf147e0fcdf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "92a7fb29-e0f4-464e-ba00-fa3f9c85fbfb.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a34aeb12-215e-434f-a628-d604e09545ec.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "09163f93-478b-4fe2-971b-2bbad6ad7f8b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "34901497-e417-430f-a6a9-f1894c79d82a.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4f873788-733e-4f2e-94cd-147d945d5342.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "32e4bee8-0298-4838-914c-01cd5d264d2c.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 835,
+      "lateMedian": 945.5,
+      "ratio": 1.1323353293413174,
+      "verdict": "retained"
+    },
+    {
+      "file": "98683427-6e3f-4892-bed4-02fe2f4060d5.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3557d711-b98c-4e85-ac02-e9aa97194832.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 1428.5,
+      "lateMedian": 1067,
+      "ratio": 0.7469373468673434,
+      "verdict": "retained"
+    },
+    {
+      "file": "5b2bb1e0-0725-4bea-8d76-aa396cb769ce.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 401,
+      "lateMedian": 809.5,
+      "ratio": 2.018703241895262,
+      "verdict": "drifting"
+    },
+    {
+      "file": "f08a232a-dea3-4b10-afb9-90547684ff0a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b33ca4f9-a04d-480d-b52c-f9568e2c4693.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0b9ee263-4df3-4b05-9b9d-52c661d6928f.jsonl",
+      "proseTurns": 17,
+      "earlyMedian": 2389.5,
+      "lateMedian": 1568,
+      "ratio": 0.6562042268256958,
+      "verdict": "retained"
+    },
+    {
+      "file": "e191d3f9-b524-48e7-9f14-f23deb93df0f.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c60d0e8e-a17d-42f0-acfa-b26f8a50fdc0.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 560,
+      "lateMedian": 1450,
+      "ratio": 2.5892857142857144,
+      "verdict": "drifting"
+    },
+    {
+      "file": "b62dd989-8319-4354-acf2-2fe5d770f477.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 831,
+      "lateMedian": 49,
+      "ratio": 0.05896510228640193,
+      "verdict": "retained"
+    },
+    {
+      "file": "e9186b1a-0dc9-4d02-bebe-311bc6fc4f86.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fd244739-c850-4493-87e0-3c35176e9b2f.jsonl",
+      "proseTurns": 17,
+      "earlyMedian": 1406.5,
+      "lateMedian": 2536,
+      "ratio": 1.8030572342694633,
+      "verdict": "drifting"
+    },
+    {
+      "file": "ec98de4a-84a5-4748-8c83-1892fdda0e5d.jsonl",
+      "proseTurns": 47,
+      "earlyMedian": 3561,
+      "lateMedian": 2842,
+      "ratio": 0.7980904240381915,
+      "verdict": "retained"
+    },
+    {
+      "file": "7bbb165c-ff8a-4fa8-855d-72506b326f49.jsonl",
+      "proseTurns": 17,
+      "earlyMedian": 919,
+      "lateMedian": 1129,
+      "ratio": 1.2285092491838956,
+      "verdict": "retained"
+    },
+    {
+      "file": "c42aa27a-1f63-4d03-99fb-dddda6393c7f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "555f915a-8274-40ef-9d76-5c12c8a116cb.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 1921,
+      "lateMedian": 460,
+      "ratio": 0.2394586153045289,
+      "verdict": "retained"
+    },
+    {
+      "file": "1c1fdf5f-0b78-4926-8233-27f4fa43cd8e.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 3591,
+      "lateMedian": 311,
+      "ratio": 0.08660540239487607,
+      "verdict": "retained"
+    },
+    {
+      "file": "b39675e6-b33e-4187-8287-274766532144.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 879.5,
+      "lateMedian": 873,
+      "ratio": 0.992609437180216,
+      "verdict": "retained"
+    },
+    {
+      "file": "8e381bc2-6a83-411d-a9fc-1ebfad8d0a10.jsonl",
+      "proseTurns": 15,
+      "earlyMedian": 2930,
+      "lateMedian": 3653,
+      "ratio": 1.2467576791808874,
+      "verdict": "retained"
+    },
+    {
+      "file": "339490c1-f66b-4f2d-b59f-46dc8c2aa7a7.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "23f184c7-afcc-47dc-9d1c-975f0b964041.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "73cde4c0-4916-468b-a6d5-3b749bddc69b.jsonl",
+      "proseTurns": 25,
+      "earlyMedian": 112.5,
+      "lateMedian": 783,
+      "ratio": 6.96,
+      "verdict": "drifting"
+    },
+    {
+      "file": "55c2373a-e452-4c85-a78f-f1a28ec5af08.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2d52976c-425b-41d8-b282-92efd7655004.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7396d4ee-abff-49fb-8fc3-50f7926212c6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b55b5ad2-d8b0-491b-9be0-342c664ad050.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "efe310cf-e21c-4e49-822e-8dd7237f1091.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "207ad328-a896-49a1-a54e-e4cad3c13e92.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "946665c2-0239-419f-8630-cc65fa88f6d1.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cb65fc07-d150-4b76-9b94-0ef12f0d1cf5.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "89bcd984-e1b0-4073-9afc-f7d889b54ecb.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 1707,
+      "lateMedian": 1700,
+      "ratio": 0.9958992384299942,
+      "verdict": "retained"
+    },
+    {
+      "file": "90de3d6c-7b10-4dd3-b8cd-98e31366286b.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cc0dfb22-e855-4c39-a87e-c2af6066ec88.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 428,
+      "lateMedian": 954,
+      "ratio": 2.2289719626168223,
+      "verdict": "drifting"
+    },
+    {
+      "file": "agent-a647a54e7aa03bde9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7ca2a994-fb00-4994-ad6c-ca0e6a4981c4.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f937fc6c-4029-43b1-ae0d-8a5fda03b4e8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e27b0ad4-71eb-4212-b792-5f7f17368365.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 4249,
+      "lateMedian": 1323.5,
+      "ratio": 0.3114850553071311,
+      "verdict": "retained"
+    },
+    {
+      "file": "707b5d00-7d76-42fa-ae6b-6955bcff2b10.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a0070a69fc15f909a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a9aa3b131edce33fa.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a33d7a3603ab07b6e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a90378178fb01488c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-abc7911ace764292f.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a5a54bea1afdb8da4.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-ac57a028a8e8b199a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-ab614b206b10ec2b8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-ad36e954f00ed232d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a1c7344f0cedfa0f1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-aa845c6c1436b392f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a887a0db057760827.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-aaa4998ada87c394c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a4ac01e2136e2cf00.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a49ffcbc01d0ea9ce.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a13e61b0eba6003e1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a5865ee144dfa01f2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-ab2ce7c4c66eeb383.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a5bb13bd90e4a3250.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a2b42955e83136a69.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "289541e5-f0c1-482d-9304-2c48f34cf48d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a2a0dc35aa6cff472.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a7af7d853048547f8.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "becf6ec3-48cb-4707-b8e3-2e2feac5c885.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "56f1de95-5815-4893-a0a0-2f4e325b79ee.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5645927b-c9bc-4a62-bfd8-9db6cae82e01.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "aa6bd327-1231-47ef-bc65-b13508fdff77.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1607864e-df57-4e97-a154-0657bf2d6c2d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a4dabbc2-ab98-4f4d-952e-291002feefa8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5b9fca15-4f44-4fe1-a6d1-f739a20cd3d7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1f1bd01c-fcbf-420e-94e0-9f5cd5689448.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5a72ee5b-c7ea-4d86-bfe1-1822baacdbd0.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 1217,
+      "lateMedian": 1226,
+      "ratio": 1.0073952341824157,
+      "verdict": "retained"
+    },
+    {
+      "file": "23c3e38c-3ed5-4333-bf82-7a3f109b78f0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cde0472d-d9dd-4598-9a84-44471f6c14d2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9d8cd6b8-f025-48aa-8c1b-5f11e2b27152.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3e970ff4-83e3-47f5-bcf1-1bad6e4d8bc9.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "de96af0c-f55e-4539-86b3-c050a53e667f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d183a9e9-212c-4880-9bc2-0e63ed445be2.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4df945cc-a445-4c68-abd2-9c5616521113.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2bb92b0f-6aaf-426e-bfe1-09f3ba24da2b.jsonl",
+      "proseTurns": 29,
+      "earlyMedian": 2132.5,
+      "lateMedian": 919,
+      "ratio": 0.4309495896834701,
+      "verdict": "retained"
+    },
+    {
+      "file": "f710d0ae-a4a9-4e79-968c-f4cafa054d90.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e6ff2aa9-e4cb-4e0f-991c-136bee73ef6e.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "31602cba-5166-4c2f-8d05-1343d636940d.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2628.5,
+      "lateMedian": 2634,
+      "ratio": 1.0020924481643523,
+      "verdict": "retained"
+    },
+    {
+      "file": "a07b5f2b-b5f6-45d6-a9b3-0bd81f8da217.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ea7f0c57-7212-48e5-93ee-034f25b72d8a.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d9c6a069-f1ac-4725-a6ff-104c057bb5c9.jsonl",
+      "proseTurns": 10,
+      "earlyMedian": 864,
+      "lateMedian": 1234,
+      "ratio": 1.4282407407407407,
+      "verdict": "retained"
+    },
+    {
+      "file": "39815256-28ac-4218-9cd0-755ff4859a98.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "919f9209-4373-4974-9f18-7393b7feb82d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cc14f7a8-ed7c-43be-85a6-68e293e2b90c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2f13c627-78fa-4a3e-bf6e-5082305cc03b.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b4ad0c70-540c-43e7-a97f-8ded3313d57c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6640af7e-5e56-4cfe-9895-c62ae06137f3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d4de164b-76a3-4a9a-98e2-813da499d950.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "df888aba-18b9-49fb-8dae-cf7bfca9e512.jsonl",
+      "proseTurns": 15,
+      "earlyMedian": 309,
+      "lateMedian": 1943.5,
+      "ratio": 6.289644012944984,
+      "verdict": "drifting"
+    },
+    {
+      "file": "3e9f4bab-afe9-4a83-8074-aaa7a0f473a3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "28164237-8c93-48c7-a139-f04cfdc046e8.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1906,
+      "lateMedian": 2160,
+      "ratio": 1.1332633788037776,
+      "verdict": "retained"
+    },
+    {
+      "file": "58841a3d-c4d7-4cca-9322-bf143a544eea.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b65293a3-08ec-4eed-8906-fe4aacd5452d.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bb5685ca-86d3-494e-b7da-bece85573bb0.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "abfe94dc-6782-4725-9b3e-19576afe5bbf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1272da67-e23c-4d7d-bc63-89ca92a1279a.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "395e1d09-58a9-461e-8dda-42f33f4811d0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4bcd1dd2-7ea1-4685-9aa2-7184990a7837.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4e6d964c-b076-427b-a988-aba0c6f76f07.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "df64c759-1001-496e-9fa9-29d43279042c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b3be5a9b-4a0b-46d8-9c2c-4eeb899babf5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a24d6ae7-bd2b-42c3-9daf-de7782167827.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 758,
+      "lateMedian": 1426.5,
+      "ratio": 1.8819261213720317,
+      "verdict": "drifting"
+    },
+    {
+      "file": "3d6346f7-c285-4a30-b619-3641994cb630.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "00f6a435-8d1f-4a9a-bdbc-758f33c754f7.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "95d4150a-ef5d-40f8-af21-b9532d5d5aea.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b47e01a9-e2bc-49fa-be81-b85f0930ccf0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d21cc2cb-17df-4888-8f5d-33bc62be104b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "004f0e63-6b33-4854-9fd1-77d97e49b429.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "97637483-4ba7-4d9d-a291-50817f1fd19e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fac59bb6-0964-4983-9351-d4bbc4a60d86.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f1aacaf0-2750-469d-9b13-bb639a071b82.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f2b54864-10aa-481c-a710-4525dcbdddfc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b1e9cdbf-40fe-4558-9e8e-8b8d00e2970d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "22d0446b-176b-4fb1-9ac6-8d209fa0385a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "90e2d8f4-e9cf-45ea-a4b3-fe344a70f0f1.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d46322ca-febd-4791-a5ec-fa0bcd593966.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d02571a2-8be1-48c7-9db3-3e39276d545b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ec3cb05b-a5ff-45b6-8300-3fc1898b9ae8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0a11d216-cf7f-4e35-a7b5-534cff8f5777.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f98b032c-a1fc-4ac8-8b2b-96f2cc64bc8e.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9a9e35aa-d6e7-4201-a2a9-d2ad30f8e7c2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d609ac38-4368-4ea3-82ca-5564333c351f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "444f3bca-48b1-4ec5-9218-b891c82a212a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "215b46bd-4708-42dc-a63f-2b20b4ef52c8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "73d8454a-f96a-41bc-9405-a6ed040ae7e3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2b316a26-35bc-4242-a953-7faa5f30181a.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e291942c-4c3b-48af-ae96-ab4bf9ce6995.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "92243c2f-7c5f-44b9-ab2c-9facee92124e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "585a64a6-810b-4a45-bead-24dacf3e4a2b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "face5d54-817e-420b-8e79-6d2a2877794f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "00a7c331-879e-4963-9078-324d1c1b87ba.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1b37ebfb-a4fb-4ff1-bbb3-37c3f1b31830.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "05a170d9-ce23-48d5-b41c-b286371c5adf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4fd95acf-ac36-40aa-9868-5407ef5fedd9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "578146db-cb01-4a02-b60e-ef1053741bd9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "124f3855-8136-483c-ac66-a0f74d5c6c75.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9c62db25-48ae-4b6a-bd95-d73446590c86.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9b98d81e-ca14-4d58-bc47-9b320fd763c5.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2159,
+      "lateMedian": 433,
+      "ratio": 0.20055581287633165,
+      "verdict": "retained"
+    },
+    {
+      "file": "666220d9-3cf0-42df-bc49-aaa8b98c3814.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f2b96991-8780-48b4-97db-7996daa559c3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "52a103c6-0bb1-48d0-89c5-a91204c9a115.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "22a7b3f6-c911-4ba9-a103-b779ec1a1f90.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e1b2a397-ee06-41d8-be23-49496ee1537e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8bd8496c-1e0f-49a5-8c53-d8a2cb92bc1d.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "22514d12-ef52-40ad-bb22-31dbea3b14e1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d82f6bc3-1be6-4515-a47d-fa24ad86f117.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "938e1e1f-2719-4440-b69a-6deb3634d359.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 503.5,
+      "lateMedian": 3543.5,
+      "ratio": 7.037735849056604,
+      "verdict": "drifting"
+    },
+    {
+      "file": "88dd5e5f-109a-447a-b181-6d065547456f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "daabe934-b906-47a6-a3c0-8facfb5a3bfc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "387d790f-a8f4-4196-b090-f86b3c51f767.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 3101.5,
+      "lateMedian": 2745,
+      "ratio": 0.8850556182492343,
+      "verdict": "retained"
+    },
+    {
+      "file": "9a23dc31-d335-4f8c-a34d-de0bb0524587.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2a27983c-7c61-4915-8e56-b4d345fc9b99.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 1098,
+      "lateMedian": 828,
+      "ratio": 0.7540983606557377,
+      "verdict": "retained"
+    },
+    {
+      "file": "152bd26e-6dfa-4001-bc95-107357d68ee4.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bfc4ffda-9316-4e98-aa31-89b18d80eeda.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a8bee481-75c7-4b2b-aed8-c999f29b2ab5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7f3f1ac2-f7b7-404c-8a84-2a5fca52800b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5dfee115-9e53-4a8f-bfc8-85839fb11f17.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "26b8e3cb-799e-425c-83e7-17e5e9654881.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7838652a-1271-4dd5-897f-2bcdf874b806.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "32033e6c-ea09-4b9f-a78e-4da9ff3ba51b.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2b29a712-4416-427c-8664-91349890ec35.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f99cf01f-66a5-4595-8624-faef5679876e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "04e75d17-1827-40be-836a-94b7b276855a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0036ed2-0dcf-445a-8704-81153f4d6bf5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "311eee54-6578-4f40-953f-1ca7e2d7fafa.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "653f561d-02e6-4b15-90af-309ff2dd3d58.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "da46b70d-ce06-4878-bce6-923434f29f9d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "1a7588db-6935-448c-9bbf-6c9792de67ea.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "efe4b3d4-ad3e-4d6a-8c94-34e48de5be22.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9f2d282f-00d6-422a-9cce-96380be181c7.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b8e075dd-8f80-497a-83f7-5275b391d1e4.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6f0ba326-627f-41dd-aff0-9be0bc7aa694.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "5f4de96e-c371-4963-87b5-4b648e55cbc6.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "2aa92a14-1500-4bdf-a9d4-d8e6e5dd0576.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8cfd6ded-4f6b-4879-b347-3d13b1adfd88.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d2b998ae-d8e9-408f-8613-60c172861de5.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9934b005-3183-419c-b891-bdf766ad8d6c.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "22b2d062-6abf-4f1d-aff9-fffdd390138e.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "385644dd-9ea9-44dd-86c4-9ad7dda60d86.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 3860,
+      "lateMedian": 1765,
+      "ratio": 0.4572538860103627,
+      "verdict": "retained"
+    },
+    {
+      "file": "865193c2-fbd2-43fd-a59d-bcabb07809b3.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1568,
+      "lateMedian": 4028,
+      "ratio": 2.568877551020408,
+      "verdict": "drifting"
+    },
+    {
+      "file": "b0a5897e-deda-42e8-9159-8ea69be51061.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d5818363-6152-44ae-82de-5a64e9c22054.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 871,
+      "lateMedian": 3362,
+      "ratio": 3.859931113662457,
+      "verdict": "drifting"
+    },
+    {
+      "file": "c8dc58b8-a50f-49e9-9195-38d3fc032a32.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "80073a78-eb6b-4270-aa20-1b939a24439d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "eaeb6593-954d-4524-afa8-a589f9a233e5.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 1608,
+      "lateMedian": 562,
+      "ratio": 0.34950248756218905,
+      "verdict": "retained"
+    },
+    {
+      "file": "4120e179-f011-42d3-b921-ecbe79edcf6b.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7168fac0-1c26-4842-a5d6-f84464165660.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 348.5,
+      "lateMedian": 1085,
+      "ratio": 3.1133428981348636,
+      "verdict": "drifting"
+    },
+    {
+      "file": "0e1ae154-1731-496f-9a0e-40615eb731f4.jsonl",
+      "proseTurns": 23,
+      "earlyMedian": 79,
+      "lateMedian": 24.5,
+      "ratio": 0.310126582278481,
+      "verdict": "retained"
+    },
+    {
+      "file": "a97b31d6-c16f-483f-a64f-da48c4e69a5f.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 1257,
+      "lateMedian": 971.5,
+      "ratio": 0.7728719172633254,
+      "verdict": "retained"
+    },
+    {
+      "file": "dfebc3dd-dcc6-469f-881a-a3db26b841e4.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 2531,
+      "lateMedian": 1322.5,
+      "ratio": 0.5225207427894113,
+      "verdict": "retained"
+    },
+    {
+      "file": "48e1ae74-2594-4767-ade2-99ff23fae288.jsonl",
+      "proseTurns": 12,
+      "earlyMedian": 125,
+      "lateMedian": 795.5,
+      "ratio": 6.364,
+      "verdict": "drifting"
+    },
+    {
+      "file": "62222adf-00b2-4de3-8e54-ac38d5c59bab.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "53b2b356-9a8c-49f1-aea6-e9ccf19c7717.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1934,
+      "lateMedian": 790,
+      "ratio": 0.40847983453981385,
+      "verdict": "retained"
+    },
+    {
+      "file": "d46eef54-e486-4aa1-a783-4288ff3468bf.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 317,
+      "lateMedian": 1363,
+      "ratio": 4.299684542586751,
+      "verdict": "drifting"
+    },
+    {
+      "file": "e3ec11ae-5e05-4de1-9190-93b486f1e4af.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2991.5,
+      "lateMedian": 1146,
+      "ratio": 0.38308540865786395,
+      "verdict": "retained"
+    },
+    {
+      "file": "38c4ee32-7809-4909-8405-b063ac3489af.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a736cc94-1cdb-49f3-becd-7b62b2d078bc.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0a6d2a1-41a7-43e1-accd-08ff8a83cb05.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ec1da574-2f34-4a32-8936-eb898706c5ae.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 1204,
+      "lateMedian": 1288,
+      "ratio": 1.069767441860465,
+      "verdict": "retained"
+    },
+    {
+      "file": "8d4614b8-47f3-47e9-a48e-2e81e7c8bdfc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bc9355f1-fa1c-4d3b-b268-9c90f0735ad8.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "687b7382-e7b8-42be-8b3e-b76729828f9f.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "57b87083-f644-4f4c-984b-98e8dbbfff00.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2947.5,
+      "lateMedian": 1690,
+      "ratio": 0.5733672603901612,
+      "verdict": "retained"
+    },
+    {
+      "file": "17bd2f71-6241-4409-8ae4-9de6e96e3e51.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 1445,
+      "lateMedian": 1186,
+      "ratio": 0.8207612456747405,
+      "verdict": "retained"
+    },
+    {
+      "file": "bdbe5b30-f2e1-4fd2-820f-91c9ee68f8ad.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "62e740ca-0fe7-492a-b08c-67c614a3d271.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "eb544030-347a-4a02-8b8f-35c36343d3d1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "dd43d817-95e6-49a0-8db0-0f7fed4e68b3.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "536ebb6d-ad88-419d-b090-0294cb2f93e8.jsonl",
+      "proseTurns": 14,
+      "earlyMedian": 3402,
+      "lateMedian": 32,
+      "ratio": 0.00940623162845385,
+      "verdict": "retained"
+    },
+    {
+      "file": "68b2ffee-4850-475a-8832-aecebb35245f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "69fe671a-c641-45a2-ae55-d1d0b76c04dc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b7910bf1-8740-4b36-92db-0efe110c64cd.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 4092,
+      "lateMedian": 1250,
+      "ratio": 0.30547409579667645,
+      "verdict": "retained"
+    },
+    {
+      "file": "2c3ce5aa-13ec-470f-b1c4-bf3e3d230827.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 209,
+      "lateMedian": 249,
+      "ratio": 1.1913875598086126,
+      "verdict": "retained"
+    },
+    {
+      "file": "2aaba28e-3e87-4150-aa4a-e21656a4b8b1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "430c2089-4802-4d75-8112-da140fb345a0.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fcd6b347-a1d3-49e6-8920-9d3582f5e246.jsonl",
+      "proseTurns": 23,
+      "earlyMedian": 1659,
+      "lateMedian": 1489,
+      "ratio": 0.8975286317058468,
+      "verdict": "retained"
+    },
+    {
+      "file": "12b6c074-e8ab-4fb6-89d5-141d9627c8cb.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c662a8c2-0617-491e-9630-2473ab1b564d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a2cc572b-bd85-48d8-b40d-1fccf31e61f0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fd09f9e7-ba95-4fb9-a419-04882f67443c.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7e5ef971-d9c4-41fd-ba35-da9a2ccf4121.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b27a118a-1bcd-4ddc-bbaa-6e7a0ce6a2d1.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "e36e6dd5-53ca-47c7-84ef-3a5b18154b0e.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 691.5,
+      "lateMedian": 632,
+      "ratio": 0.9139551699204628,
+      "verdict": "retained"
+    },
+    {
+      "file": "61c576c4-032f-4637-b860-fed7db644d99.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "9696a8bf-0640-4b9e-8044-88ccb8af5f56.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 235,
+      "lateMedian": 1837,
+      "ratio": 7.817021276595745,
+      "verdict": "drifting"
+    },
+    {
+      "file": "8dd7fd9f-8509-46c4-af85-02d0d5e8d598.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 4271,
+      "lateMedian": 1338,
+      "ratio": 0.3132755794895809,
+      "verdict": "retained"
+    },
+    {
+      "file": "41768509-e766-47a3-9cb4-d49a5f979496.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 4705,
+      "lateMedian": 2095,
+      "ratio": 0.4452709883103082,
+      "verdict": "retained"
+    },
+    {
+      "file": "4da82ae7-c18e-479f-a5aa-7127b3f27cf9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "96e03cdd-2368-4eb0-bc94-a3d8c6b80025.jsonl",
+      "proseTurns": 7,
+      "earlyMedian": 3269,
+      "lateMedian": 1686.5,
+      "ratio": 0.515907005200367,
+      "verdict": "retained"
+    },
+    {
+      "file": "19f26062-0d53-4f7b-a74f-e950fc56461f.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "57fd091a-9df3-4b16-a75d-ced4e414f49b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "99dc3fb3-92a0-43a7-8f3a-e2558ed084b8.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 3140,
+      "lateMedian": 526,
+      "ratio": 0.16751592356687897,
+      "verdict": "retained"
+    },
+    {
+      "file": "87f60c8d-a8cd-43ec-893b-1248140dede9.jsonl",
+      "proseTurns": 20,
+      "earlyMedian": 861,
+      "lateMedian": 1787.5,
+      "ratio": 2.0760743321718933,
+      "verdict": "drifting"
+    },
+    {
+      "file": "41c0b1eb-ce39-4592-ac62-414582070552.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "49988228-01d6-434d-a85a-9035e0603870.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "7d2b611c-91fb-4b5b-8988-a4b45ca665c9.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2738,
+      "lateMedian": 1737,
+      "ratio": 0.6344046749452155,
+      "verdict": "retained"
+    },
+    {
+      "file": "455cc985-7a93-473d-a1a8-8ca9dc2e99d0.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3475fc73-a2a3-4302-9e13-38c6ed74736d.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 1493.5,
+      "lateMedian": 1797,
+      "ratio": 1.203213927017074,
+      "verdict": "retained"
+    },
+    {
+      "file": "4608aa45-ff08-4d4a-a1f1-7f026819d98d.jsonl",
+      "proseTurns": 6,
+      "earlyMedian": 2367,
+      "lateMedian": 0,
+      "ratio": 0,
+      "verdict": "retained"
+    },
+    {
+      "file": "9b83729d-3876-49f7-8d7b-a7e5a97852a9.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0532992-79de-4546-b107-f5541a073edf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "b47d0860-ed14-4cb6-a3f9-8a157c32e9cb.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "74f1958e-6717-40d8-adab-3300582767da.jsonl",
+      "proseTurns": 11,
+      "earlyMedian": 2987,
+      "lateMedian": 2486.5,
+      "ratio": 0.8324405758285905,
+      "verdict": "retained"
+    },
+    {
+      "file": "ed912071-947c-4215-a7f4-680bd701e79b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a614ef70-b313-43ca-bcce-883ba8498437.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1328.5,
+      "lateMedian": 763,
+      "ratio": 0.5743319533308242,
+      "verdict": "retained"
+    },
+    {
+      "file": "986c123e-6911-4340-b8df-123dee4aa115.jsonl",
+      "proseTurns": 8,
+      "earlyMedian": 2152,
+      "lateMedian": 1380.5,
+      "ratio": 0.641496282527881,
+      "verdict": "retained"
+    },
+    {
+      "file": "c72c9207-f9af-4047-885d-0b3ab9755112.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "af95616f-fdaf-4190-ad4f-87e2ab7ecdeb.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0123c10d-e244-4db2-b6b1-82794e5380c8.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "fa512f12-7b8a-4935-9056-448d99ff9302.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "cd85163c-1f87-43a7-993e-75dd17e05175.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "3c5c2ca7-8b9a-4926-8202-447033e84fdc.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "0a99b14e-99a8-450a-85ad-c048f878e5cc.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f6e49fe9-9959-4cc0-9a5a-29afda0cb9a6.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "ff9d8b2f-cd57-456e-9c22-e8b464f9d5b0.jsonl",
+      "proseTurns": 13,
+      "earlyMedian": 750,
+      "lateMedian": 818,
+      "ratio": 1.0906666666666667,
+      "verdict": "retained"
+    },
+    {
+      "file": "76290a4e-531a-4bdd-8142-aa9329ba115b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "74ccdbb2-fcce-415a-9185-fd1f2fa9832b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bae0aea8-fea3-415a-ba40-a0f66d654389.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c582a928-fe25-4e29-833c-9747af29393c.jsonl",
+      "proseTurns": 3,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "808e7bd0-9ff9-41c6-be4d-208991d2943b.jsonl",
+      "proseTurns": 9,
+      "earlyMedian": 2196.5,
+      "lateMedian": 0,
+      "ratio": 0,
+      "verdict": "retained"
+    },
+    {
+      "file": "0a8ec78c-ae7e-44a4-8c05-66e19078188c.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "8a75e3ef-8d5b-4e86-b1ed-321771788069.jsonl",
+      "proseTurns": 25,
+      "earlyMedian": 1301,
+      "lateMedian": 1452,
+      "ratio": 1.1160645657186778,
+      "verdict": "retained"
+    },
+    {
+      "file": "baf2e555-dbeb-41c6-b713-4794882137c1.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a85ab7627548de27a.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "agent-a86343c99ba7867fb.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a04974a6-fd40-4fce-9100-4da6e94a56f3.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d30b32f7-42ea-4692-b687-310275c045de.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "91c51d4a-4fff-4046-9ec1-3385c1189059.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "de52a798-7bc3-423d-8789-4d51804ee66e.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 1064,
+      "lateMedian": 257,
+      "ratio": 0.24154135338345864,
+      "verdict": "retained"
+    },
+    {
+      "file": "8bcd5ddd-8f30-4179-9a67-e2c2fdd7761d.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6654d737-d709-466f-b873-d614db05f8f3.jsonl",
+      "proseTurns": 11,
+      "earlyMedian": 2004,
+      "lateMedian": 1562,
+      "ratio": 0.779441117764471,
+      "verdict": "retained"
+    },
+    {
+      "file": "97763749-b657-45c0-a8a2-b8bdd0105462.jsonl",
+      "proseTurns": 5,
+      "earlyMedian": 2155,
+      "lateMedian": 3370,
+      "ratio": 1.5638051044083527,
+      "verdict": "drifting"
+    },
+    {
+      "file": "c80423c7-fc3c-481e-86db-f186622a41b2.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6ca29cc1-2ac0-4f83-abbf-2d75e2929199.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "a0c92899-de89-444c-93db-a393a03c109a.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "00fdcbb0-159f-4abf-a98c-59e37363bc51.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "d77dca24-77b5-42cb-a3c5-b61cc5811dbf.jsonl",
+      "proseTurns": 4,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "69a1ed49-58b1-4b3c-b286-fa40e2841ec0.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "df926b00-f15c-41b1-9871-495fb7bf4458.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "674dafc0-20cc-4120-a7a3-bf98d69b39b6.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "869c21c1-4955-4556-a264-beca1fdc90ff.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "c2d55376-2cc0-4534-9df0-5f7f6e2fb8bf.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "802d3390-00b1-4f0e-a9a9-8105d831aa61.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "da791e84-dace-49b2-84d2-c79c74302ee9.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "085a621b-f9ed-44da-8e3c-67cc5b4584fe.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "051da282-f059-4847-8269-35922494a603.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "990f7e5b-51a8-411b-997b-c1500d0fc8de.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "828a9aab-2ee2-4307-a4c7-c392bc2f4c4b.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "f2cbe7c3-c661-4c8d-9c1f-bc83a47512fb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "6cbea96f-9cb3-4695-82a2-a1102d5dcfbb.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "4e09a4e6-73e3-4d68-9add-ebc91514a4f7.jsonl",
+      "proseTurns": 15,
+      "earlyMedian": 549,
+      "lateMedian": 1182,
+      "ratio": 2.1530054644808745,
+      "verdict": "drifting"
+    },
+    {
+      "file": "9f4f898c-ee6c-4f06-9dd8-a09c4f522a4e.jsonl",
+      "proseTurns": 1,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "bcbf417c-7cd7-457a-8900-24bf258ae8f3.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "66816e43-6469-47cb-a72c-6aa528ad00e5.jsonl",
+      "proseTurns": 0,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    },
+    {
+      "file": "38e40fbb-eec8-43ab-a216-aa232ef1ffe7.jsonl",
+      "proseTurns": 2,
+      "earlyMedian": null,
+      "lateMedian": null,
+      "ratio": null,
+      "verdict": "inconclusive"
+    }
+  ],
+  "main": {
+    "total": 744,
+    "conclusive": 177,
+    "retained": 136,
+    "drifting": 41,
+    "inconclusive": 567,
+    "medianRatio": 0.833864592630371,
+    "verdict": "caveat-relax"
+  },
+  "subagent": {
+    "turns": 3449,
+    "proseTurns": 395,
+    "safetyTurns": 293,
+    "spanTurns": 787
+  }
+}

@@ -42,9 +42,9 @@ Structural (dup+dead) precision: `1` — the D2 GO leg. Established: `true`.
 
 | file | source | live | baseline(tok) | dup | dead | lowdensity | structural(tok) | marginal |
 | ---- | ------ | ---- | ------------- | --- | ---- | ---------- | --------------- | -------- |
-| `CLAUDE.md` | self-repo | yes | 1083 | 0 | 0 | 0 | 0 | 0% |
+| `CLAUDE.md` | self-repo | yes | 1114 | 0 | 0 | 0 | 0 | 0% |
 | `AGENTS.md` | self-repo | yes | 176 | 0 | 0 | 0 | 0 | 0% |
-| `rules/ko/full.md` | self-repo | yes | 1151 | 0 | 0 | 3 | 0 | 0% |
+| `rules/ko/full.md` | self-repo | yes | 1207 | 0 | 0 | 3 | 0 | 0% |
 | `rules/en/full.md` | self-repo | yes | 1389 | 0 | 0 | 1 | 0 | 0% |
 | `samples/medium.md` | synthetic | no | 175 | 1 | 1 | 1 | 55 | 31.43% |
 | `samples/loose.md` | synthetic | no | 284 | 2 | 2 | 1 | 71 | 25% |
