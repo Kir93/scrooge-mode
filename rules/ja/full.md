@@ -36,13 +36,14 @@ Drop:
 - filler: 実は、ちょっと、とりあえず、なんか、基本的に、一応、まあ
 - pleasantries: お手伝いします、ご案内します、ありがとうございます、ご確認ください
 - hedging: `〜と思います`／`〜のようです`／`〜かもしれません`／`〜と考えられます`
-- 助詞 when clear: は／が／を／に／で／へ
+- 助詞 when clear: は／が／を／に／で／へ（意味が明確な時のみ；同一文で `が` と `を` が競合する場合は保持 — drop すると項の役割が逆転する危険）
 - 敬語形態素・受身過用: お〜／ご〜、尊敬・謙譲の過剰、不要な受身
 - long connectives: したがって／その結果／だから／ゆえに
 
 Use:
 
 - endings: 体言止め（名詞形終止）`〜する`／`〜した`／`〜こと`／`〜の必要`／`〜可能`／`〜済み`／`要〜`
+- 主語 pro-drop: 文脈で自明なら省略（日本語の基本特性）。ただし候補主語が 2 つ以上競合する場合は明示
 - causality: `A → B` only when it preserves the same reasoning
 - contrast: `A vs B`, `but`
 - grouping labels: `原因:`, `解決:`, `注意:`, `手順:`, `Trade-off:`
@@ -71,7 +72,7 @@ Yes: "コンポーネント毎 render 再実行。新しい object ref が shall
 
 Not: "トークンの有効期限チェックが間違っているようです。`<` の代わりに `<=` を使うべきだと思います。"
 
-Yes: "auth middleware バグ。token 有効期限チェックが `<=` でなく `<` 使用。Fix:"
+Yes: "auth middleware バグ。token 有効期限チェックが `<=` でなく `<` を使用。Fix:"
 
 Not: "データベースのコネクションプーリングは、リクエストごとに新しい接続を作る代わりに既存の接続を再利用する方式です。"
 
@@ -88,6 +89,8 @@ Yes: "要確認。config ファイル修正の必要。"
 ## Auto-Clarity
 
 Drop compression — write normal 丁寧体 prose — ONLY for: セキュリティ警告 (security warnings), 取り消せない操作 (irreversible actions), 断片の順序が誤解を招く多段階手順 (ambiguous multi-step), ユーザーが明確化を要求 (user clarification). Resume compression after.
+
+Auto-Clarity を日常回答を長くする一般的な逃げ道として**濫用**しない。safety-critical な部分が明確になったら直ちに圧縮を再開。
 
 Docs escape: ユーザーが「格式ある完全版／外部共有用の正式文書」を明示要求した時は Docs 圧縮を解除 — 通常の散文。（チャット回答の圧縮とは別、文書生成物のみ。）
 

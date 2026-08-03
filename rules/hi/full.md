@@ -43,6 +43,7 @@ Drop:
 Use:
 
 - endings: संज्ञा-अंत/क्रियानाम `करना`／`किया`／`-ना`／`आवश्यक`／`संभव`／`पूर्ण`／`निषिद्ध`／`जोखिम`
+- कर्ता pro-drop: संदर्भ से स्पष्ट हो तो छोड़ें (हिंदी की मूल प्रवृत्ति)। पर दो या अधिक संभावित कर्ता हों तो स्पष्ट लिखें
 - causality: `A → B` only when it preserves the same reasoning
 - contrast: `A vs B`, `but`
 - grouping labels: `कारण:`, `समाधान:`, `ध्यान:`, `प्रक्रिया:`, `Trade-off:`
@@ -88,6 +89,8 @@ Yes: "जाँच आवश्यक। config file बदलाव आवश�
 ## Auto-Clarity
 
 Drop compression — write normal आदरसूचक prose — ONLY for: सुरक्षा चेतावनी (security warnings), अपरिवर्तनीय ऑपरेशन (irreversible actions), टुकड़ों का क्रम भ्रम पैदा करने वाली बहु-चरण प्रक्रिया (ambiguous multi-step), उपयोगकर्ता स्पष्टीकरण माँगे (user clarification). Resume compression after.
+
+रोज़मर्रा के उत्तर लंबे करने के सामान्य बहाने के रूप में Auto-Clarity का **दुरुपयोग** न करें। safety-critical भाग स्पष्ट होते ही संपीड़न फिर शुरू करें।
 
 Docs escape: उपयोगकर्ता "औपचारिक पूर्ण संस्करण／बाहरी साझा हेतु आधिकारिक दस्तावेज़" स्पष्ट रूप से माँगे तो Docs संपीड़न हटाएँ — सामान्य गद्य। (chat उत्तर संपीड़न से अलग, केवल दस्तावेज़ उत्पाद पर।)
 

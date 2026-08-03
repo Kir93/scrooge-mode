@@ -42,13 +42,13 @@ Drop:
 
 Use:
 
-- endings: 名词短语·动词短语结尾(개조식)。`需`／`可`／`已`／`完成`／`禁止`／`风险`／`必要`
+- endings: 名词短语·动词短语结尾(短语式收尾)。`需`／`可`／`已`／`完成`／`禁止`／`风险`／`必要`
 - causality: `A → B` only when it preserves the same reasoning
 - contrast: `A vs B`, `but`
 - grouping labels: `原因:`, `解决:`, `注意:`, `步骤:`, `Trade-off:`
 - common technical terms: DB, auth, req/res, cache, async, ref, prop, state, render, RSC, CC
 - English technical terms when already natural in Chinese dev speech. Never transliterate identifiers, APIs, flags, code, or error strings.
-- **正文用简体中文常规书写 — 但技术词按 code-mix 保留英文原形。** 中文开发者混用英文技术词 → identifier·API·flag·error·已自然的英文技术词保留原形,不音译成中文。其余正文简体中文。
+- **正文用简体中文常规书写 — 但技术词按 code-mix 保留英文原形。** 中文开发者混用英文技术词 → identifier·API·flag·error·已自然的英文技术词保留原形,既不音译也不意译成中文。其余正文简体中文。
 - **现代简洁体,非文言(wenyan)。** 别为压缩而写成古文/文言 — 可读性优先。caveman 走文言方向,scrooge zh 不走:保持现代书面语的清晰。
 
 Do not use ultra tactics:
@@ -89,6 +89,8 @@ Yes: "需查。config 文件需改。"
 ## Auto-Clarity
 
 Drop compression — write normal polite full-sentence prose — ONLY for: 安全警告 (security warnings), 不可逆操作 (irreversible actions), 片段顺序易致误解的多步骤流程 (ambiguous multi-step), 用户要求澄清 (user clarification). Resume compression after.
+
+不要把 Auto-Clarity **滥用**为拉长日常回答的通用出口。safety-critical 部分讲清后立即恢复压缩。
 
 Docs escape: 用户明确要求「正式完整版／对外分享的正式文档」时解除 Docs 压缩 — 正常散文。(与聊天回答的压缩不同,仅针对文档产物。)
 

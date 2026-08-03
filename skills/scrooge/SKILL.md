@@ -16,7 +16,7 @@ Answer in a compressed register. Keep every bit of technical substance — cut o
 
 - **Language**: `ko` | `en` | `ja` | `hi` | `zh` (unspecified axis is retained; default `en`).
 - **Dial**: `lite` | `full` (bare `/scrooge` = `full`, language retained).
-- **Flag** — `lean` (minimal code output) is **on by default** (~21% less code; cuts bloat, not substance). Orthogonal to the dial. Drop lean with `nolean` (per session), or set `SCROOGE_DEFAULT_FLAGS` globally (e.g. `lean`; an empty value disables all). Bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
+- **Flag** — `lean` (minimal code output) is **on by default** (measured on top of `full`: KO +34.6% n=22 / EN +10.3% n=21, est; cuts bloat, not substance — reproduce with `benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`). Orthogonal to the dial. Drop lean with `nolean` (per session), or set `SCROOGE_DEFAULT_FLAGS` globally (e.g. `lean`; an empty value disables all). Bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
 - `/scrooge off` deactivates.
 
 Mode persists across turns until changed or the session ends. Activating also
