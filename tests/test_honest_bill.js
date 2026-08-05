@@ -61,12 +61,12 @@ test('formatStats says the lifetime total is unavailable when the history is ove
     cacheReadTokens: 0,
     turns: 2,
     state: ACTIVE,
-    ledger: { sessions: 0, savedTokens: 0, inputSavedTokens: 0, bySource: {}, unreadable: true },
+    ledger: { sessions: 0, savedTokens: 0, unreadable: true },
   });
   assert.match(out, /Lifetime \(ledger\):\s+unavailable — history file could not be read/);
 });
 
-test('formatStats ledger block renders the net bill with input savings and per-source breakdown', () => {
+test('formatStats ledger block nets saved output against our own injected overhead', () => {
   const out = formatStats({
     outputTokens: 2000,
     proseOutputTokens: 2000,
@@ -78,19 +78,17 @@ test('formatStats ledger block renders the net bill with input savings and per-s
     ledger: {
       sessions: 2,
       savedTokens: 1000,
-      inputSavedTokens: 400,
       inputOverheadTokens: 300,
       reasoningTokens: 500,
-      netSavedTokens: 1100,
-      bySource: { 'memory-compress': 400 },
+      netSavedTokens: 700,
       proseOutputTokens: 4000,
-      savedUsd: 0.0165,
+      savedUsd: 0.0235,
     },
   });
-  assert.match(out, /Input tokens saved:\s+400 \(est\)/);
-  assert.match(out, /memory-compress: 400/);
   assert.match(out, /Self overhead:\s+-300 \(est, static rule ctx\)/);
-  assert.match(out, /Net tokens saved:\s+1,100 \(est\)/);
+  assert.match(out, /Net tokens saved:\s+700 \(est\)/);
   assert.match(out, /Reasoning tokens:\s+500 \(uncompressed, not a saving\)/);
   assert.match(out, /Est\. value saved:\s+~\$0\.02 \(est, net\)/);
+  // Our own cost stays on screen — a bill that only ever shows savings is an ad.
+  assert.doesNotMatch(out, /Input tokens saved/);
 });

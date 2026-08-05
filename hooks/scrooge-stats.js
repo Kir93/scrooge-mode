@@ -11,8 +11,8 @@
 // Savings are a COUNTERFACTUAL ESTIMATE (what the same turns would have cost
 // uncompressed), always labelled "(est)". Per-dial ratios come from the
 // subscription benchmark, carried per language in lang-meta.js (LANG_META.savings)
-// and read here via savingsMeta(); a dial with no published ratio (lite, or an
-// unbenchmarked language) shows raw tokens only — never a fabricated number.
+// and read here via savingsMeta(); a language with no published ratio shows raw
+// tokens only — never a fabricated number.
 
 import path from 'node:path';
 import os from 'node:os';
@@ -27,21 +27,19 @@ import {
 import { readSession } from '../lib/session-log.js';
 import { upsertSession, aggregateLedger, sinceToEpoch, getHistoryPath } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
-import { savingsMeta } from './lang-meta.js';
+import { savingsMeta, buildReminder } from './lang-meta.js';
 
 // Per-(lang, dial) mean output-token compression ratios now live in lang-meta.js
 // (LANG_META[lang].savings), one row per language alongside the rest of that
 // language's metadata, each with its provenance (results file(s), N, model). This
 // hook reads them through savingsMeta().
 //
-// `lite` carries no ratio on purpose, and it is NOT unmeasured. It was measured
-// (lite-dial-verification, 2026-07-20): ko/lite +43.8% vs normal at fidelity
-// 0.650, en/lite +60.3% at 0.700 — against ko/full 0.690 and en/full 0.720. lite
-// compresses LESS than full and preserves LESS, a Pareto loss, so the verdict was
-// NO-GO and decision D2 (option A) kept the dial shipped but its ratio out of the
-// product surface. Publishing a lite estimate would advertise a dial we measured
-// and did not adopt. Register-only isolation means real sessions may differ —
-// hence the "(est)" label on every derived figure.
+// `full` is the only dial. `lite` shipped through v0.22.1 carrying no ratio
+// because its measurement rejected it (lite-dial-verification, 2026-07-20: ko/lite
+// +43.8% at fidelity 0.650 and en/lite +60.3% at 0.700, against ko/full 0.690 and
+// en/full 0.720 — less compression AND less preservation). v0.23.0 finished that
+// decision and removed the dial. Register-only isolation means real sessions may
+// differ from the benchmark — hence the "(est)" label on every derived figure.
 
 const SEP = '──────────────────────────────';
 
@@ -53,8 +51,7 @@ function humanizeTokens(n) {
 }
 
 // Counterfactual estimate for one (lang, dial), or null when that pair carries no
-// published ratio — every lite session (measured, NO-GO, see above) and any
-// language not yet benchmarked.
+// published ratio — any language not yet benchmarked.
 // The ratio is a prose-register figure, so it is applied to prose output tokens
 // only — tool_use output (bash/edit/tool JSON) is not compressed by the register
 // and must stay out of the savings base (ADR-003).
@@ -85,16 +82,24 @@ function estimateTokens(text) {
 // Static self-injection overhead: the token cost of the register Scrooge injects
 // for (lang, dial, flags), measured from the actual rule body length. This is a
 // STATIC measure of injected context — never a runtime counterfactual (ADR-003 /
-// lean-flags SC9). Counts the full injected register once per session; the small
-// per-turn reminder is not separately billed. Returns 0 when inactive or the rule
+// lean-flags SC9).
+//
+// Billed as the full register once plus the per-turn reminder on every turn after
+// it, which is what the hooks actually inject. Through v0.22.1 only the full
+// register was counted and the reminder was dismissed as "not separately billed" —
+// in a 50-turn session that silently omitted ~49 reminders from our own cost side,
+// making the net bill flatter than reality. Returns 0 when inactive or the rule
 // body cannot be read (degrades to no overhead rather than a fabricated number).
-function selfOverheadTokens(state) {
+function selfOverheadTokens(state, turns = 1) {
   if (!state) return 0;
   try {
     const root = resolveRepoRoot();
     const body = assembleRuleBody(root, state.lang, state.dial, state.flags);
     if (!body) return 0;
-    return estimateTokens(buildFullInjection(state.lang, state.dial, body, state.flags));
+    const full = estimateTokens(buildFullInjection(state.lang, state.dial, body, state.flags));
+    const reminder = estimateTokens(buildReminder(state.lang, state.dial, state.flags));
+    const extraTurns = Math.max(0, (Number(turns) || 0) - 1);
+    return full + reminder * extraTurns;
   } catch (e) {
     return 0;
   }
@@ -120,16 +125,8 @@ function formatLedger(ledger, since) {
     `${SEP}\n${label} (ledger):\n` +
     `Sessions:              ${ledger.sessions.toLocaleString()}\n` +
     `Output tokens saved:   ${ledger.savedTokens.toLocaleString()} (est, prose-only)\n`;
-  if (ledger.inputSavedTokens > 0) {
-    block += `Input tokens saved:    ${ledger.inputSavedTokens.toLocaleString()} (est)\n`;
-    for (const [source, saved] of Object.entries(ledger.bySource)) {
-      if (saved > 0) block += `  ${source}: ${saved.toLocaleString()}\n`;
-    }
-  }
   if (ledger.inputOverheadTokens > 0) {
     block += `Self overhead:         -${ledger.inputOverheadTokens.toLocaleString()} (est, static rule ctx)\n`;
-  }
-  if (ledger.inputSavedTokens > 0 || ledger.inputOverheadTokens > 0) {
     block += `Net tokens saved:      ${ledger.netSavedTokens.toLocaleString()} (est)\n`;
   }
   if (ledger.reasoningTokens > 0) {
@@ -184,9 +181,7 @@ function formatStats({
   } else {
     savings =
       `No savings estimate published for '${state.lang}/${state.dial}'.\n` +
-      (state.dial === 'lite'
-        ? 'The lite dial was measured and not adopted for estimates — it compresses less than full AND preserves less (see benchmarks/README.md).\n'
-        : 'That language/dial pair has no benchmark run yet.\n') +
+      'That language has no benchmark run yet.\n' +
       'Measured output tokens shown above; no estimate fabricated.';
   }
 
@@ -246,6 +241,11 @@ function main() {
   const sinceIdx = args.indexOf('--since');
   const sinceArg = sinceIdx !== -1 ? args[sinceIdx + 1] || null : null;
 
+  // Host detection mirrors scrooge-activate.js `isCodexAgent()` — same rule
+  // (SCROOGE_AGENT, else CLAUDE_CONFIG_DIR's basename). Kept separate rather than
+  // shared because this side also *sets* CLAUDE_CONFIG_DIR and needs
+  // defaultCodexDir for readSession; a shared helper would take an options bag for
+  // a three-line branch. If the rule changes, change it in both.
   const defaultCodexDir =
     process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
   const configuredDir = process.env.CLAUDE_CONFIG_DIR;
@@ -278,7 +278,7 @@ function main() {
   // running /scrooge-stats N times in one session overwrites the one entry, never
   // double-counts. Skipped when sessionless or no turns yet.
   const est = state ? deriveEstimate(sess.proseOutputTokens, state.lang, state.dial) : null;
-  const inputOverheadTokens = selfOverheadTokens(state);
+  const inputOverheadTokens = selfOverheadTokens(state, sess.turns);
   if (sessionKey && sess.turns > 0) {
     upsertSession({
       sessionId: sessionKey,

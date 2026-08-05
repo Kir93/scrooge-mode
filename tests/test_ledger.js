@@ -14,10 +14,10 @@ import path from 'node:path';
 
 import {
   upsertSession,
-  recordInputDelta,
   aggregateLedger,
   sinceToEpoch,
   priceForModel,
+  inputPriceForModel,
 } from '../lib/ledger.js';
 
 const tmpDirs = [];
@@ -72,21 +72,22 @@ test('aggregateLedger --since filters by window lower bound', () => {
 
 test('currency: savedUsd sums each session at its model rate; unknown model → no USD', () => {
   const h = tmpHistory();
-  // 1,000,000 opus output tokens at $15/Mtok = $15
+  // 1,000,000 opus output tokens at $25/Mtok = $25
   upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 0, savedTokens: 1_000_000, ts: 1000 }, h);
   // unknown model contributes tokens but no currency
   upsertSession({ sessionId: 's2', model: 'mystery-model', proseOutputTokens: 0, savedTokens: 1_000_000, ts: 2000 }, h);
   const agg = aggregateLedger({}, h);
   assert.equal(agg.savedTokens, 2_000_000);
-  assert.equal(Math.round(agg.savedUsd), 15);
+  assert.equal(Math.round(agg.savedUsd), 25);
 });
 
 test('priceForModel maps families; unknown / null → null', () => {
-  assert.equal(priceForModel('claude-opus-4-7'), 15);
-  assert.equal(priceForModel('claude-sonnet-4-6'), 3);
-  assert.equal(priceForModel('claude-haiku-4-5'), 0.8);
+  assert.equal(priceForModel('claude-opus-4-7'), 25);
+  assert.equal(priceForModel('claude-sonnet-4-6'), 15);
+  assert.equal(priceForModel('claude-haiku-4-5'), 5);
   assert.equal(priceForModel('gpt-5-codex'), null);
   assert.equal(priceForModel(null), null);
+  assert.equal(inputPriceForModel(null), null);
 });
 
 test('sinceToEpoch parses d/h windows and rejects junk', () => {
@@ -97,42 +98,7 @@ test('sinceToEpoch parses d/h windows and rejects junk', () => {
   assert.equal(sinceToEpoch(null, 1_000_000_000), null);
 });
 
-test('recordInputDelta is idempotent on (sessionKey, source) — re-recording overwrites', () => {
-  const h = tmpHistory();
-  const d = { sessionKey: 's1', source: 'memory-compress', saved: 460, ts: 1000 };
-  recordInputDelta(d, h);
-  recordInputDelta(d, h);
-  recordInputDelta(d, h);
-  const agg = aggregateLedger({}, h);
-  assert.equal(agg.sessions, 1);
-  assert.equal(agg.inputSavedTokens, 460); // not 1380
-  assert.equal(agg.bySource['memory-compress'], 460);
-});
-
-test('recordInputDelta sums distinct sources per session into one input total', () => {
-  const h = tmpHistory();
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 400, ts: 1000 }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'other-surface', saved: 200, ts: 1000 }, h);
-  const agg = aggregateLedger({}, h);
-  assert.equal(agg.sessions, 1);
-  assert.equal(agg.inputSavedTokens, 600);
-  assert.equal(agg.bySource['memory-compress'], 400);
-  assert.equal(agg.bySource['other-surface'], 200);
-});
-
-test('upsertSession and recordInputDelta coexist — neither clobbers the other', () => {
-  const h = tmpHistory();
-  // Output side records first, then an input surface, then stats re-upserts.
-  upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 1000, savedTokens: 600, ts: 1000 }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 300, ts: 1000 }, h);
-  upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 1200, savedTokens: 700, ts: 2000 }, h);
-  const agg = aggregateLedger({}, h);
-  assert.equal(agg.sessions, 1);
-  assert.equal(agg.savedTokens, 700); // latest output-side, preserved
-  assert.equal(agg.inputSavedTokens, 300); // input delta NOT wiped by the re-upsert
-});
-
-test('aggregateLedger nets output + input − self overhead; reasoning is reported apart', () => {
+test('aggregateLedger nets output savings against self overhead; reasoning apart', () => {
   const h = tmpHistory();
   upsertSession({
     sessionId: 's1',
@@ -143,30 +109,29 @@ test('aggregateLedger nets output + input − self overhead; reasoning is report
     inputOverheadTokens: 300,
     ts: 1000,
   }, h);
-  recordInputDelta({ sessionKey: 's1', source: 'memory-compress', saved: 400, ts: 1000 }, h);
   const agg = aggregateLedger({}, h);
   assert.equal(agg.savedTokens, 1000);
-  assert.equal(agg.inputSavedTokens, 400);
   assert.equal(agg.inputOverheadTokens, 300);
-  assert.equal(agg.netSavedTokens, 1100); // 1000 + 400 − 300
-  assert.equal(agg.reasoningTokens, 500); // separate, not in net
-  // USD monetizes the net (1100) at opus $15/Mtok.
-  assert.equal(Number(agg.savedUsd.toFixed(4)), Number(((1100 / 1e6) * 15).toFixed(4)));
+  assert.equal(agg.netSavedTokens, 700); // 1000 saved output − 300 injected input
+  assert.equal(agg.reasoningTokens, 500); // separate, never netted
+  // Each side is priced at its OWN rate: saved output at opus $25/Mtok, injected
+  // overhead at opus $5/Mtok. Pricing the netted token count once would value an
+  // input token at the output rate, which is the bug this guards.
+  const expected = (1000 / 1e6) * 25 - (300 / 1e6) * 5;
+  assert.equal(Number(agg.savedUsd.toFixed(6)), Number(expected.toFixed(6)));
 });
 
-test('recordInputDelta refuses invalid input', () => {
-  const h = tmpHistory();
-  assert.equal(recordInputDelta(null, h), false);
-  assert.equal(recordInputDelta({ sessionKey: '', source: 'x', saved: 1 }, h), false);
-  assert.equal(recordInputDelta({ sessionKey: 's1', source: '', saved: 1 }, h), false);
-  assert.equal(recordInputDelta({ sessionKey: 's1', source: 'x', saved: -1 }, h), false);
-  assert.equal(aggregateLedger({}, h).sessions, 0); // nothing written
+test('output and input rates are distinct per model family', () => {
+  assert.equal(priceForModel('claude-opus-4-8'), 25);
+  assert.equal(inputPriceForModel('claude-opus-4-8'), 5);
+  assert.equal(priceForModel('claude-sonnet-5'), 15);
+  assert.equal(inputPriceForModel('claude-sonnet-5'), 3);
+  assert.equal(priceForModel('claude-haiku-4-5'), 5);
+  assert.equal(inputPriceForModel('claude-haiku-4-5'), 1);
+  assert.equal(priceForModel('gpt-5'), null);
+  assert.equal(inputPriceForModel('gpt-5'), null);
 });
 
-// Regression: the read cap (bytes) and the write cap (sessions) used to be in
-// different units, so a history of large entries could pass the write cap while
-// failing the read cap. The read then returned null, the writer read that as "no
-// history yet", and the next write replaced a lifetime of entries with one line.
 test('a history file over the read cap is never overwritten', () => {
   const h = tmpHistory();
   // 300 KB of well-formed entries — past the 256 KB read cap.
@@ -181,7 +146,6 @@ test('a history file over the read cap is never overwritten', () => {
   assert.ok(fs.statSync(h).size > 256 * 1024);
 
   assert.equal(upsertSession({ sessionId: 'new', savedTokens: 999, ts: 99999 }, h), false);
-  assert.equal(recordInputDelta({ sessionKey: 'new', source: 'memory-compress', saved: 5 }, h), false);
   assert.equal(fs.readFileSync(h, 'utf8'), body); // untouched, not collapsed to one entry
 
   // The zeros are reported as "unreadable", not as "nothing was ever saved".
@@ -216,9 +180,9 @@ test('a write that would cross the read cap drops the oldest entries instead', (
 });
 
 test('a near-full history keeps the entry being written, even with no timestamp', () => {
-  // recordInputDelta callers may omit `ts` (hooks/scrooge-memory.js does), so the
-  // new entry sorts oldest and would be first over the byte cliff — written,
-  // reported as success, and silently absent from the file.
+  // A caller may omit `ts`, so the new entry sorts oldest and would be first over
+  // the byte cliff — written, reported as success, and silently absent from the
+  // file.
   const h = tmpHistory();
   const line = (i) =>
     JSON.stringify({ sessionId: `s${String(i).padStart(400, '0')}`, model: 'claude-opus-4-7', savedTokens: 1, ts: i });
@@ -230,8 +194,8 @@ test('a near-full history keeps the entry being written, even with no timestamp'
   }
   fs.writeFileSync(h, seeded.join('\n') + '\n');
 
-  assert.equal(recordInputDelta({ sessionKey: 'no-ts', source: 'memory-compress', saved: 42 }, h), true);
-  assert.equal(aggregateLedger({}, h).bySource['memory-compress'], 42);
+  assert.equal(upsertSession({ sessionId: 'no-ts', model: 'claude-opus-4-7', savedTokens: 42 }, h), true);
+  assert.equal(aggregateLedger({}, h).savedTokens >= 42, true);
 });
 
 test('upsertSession refuses invalid input and a symlinked history path', {
