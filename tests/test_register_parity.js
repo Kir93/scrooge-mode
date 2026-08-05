@@ -5,7 +5,7 @@
 // `test_golden_corpus.js` is a frozen-fixture tripwire that by design does not
 // move when rule text changes. So a rule item could live in one language and be
 // missing from the other four indefinitely — which is exactly what happened: the
-// Auto-Clarity anti-abuse sentence existed only in `en/full`, every `lite` file
+// Auto-Clarity anti-abuse sentence existed only in `en/full`, every other file
 // shipped with zero safety guards, and a Korean word (`개조식`) sat inside the
 // Chinese register.
 //
@@ -37,28 +37,28 @@ const RULES = [
   {
     id: 'ultra-tactics-floor',
     what: 'the "do not compress into ultra tactics" floor',
-    dials: ['lite', 'full'],
+    dials: ['full'],
     token: 'ultra tactics',
     langs: 'all',
   },
   {
     id: 'non-actionable-guard',
     what: 'never shorten into a non-actionable answer',
-    dials: ['lite', 'full'],
+    dials: ['full'],
     token: 'non-actionable',
     langs: 'all',
   },
   {
     id: 'auto-clarity-anti-abuse',
     what: 'Auto-Clarity must not become a general escape to lengthen answers',
-    dials: ['lite', 'full'],
+    dials: ['full'],
     token: { en: 'general escape', ko: '남용', ja: '濫用', zh: '滥用', hi: 'दुरुपयोग' },
     langs: 'all',
   },
   {
     id: 'docs-escape',
     what: 'the Docs-escape clause (formal full version on explicit request)',
-    dials: ['lite', 'full'],
+    dials: ['full'],
     token: 'Docs escape',
     langs: 'all',
   },
@@ -84,8 +84,8 @@ const RULES = [
   {
     id: 'hangul-only',
     what: 'the Han-character block (write Sino-Korean in Hangul)',
-    dials: ['lite', 'full'],
-    // The exact rule phrasing, not the bare word "Hangul": ja/full and ja/lite
+    dials: ['full'],
+    // The exact rule phrasing, not the bare word "Hangul": ja/full
     // legitimately NAME this rule while stating its inverse ("KO の Hangul-only
     // 規則とは逆方向"), and a looser token would read that mention as the rule.
     token: 'Hangul script only',
@@ -161,7 +161,7 @@ test('a language-specific rule has not silently spread to languages it would bre
 // Structural drift the item checks above cannot see: a register that quietly
 // loses half its demonstration pairs or its rule bullets still passes every
 // token check. These are floors, not exact counts — adding examples is fine.
-const FLOORS = { full: { notPairs: 4, bullets: 25 }, lite: { notPairs: 3, bullets: 12 } };
+const FLOORS = { full: { notPairs: 4, bullets: 25 } };
 
 for (const dial of VALID_DIALS) {
   test(`every ${dial} register keeps its demonstration pairs and rule bullets`, () => {

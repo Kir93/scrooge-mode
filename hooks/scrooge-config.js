@@ -53,7 +53,25 @@ function loadRegistryForLangs() {
 
 const DERIVED_LANGS = deriveValidLangs(loadRegistryForLangs());
 export const VALID_LANGS = DERIVED_LANGS.length ? DERIVED_LANGS : ['ko', 'en', 'ja'];
-export const VALID_DIALS = ['lite', 'full'];
+export const VALID_DIALS = ['full'];
+
+// `lite` shipped through v0.22.1 and was removed in v0.23.0. Its own measurement
+// rejected it: ko/lite +43.8% vs normal at fidelity 0.650 and en/lite +60.3% at
+// 0.700, against ko/full 0.690 and en/full 0.720 — it compressed LESS than full
+// and preserved LESS, a Pareto loss on both axes. Keeping a dial we measured and
+// did not adopt cost five rule files, half of every language x dial test matrix,
+// and a column in every doc surface, so it is gone rather than merely unquoted.
+//
+// Saved state naming it must be migrated, not rejected: a stale `lite` would fail
+// isValidState, and a user whose global default silently stopped activating would
+// read that as the tool breaking, not as a dial being retired.
+const RETIRED_DIALS = { lite: 'full' };
+
+export function migrateDial(dial) {
+  return Object.prototype.hasOwnProperty.call(RETIRED_DIALS, dial)
+    ? RETIRED_DIALS[dial]
+    : dial;
+}
 // Behavior/input flags, orthogonal to dial. Whitelist-only: any token outside
 // this set is dropped (never persisted, never injected). `lean` is the lone flag.
 export const VALID_FLAGS = ['lean'];
@@ -375,7 +393,7 @@ export function readState(statePath = getStatePath()) {
   // tampered flags field fails closed to null instead of being silently dropped.
   const state = {
     lang: parsed.lang,
-    dial: parsed.dial,
+    dial: migrateDial(parsed.dial),
     flags: parsed.flags === undefined ? [] : parsed.flags,
   };
   return isValidState(state) ? state : null;

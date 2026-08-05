@@ -298,10 +298,10 @@ test('NL off through the hook clears state and injects a countermand', () => {
 
 test('(e) a valid slash command wins over NL text in the same prompt (SC 3.3)', () => {
   const cfg = freshConfig();
-  // "lite" is a valid slash dial, so parseCommand returns non-null and NL never
-  // runs — dial stays lite, not the full an NL trigger would force.
-  const { state } = runHook(cfg, '/scrooge lite talk like scrooge');
-  assert.deepEqual(state, { lang: 'en', dial: 'lite', flags: [] });
+  // "en" is a valid slash lang, so parseCommand returns non-null and NL never
+  // runs — the lang stays en, not the ko an NL trigger would pick from the text.
+  const { state } = runHook(cfg, '/scrooge en 스크루지처럼 답해줘');
+  assert.deepEqual(state, { lang: 'en', dial: 'full', flags: [] });
 });
 
 test('(f) inactive session + plain prompt injects nothing', () => {

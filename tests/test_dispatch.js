@@ -29,7 +29,7 @@ import {
   metaLangs,
 } from '../hooks/lang-meta.js';
 import { parseNaturalActivation } from '../hooks/nl-activation.js';
-import { deriveValidLangs } from '../hooks/scrooge-config.js';
+import { deriveValidLangs, VALID_DIALS, readState, migrateDial } from '../hooks/scrooge-config.js';
 import { deriveEstimate, formatStats, suffixFor } from '../hooks/scrooge-stats.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -43,7 +43,6 @@ const XX = {
   reminder: {
     head: 'SCROOGE xx',
     modeClose: '. ',
-    lite: 'xx-lite-body. ',
     full: 'xx-full-body. ',
     suffix: 'xx-suffix.',
     flag: { prefix: ' flag: ', sep: '·', suffix: ' on.' },
@@ -73,20 +72,14 @@ after(() => {
 // existing fixtures only partial-match the reminder HEADER (e.g. test_activate.js's
 // `/SCROOGE 활성 \(ko\/full\)/`), leaving the body + suffix (and ja's distinct
 // trailing-space placement) and the full countermand unpinned. These frozen golden
-// strings are the verbatim pre-refactor output for every ko/en/ja × lite/full × flags
+// strings are the verbatim pre-refactor output for every ko/en/ja × dial × flags
 // combination; a 1-byte drift in any LANG_META string fails here — the regression
 // the refactor's "move verbatim, don't rewrite" prime directive rides on.
 const GOLDEN_REMINDER = {
-  'ko|lite|-': 'SCROOGE 활성 (ko/lite). 다듬은 존댓말, filler·빈 인사·hedging 드롭, 완전문. code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.',
-  'ko|lite|lean': 'SCROOGE 활성 (ko/lite). 다듬은 존댓말, filler·빈 인사·hedging 드롭, 완전문. code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose. flag: lean(최소 코드) 활성.',
   'ko|full|-': 'SCROOGE 활성 (ko/full). 개조식·음슴체(~함/~됨), 의미 명확 시 조사 드롭, 존대 제거. code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.',
   'ko|full|lean': 'SCROOGE 활성 (ko/full). 개조식·음슴체(~함/~됨), 의미 명확 시 조사 드롭, 존대 제거. code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose. flag: lean(최소 코드) 활성.',
-  'en|lite|-': 'SCROOGE active (en/lite). Drop filler/pleasantry/hedging, keep grammar + articles. Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.',
-  'en|lite|lean': 'SCROOGE active (en/lite). Drop filler/pleasantry/hedging, keep grammar + articles. Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose. Flags: lean (minimal code) active.',
   'en|full|-': 'SCROOGE active (en/full). Drop articles/filler/pleasantries, fragments OK, short synonyms. Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.',
   'en|full|lean': 'SCROOGE active (en/full). Drop articles/filler/pleasantries, fragments OK, short synonyms. Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose. Flags: lean (minimal code) active.',
-  'ja|lite|-': 'SCROOGE 活性 (ja/lite)。 整えた丁寧体、filler・空のあいさつ・hedging ドロップ、完全文。 code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。',
-  'ja|lite|lean': 'SCROOGE 活性 (ja/lite)。 整えた丁寧体、filler・空のあいさつ・hedging ドロップ、完全文。 code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。 flag: lean（最小コード） 活性。',
   'ja|full|-': 'SCROOGE 活性 (ja/full)。 体言止め・常体、意味明確時は助詞ドロップ、敬語除去。 code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。',
   'ja|full|lean': 'SCROOGE 活性 (ja/full)。 体言止め・常体、意味明確時は助詞ドロップ、敬語除去。 code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。 flag: lean（最小コード） 活性。',
 };
@@ -98,7 +91,7 @@ const GOLDEN_COUNTERMAND = {
 
 test('ko/en/ja reminder + countermand are byte-identical to the pre-refactor output', () => {
   for (const lang of ['ko', 'en', 'ja']) {
-    for (const dial of ['lite', 'full']) {
+    for (const dial of VALID_DIALS) {
       for (const flags of [[], ['lean']]) {
         const key = `${lang}|${dial}|${flags.join('+') || '-'}`;
         assert.equal(buildReminder(lang, dial, flags), GOLDEN_REMINDER[key], key);
@@ -139,7 +132,6 @@ test('reminder + countermand dispatch from the new table row (no branch edit)', 
     buildReminder('xx', 'full', ['lean']),
     'SCROOGE xx (xx/full). xx-full-body. xx-suffix. flag: lean(xx) on.'
   );
-  assert.equal(buildReminder('xx', 'lite', []), 'SCROOGE xx (xx/lite). xx-lite-body. xx-suffix.');
   assert.equal(buildCountermand('xx'), 'SCROOGE OFF — xx countermand.');
 });
 
@@ -166,7 +158,7 @@ test('statusline falls back to the legacy root-level state file (skew window)', 
   // No .scrooge/ subdir at all — only the pre-migration legacy dotfile exists.
   fs.writeFileSync(
     path.join(cfg, '.scrooge-active'),
-    JSON.stringify({ lang: 'ko', dial: 'lite', flags: [] })
+    JSON.stringify({ lang: 'ko', dial: 'lite', flags: [] }) // retired dial → renders as full
   );
   const r = spawnSync('bash', [STATUSLINE], {
     input: '{}',
@@ -174,7 +166,7 @@ test('statusline falls back to the legacy root-level state file (skew window)', 
     env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, SCROOGE_STATUSLINE_SAVINGS: '0' },
   });
   assert.equal(r.status, 0, `statusline exited ${r.status}: ${r.stderr}`);
-  assert.match(r.stdout, /\[SCROOGE:ko\/lite\]/);
+  assert.match(r.stdout, /\[SCROOGE:ko\/full\]/);
 });
 
 test('stats label dispatches generically; an un-benchmarked lang degrades gracefully', () => {
@@ -189,28 +181,22 @@ test('stats label dispatches generically; an un-benchmarked lang degrades gracef
   });
   assert.match(out, /Mode:\s+xx\/full/);
   assert.match(out, /No savings estimate published for 'xx\/full'/);
-  assert.match(out, /no benchmark run yet/); // truly unmeasured — distinct from the lite case below
+  assert.match(out, /no benchmark run yet/); // truly unmeasured
   assert.match(suffixFor({ outputTokens: 500, turns: 2, state }), /tok/); // raw tokens, not a fake est
 });
 
-test('a lite session says the dial was measured and not adopted, not "pending"', () => {
-  // lite has no ratio because the measurement rejected it (Pareto loss vs full),
-  // not because it is unmeasured. Telling the user "pending" implies a number is
-  // coming; the honest register-product answer is why there will not be one.
-  const out = formatStats({
-    turns: 2,
-    outputTokens: 500,
-    proseOutputTokens: 400,
-    cacheReadTokens: 0,
-    state: { lang: 'ko', dial: 'lite', flags: [] },
-  });
-  assert.equal(deriveEstimate(1000, 'ko', 'lite'), null); // D2 option A: no lite ratio injected
-  assert.match(out, /No savings estimate published for 'ko\/lite'/);
-  assert.match(out, /measured and not adopted/);
-  assert.doesNotMatch(out, /pending/);
+test('a retired dial in saved state renders as full rather than failing closed', () => {
+  // `lite` was removed in v0.23.0 after its own measurement rejected it (less
+  // compression AND less preservation than full). State naming it still exists on
+  // disk, so every read path migrates it — a user whose default said lite keeps
+  // working instead of silently going inactive.
+  const p = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-dial-')), 'state');
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'lite', flags: [] }));
+  assert.deepEqual(readState(p), { lang: 'ko', dial: 'full', flags: [] });
+  assert.equal(migrateDial('lite'), 'full');
+  assert.equal(migrateDial('full'), 'full');
+  assert.equal(migrateDial('nonsense'), 'nonsense'); // unknown stays unknown, then fails isValidState
 });
-
-// ── missing table row → safe fallback (no crash) ────────────────────────────────
 
 test('a lang with NO table row falls back to the en register (matches the legacy fallthrough)', () => {
   assert.ok(!LANG_META.zz, 'precondition: zz must not be defined');

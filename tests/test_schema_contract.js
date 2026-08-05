@@ -102,10 +102,10 @@ test('deriveSessionKey: neither field → null (sessionless global fallback)', (
 test('activate: the documented payload activates and routes state to the derived session key', () => {
   const cfg = freshConfig();
   runHook(ACTIVATE_HOOK, ACTIVATE_PAYLOAD, cfg);
-  // `data.prompt` (/scrooge en lite) was parsed AND the key was derived from the
-  // stdin fields — so the state lands at sessions/<derived key> with en/lite.
+  // `data.prompt` (/scrooge en full) was parsed AND the key was derived from the
+  // stdin fields — so the state lands at sessions/<derived key> with en/full.
   const state = readState(sessionStateFile(cfg, EXPECTED_KEY));
-  assert.deepEqual(state, { lang: 'en', dial: 'lite', flags: [] });
+  assert.deepEqual(state, { lang: 'en', dial: 'full', flags: [] });
 });
 
 test('activate: a sessionless payload degrades to the global state file without throwing', () => {

@@ -4,7 +4,7 @@ Self-review baseline for Scrooge `en/full` output quality. Source rules: [rules/
 
 EN-specific counterpart to [docs/ko-qa-checklist.md](ko-qa-checklist.md). Categories that only apply to Korean (honorific removal, particle drop) are dropped; a Language-fidelity category is added because the EN dial must not regress to Korean output.
 
-**Scope.** Categories A–E judge `en/full`; F and G cover the `lean` flag (on by default) and the `lite` dial. This is a **human self-review** aid, not an automated gate — nothing here runs in `npm test`, and it is deliberately not a frozen fixture set (`RELEASE.md` pins rule-text regression to the manual judge gate instead). Checklists exist for `en` and `ko` only; `ja`/`hi`/`zh` have none, because writing one without a native reviewer would make the fixture itself the wrong baseline.
+**Scope.** Categories A–E judge `en/full`; F covers the `lean` flag (on by default). (A category G judged the `lite` dial; that dial was removed in v0.23.0 after its own measurement rejected it.) This is a **human self-review** aid, not an automated gate — nothing here runs in `npm test`, and it is deliberately not a frozen fixture set (`RELEASE.md` pins rule-text regression to the manual judge gate instead). Checklists exist for `en` and `ko` only; `ja`/`hi`/`zh` have none, because writing one without a native reviewer would make the fixture itself the wrong baseline.
 
 ## Categories
 
@@ -52,14 +52,6 @@ Hedges (`might`, `could`, `perhaps`, `seems like`, `I think`) become assertions,
 - PASS: no commentary on how the answer was minimized ("I could also…", "another approach would be…", a library-vs-hand-rolled comparison).
 - FAIL: speculative flexibility — a parameter, hook, or config the prompt never asked for, "in case you need it later".
 - FAIL: input validation, error handling, or a required test dropped to look leaner. `lean` narrows scope, never safety.
-
-### G. `lite` dial — trimmed, not fragmented
-
-Judge `lite` output against `rules/en/lite.md`, not `full`. `lite` keeps full grammar and complete sentences; it only removes filler, pleasantries, and hedging.
-
-- PASS: The token expiry check in auth middleware has a bug. It should use `<=` instead of `<`.
-- FAIL (over-compressed): auth middleware bug. token expiry `<` not `<=`. — that is `full`'s register leaking into `lite`.
-- FAIL (guard dropped): a trade-off, caveat, or requested step removed. Those guards apply in every dial, so a `lite` answer that sheds them fails the same way a `full` one would.
 
 ## Sample 1 — simple technical question
 

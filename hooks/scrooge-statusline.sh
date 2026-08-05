@@ -53,6 +53,9 @@ RAW=$(head -c 256 "$STATE" 2>/dev/null | tr -d '\000-\037\177')
 # below). The closing-quote anchor keeps the charset bounded to the exact value.
 LANG_V=$(printf '%s' "$RAW" | grep -oE '"lang"[[:space:]]*:[[:space:]]*"[a-z]{2,3}"' | grep -oE '[a-z]{2,3}"$' | tr -d '"' | head -1)
 DIAL_V=$(printf '%s' "$RAW" | grep -oE '"dial"[[:space:]]*:[[:space:]]*"(lite|full)"' | grep -oE '(lite|full)"$' | tr -d '"' | head -1)
+# `lite` was retired in v0.23.0; a state file still naming it renders as full, the
+# same mapping migrateDial() applies on the JS side.
+[ "$DIAL_V" = "lite" ] && DIAL_V=full
 
 { [ -z "$LANG_V" ] || [ -z "$DIAL_V" ]; } && exit 0
 
@@ -71,7 +74,9 @@ if [ "${SCROOGE_STATUSLINE_SAVINGS:-1}" != "0" ]; then
     SUFFIX_FILE="$CONFIG_DIR/.scrooge-statusline-suffix"
   fi
   if [ -n "$SID" ] && [ -f "$SUFFIX_FILE" ] && [ ! -L "$SUFFIX_FILE" ]; then
-    CONTENT=$(head -c 256 "$SUFFIX_FILE" 2>/dev/null | tr -d '\000-\037\177')
+    # 128 = MAX_SUFFIX_BYTES in scrooge-config.js. Reading further would render a
+    # suffix that every JS reader rejects, so the two sides must agree.
+    CONTENT=$(head -c 128 "$SUFFIX_FILE" 2>/dev/null | tr -d '\000-\037\177')
     FILE_SID="${CONTENT%%:*}"
     FILE_TEXT="${CONTENT#*:}"
     if [ "$FILE_SID" = "$SID" ] && [ -n "$FILE_TEXT" ] && [ "$FILE_TEXT" != "$CONTENT" ]; then

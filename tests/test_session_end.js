@@ -52,9 +52,9 @@ test('marker equal to the default is deleted at session end', () => {
 test('marker differing from the default (override) is KEPT for resume', () => {
   withConfigDir(freshConfig(), () => {
     writeState(DEFAULT, getDefaultPath());
-    writeState({ lang: 'en', dial: 'lite', flags: [] }, getStatePath('sessB'));
+    writeState({ lang: 'en', dial: 'full', flags: [] }, getStatePath('sessB'));
     handlePayload({ session_id: 'sessB' });
-    assert.deepEqual(readState(getStatePath('sessB')), { lang: 'en', dial: 'lite', flags: [] });
+    assert.deepEqual(readState(getStatePath('sessB')), { lang: 'en', dial: 'full', flags: [] });
   });
 });
 

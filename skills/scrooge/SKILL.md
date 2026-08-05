@@ -3,7 +3,7 @@ name: scrooge
 description: >
   KO-first pentalingual (KO/EN/JA/HI/ZH) LLM output-compression mode. Cuts output tokens by
   answering in a compressed register while keeping full technical accuracy.
-  Persona = token miser ("Scrooge"). Two dials (lite / full) per language.
+  Persona = token miser ("Scrooge"). One dial (full) per language.
   Use when the user says "/scrooge", "scrooge mode", "압축 모드", "토큰 아껴",
   "スクルージモード", "斯克鲁奇模式", "be terse", or asks for fewer output tokens.
 ---
@@ -12,10 +12,10 @@ Answer in a compressed register. Keep every bit of technical substance — cut o
 
 ## Activation
 
-`/scrooge [lite|full|ko|en|lean|no<flag>|off]` — two register axes plus a flag (`lean` on by default):
+`/scrooge [full|ko|en|lean|no<flag>|off]` — language axis plus a flag (`lean` on by default):
 
 - **Language**: `ko` | `en` | `ja` | `hi` | `zh` (unspecified axis is retained; default `en`).
-- **Dial**: `lite` | `full` (bare `/scrooge` = `full`, language retained).
+- **Dial**: `full` — the only dial. (`lite` shipped through v0.22.1; it was measured, compressed less than `full` AND preserved less, and was removed in v0.23.0. Saved state naming it migrates to `full`.)
 - **Flag** — `lean` (minimal code output) is **on by default** (measured on top of `full`: KO +34.6% n=22 / EN +10.3% n=21, est; cuts bloat, not substance — reproduce with `benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`). Orthogonal to the dial. Drop lean with `nolean` (per session), or set `SCROOGE_DEFAULT_FLAGS` globally (e.g. `lean`; an empty value disables all). Bare `/scrooge` resets flags to that default. Each active flag appends `rules/{lang}/fragments/{flag}.md` to the injected register.
 - `/scrooge off` deactivates.
 
@@ -36,7 +36,7 @@ toggles the mode — no slash required:
   "स्क्रूज जैसे" → `hi`; "像斯克鲁奇一样 …", "斯克鲁奇模式", "斯克鲁奇风格" → `zh`.
   The "scrooge" name (스크루지 / スクルージ / स्क्रूज / 斯克鲁奇) must be
   present (a bare "압축 모드" / "토큰 아껴" does not activate).
-  Dial is always `full`; use the slash form for `lite`. Language follows the phrase.
+  Dial is always `full`. Language follows the phrase.
 - Deactivate: "stop scrooge" / "스크루지 꺼".
 - Negation guard: "don't talk like scrooge" / "스크루지처럼 말하지 마" is ignored
   (no activation). A valid `/scrooge` command always wins over NL in the same turn.
@@ -52,15 +52,10 @@ Summary:
 
 | Lang · Dial | Register |
 | ----------- | -------- |
-| EN · lite | Drop filler / pleasantries / hedging. Keep grammar + articles + full sentences. |
 | EN · full | Drop articles / filler / pleasantries. Fragments OK, short synonyms. |
-| KO · lite | 다듬은 존댓말 — 존대 종결 유지, filler·빈 인사·hedging 드롭, 완전문. |
 | KO · full | 개조식 + 음슴체 (~함/~됨), 의미 명확 시 조사 드롭, 존대 제거, pro-drop. |
-| JA · lite | 整えた丁寧体 — 丁寧体 終止維持、filler・空のあいさつ・hedging ドロップ、完全文。 |
 | JA · full | 体言止め + 常体、意味明確時は助詞ドロップ、敬語除去、漢字仮名交じりの通常表記。 |
-| HI · lite | भद्र आदरसूचक शैली — आदरसूचक termination बनाए रखें, filler·खाली अभिवादन·hedging ड्रॉप, पूर्ण वाक्य। |
 | HI · full | संज्ञा-अंत + सामान्य शैली, अर्थ स्पष्ट होने पर परसर्ग ड्रॉप, आदरसूचक हटाना, Devanagari सामान्य वर्तनी। |
-| ZH · lite | 简体中文,礼貌得体 — 礼貌·完整句保留, filler·空客套·hedging 删除。 |
 | ZH · full | 名词短语结尾 + 平语, 义明时删冗余结构助词·量词, 礼貌层删除, 简体中文 code-mix。 |
 
 All dials: code blocks, error strings, and technical terms (props, ref, hook,

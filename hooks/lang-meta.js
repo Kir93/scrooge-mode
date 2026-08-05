@@ -45,7 +45,6 @@ export const LANG_META = {
     reminder: {
       head: 'SCROOGE 활성',
       modeClose: '. ',
-      lite: '다듬은 존댓말, filler·빈 인사·hedging 드롭, 완전문. ',
       full: '개조식·음슴체(~함/~됨), 의미 명확 시 조사 드롭, 존대 제거. ',
       suffix: 'code block·error·기술 용어 원문. 보안/되돌릴 수 없는 동작은 normal prose.',
       flag: { prefix: ' flag: ', sep: '·', suffix: ' 활성.' },
@@ -73,7 +72,6 @@ export const LANG_META = {
     reminder: {
       head: 'SCROOGE active',
       modeClose: '. ',
-      lite: 'Drop filler/pleasantry/hedging, keep grammar + articles. ',
       full: 'Drop articles/filler/pleasantries, fragments OK, short synonyms. ',
       suffix: 'Code blocks, errors, technical terms verbatim. Security / irreversible actions: normal prose.',
       flag: { prefix: ' Flags: ', sep: ', ', suffix: ' active.' },
@@ -81,7 +79,7 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.',
     flagHint: { lean: 'lean (minimal code)' },
     savings: {
-      full: { ratio: 0.66, results: ['benchmarks/published/results-en-clean-opus48.jsonl'], n: 25, model: 'claude-opus-4-8' },
+      full: { ratio: 0.67, results: ['benchmarks/published/results-en-clean-opus48.jsonl'], n: 24, model: 'claude-opus-4-8' },
     },
     nlCue: {
       name: /scrooge/i,
@@ -100,7 +98,6 @@ export const LANG_META = {
     reminder: {
       head: 'SCROOGE 活性',
       modeClose: '。 ',
-      lite: '整えた丁寧体、filler・空のあいさつ・hedging ドロップ、完全文。',
       full: '体言止め・常体、意味明確時は助詞ドロップ、敬語除去。',
       suffix: ' code block・error・技術用語は原文。セキュリティ／取り消せない操作は normal prose。',
       flag: { prefix: ' flag: ', sep: '・', suffix: ' 活性。' },
@@ -112,7 +109,7 @@ export const LANG_META = {
       // N=15 tuning run with the held-out one; that tuning corpus is gitignored,
       // so nobody could recompute the average — the README table it backed was
       // dropped for the same reason.
-      full: { ratio: 0.64, results: ['benchmarks/published/results-ja-report.jsonl'], n: 11, model: 'claude-opus-4-8' },
+      full: { ratio: 0.65, results: ['benchmarks/published/results-ja-report.jsonl'], n: 10, model: 'claude-opus-4-8' },
     },
     nlCue: {
       name: /スクルージ/,
@@ -129,7 +126,6 @@ export const LANG_META = {
     reminder: {
       head: 'SCROOGE सक्रिय',
       modeClose: '। ',
-      lite: 'भद्र आदरसूचक शैली, filler·खाली अभिवादन·hedging ड्रॉप, पूर्ण वाक्य।',
       full: 'संज्ञा-अंत·सामान्य शैली, अर्थ स्पष्ट होने पर परसर्ग ड्रॉप, आदरसूचक हटाना।',
       suffix: ' code block·error·तकनीकी शब्द मूल रूप में। सुरक्षा/अपरिवर्तनीय ऑपरेशन normal prose।',
       flag: { prefix: ' flag: ', sep: '·', suffix: ' सक्रिय।' },
@@ -157,7 +153,6 @@ export const LANG_META = {
     reminder: {
       head: 'SCROOGE 已激活',
       modeClose: '。 ',
-      lite: '礼貌得体、filler·空客套·hedging 删除,完整句。',
       full: '名词短语结尾·平语,义明时删冗余结构助词·量词,礼貌层·filler 删除。',
       suffix: ' code block·error·技术词原形。安全/不可逆操作用 normal prose。',
       flag: { prefix: ' flag: ', sep: '·', suffix: ' 已激活。' },

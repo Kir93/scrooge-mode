@@ -44,7 +44,7 @@ test('each LANG_META row carries the complete activation-metadata shape', () => 
     const m = LANG_META[lang];
     const r = m.reminder;
     assert.ok(r && typeof r === 'object', `${lang}: missing reminder`);
-    for (const key of ['head', 'modeClose', 'lite', 'full', 'suffix']) {
+    for (const key of ['head', 'modeClose', ...VALID_DIALS, 'suffix']) {
       assert.equal(typeof r[key], 'string', `${lang}: reminder.${key} not a string`);
     }
     assert.ok(r.flag && typeof r.flag === 'object', `${lang}: missing reminder.flag`);

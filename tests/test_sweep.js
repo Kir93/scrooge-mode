@@ -34,7 +34,7 @@ function withConfigDir(cfg, fn) {
 }
 
 const DEFAULT = { lang: 'ko', dial: 'full', flags: ['lean'] };
-const OVERRIDE = { lang: 'en', dial: 'lite', flags: [] };
+const OVERRIDE = { lang: 'en', dial: 'full', flags: [] };
 const DAY = 24 * 60 * 60 * 1000;
 
 function writeMarkerAgedDays(key, state, days, now) {

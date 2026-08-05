@@ -112,8 +112,8 @@ test('writeState/readState round-trip flags; legacy file normalizes to []', () =
   const p = path.join(freshConfig(), 'state');
   assert.equal(writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, p), true);
   assert.deepEqual(readState(p), { lang: 'ko', dial: 'full', flags: ['lean'] });
-  fs.writeFileSync(p, JSON.stringify({ lang: 'en', dial: 'lite' })); // legacy {lang,dial}
-  assert.deepEqual(readState(p), { lang: 'en', dial: 'lite', flags: [] });
+  fs.writeFileSync(p, JSON.stringify({ lang: 'en', dial: 'full' })); // legacy {lang,dial}
+  assert.deepEqual(readState(p), { lang: 'en', dial: 'full', flags: [] });
   fs.writeFileSync(p, JSON.stringify({ lang: 'en', dial: 'full', flags: ['xss'] }));
   assert.equal(readState(p), null); // a non-whitelist flag fails the whole state closed
 });

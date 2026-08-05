@@ -171,7 +171,7 @@ test('Claude does not intercept /scrooge-stats — the skill surfaces the figure
 
 test('bare /scrooge forces dial=full but keeps the current lang (G5)', () => {
   const cfg = freshConfig();
-  runHook(cfg, '/scrooge lite'); // → en/lite
+  runHook(cfg, '/scrooge en'); // → en/full
   const { state } = runHook(cfg, '/scrooge'); // bare: dial→full, lang kept
   assert.deepEqual(state, { lang: 'en', dial: 'full', flags: [] });
 });
@@ -179,17 +179,32 @@ test('bare /scrooge forces dial=full but keeps the current lang (G5)', () => {
 test('lang and dial are independent axes; unspecified axis is preserved', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge ko'); // lang→ko, dial kept (full default)
-  let { state } = runHook(cfg, '/scrooge lite'); // dial→lite, lang kept
-  assert.deepEqual(state, { lang: 'ko', dial: 'lite', flags: [] });
+  let { state } = runHook(cfg, '/scrooge full'); // dial→full, lang kept
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
+  // Only one dial ships since v0.23.0, so the axes are exercised through the
+  // flag axis too: a flag token must not disturb the lang.
+  ({ state } = runHook(cfg, '/scrooge nolean'));
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
 });
 
 test('token order does not matter', () => {
   const a = freshConfig();
   const b = freshConfig();
-  const sa = runHook(a, '/scrooge ko lite').state;
-  const sb = runHook(b, '/scrooge lite ko').state;
-  assert.deepEqual(sa, { lang: 'ko', dial: 'lite', flags: [] });
-  assert.deepEqual(sb, { lang: 'ko', dial: 'lite', flags: [] });
+  const sa = runHook(a, '/scrooge ko full').state;
+  const sb = runHook(b, '/scrooge full ko').state;
+  assert.deepEqual(sa, { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(sb, { lang: 'ko', dial: 'full', flags: [] });
+});
+
+test('a retired dial token migrates instead of failing the state closed', () => {
+  // `lite` was removed in v0.23.0. A saved state naming it must keep working:
+  // rejecting it would silently deactivate a user whose global default said lite,
+  // which reads as the tool breaking rather than as a dial being retired.
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko full', { session_id: 'sessMig' });
+  const sp = statePathFor(cfg, 'sessMig');
+  fs.writeFileSync(sp, JSON.stringify({ lang: 'ko', dial: 'lite', flags: ['lean'] }));
+  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: ['lean'] });
 });
 
 test('an unknown arg leaves state unchanged and reinjects a reminder', () => {
@@ -282,12 +297,12 @@ function statePathFor(configDir, sid) {
 test('session-scope: /scrooge off in one session does not clear another', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge ko', { session_id: 'sessA' });
-  runHook(cfg, '/scrooge en lite', { session_id: 'sessB' });
+  runHook(cfg, '/scrooge en', { session_id: 'sessB' });
   assert.deepEqual(readState(statePathFor(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: [] });
-  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'lite', flags: [] });
+  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: [] });
   runHook(cfg, '/scrooge off', { session_id: 'sessA' });
   assert.equal(readState(statePathFor(cfg, 'sessA')), null);
-  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'lite', flags: [] }); // untouched
+  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: [] }); // untouched
 });
 
 test('session-scope: off on an active session injects a localized countermand', () => {

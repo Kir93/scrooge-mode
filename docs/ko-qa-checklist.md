@@ -2,7 +2,7 @@
 
 Self-review baseline for Scrooge `ko/full` output quality. Source rules: [rules/ko/full.md](../rules/ko/full.md), including the safety-escape behavior described in its [Auto-Clarity](../rules/ko/full.md#auto-clarity) section.
 
-**범위.** A–E는 `ko/full`을, F·G는 `lean` 플래그(기본 on)와 `lite` dial을 다룹니다. 이 문서는 **사람이 수행하는 self-review** 보조 도구이지 자동 게이트가 아닙니다 — `npm test`에서 실행되지 않으며, frozen fixture 세트로 만들지도 않았습니다(`RELEASE.md`가 rule-text 회귀를 수동 judge 게이트에 고정). 체크리스트는 `en`·`ko`에만 있고 `ja`/`hi`/`zh`에는 없습니다 — 네이티브 검수 없이 만들면 픽스처 자체가 잘못된 기준이 되기 때문입니다.
+**범위.** A–E는 `ko/full`을, F는 `lean` 플래그(기본 on)를 다룹니다. (G는 `lite` dial 판정용이었으나, 그 dial은 자체 측정이 기각해 v0.23.0에서 제거됐습니다.) 이 문서는 **사람이 수행하는 self-review** 보조 도구이지 자동 게이트가 아닙니다 — `npm test`에서 실행되지 않으며, frozen fixture 세트로 만들지도 않았습니다(`RELEASE.md`가 rule-text 회귀를 수동 judge 게이트에 고정). 체크리스트는 `en`·`ko`에만 있고 `ja`/`hi`/`zh`에는 없습니다 — 네이티브 검수 없이 만들면 픽스처 자체가 잘못된 기준이 되기 때문입니다.
 
 ## Categories
 
@@ -49,14 +49,6 @@ Default `ko/full` output avoids `~합니다`, `~습니다`, `~해요`, honorific
 - PASS: 어떻게 줄였는지에 대한 해설이 없음("이렇게도 가능", "다른 접근으로는…", 라이브러리 vs 직접구현 비교).
 - FAIL: 추측성 유연성 — 프롬프트가 요구하지 않은 파라미터·hook·config를 "나중을 위해" 추가.
 - FAIL: 입력 검증·에러 처리·요구된 테스트를 빼서 더 간결해 보이게 함. `lean`은 범위만 줄이지 안전은 줄이지 않습니다.
-
-### G. `lite` dial — 다듬되 조각내지 않음
-
-`lite` 출력은 `full`이 아니라 `rules/ko/lite.md` 기준으로 판정합니다. `lite`는 완전한 문장과 존댓말을 유지하고 filler·빈 인사·hedging만 제거합니다.
-
-- PASS: auth middleware의 토큰 만료 검증에 버그가 있습니다. `<` 대신 `<=`를 사용해야 합니다.
-- FAIL(과압축): auth middleware 버그. token 만료 검증 `<=` 아닌 `<` 사용. — `full` register가 `lite`로 새어든 경우.
-- FAIL(가드 누락): trade-off·caveat·요청된 단계가 사라짐. 이 가드들은 모든 dial에 적용되므로 `lite`에서 빠지면 `full`과 똑같이 실패입니다.
 
 ## Sample 1 — 단순 기술 질문
 
@@ -162,7 +154,7 @@ Prompt: `새 언어 rule 추가 절차 알려줘.`
 Output:
 
 ```text
-1. `rules/{lang}/lite.md`, `rules/{lang}/full.md` 작성.
+1. `rules/{lang}/full.md` 작성.
 2. `registry.json[lang]`에 두 path 추가.
 3. sample 5건 출력 후 QA checklist self-check.
 4. README/INSTALL/CONTRIBUTING 영향 있으면 mirror 갱신.

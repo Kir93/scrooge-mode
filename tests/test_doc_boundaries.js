@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS } from '../hooks/scrooge-config.js';
+import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
@@ -45,7 +45,7 @@ const DOCS_ESCAPE = /Docs escape/;
 // the per-lang DOCS_BOUNDARY map is hand-maintained data, so a registry lang missing
 // from it fails clearly (assert) instead of matching against `undefined`.
 for (const lang of VALID_LANGS) {
-  for (const dial of ['lite', 'full']) {
+  for (const dial of VALID_DIALS) {
     test(`rule ${lang}/${dial} carries the Docs/prose compression boundary + escape`, () => {
       const boundary = DOCS_BOUNDARY[lang];
       assert.ok(boundary, `no DOCS_BOUNDARY entry for '${lang}' — add its Docs/prose boundary marker`);

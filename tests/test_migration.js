@@ -44,12 +44,12 @@ function withConfigDir(cfg, fn) {
 }
 
 const KO_FULL = JSON.stringify({ lang: 'ko', dial: 'full', flags: ['lean'] });
-const EN_LITE = JSON.stringify({ lang: 'en', dial: 'lite', flags: [] });
+const EN_FULL = JSON.stringify({ lang: 'en', dial: 'full', flags: [] });
 
 test('moves every legacy file kind to its subdir home, content intact', () => {
   const cfg = freshConfig();
   fs.writeFileSync(path.join(cfg, '.scrooge-active'), KO_FULL);
-  fs.writeFileSync(path.join(cfg, '.scrooge-active-sessA'), EN_LITE);
+  fs.writeFileSync(path.join(cfg, '.scrooge-active-sessA'), EN_FULL);
   fs.writeFileSync(path.join(cfg, '.scrooge-default'), KO_FULL);
   fs.writeFileSync(path.join(cfg, '.scrooge-version'), '0.17.0');
   fs.writeFileSync(path.join(cfg, '.scrooge-statusline-suffix'), 'sessA:~1k saved');
@@ -57,7 +57,7 @@ test('moves every legacy file kind to its subdir home, content intact', () => {
   withConfigDir(cfg, () => {
     migrateLegacyState();
     assert.deepEqual(readState(getStatePath()), { lang: 'ko', dial: 'full', flags: ['lean'] });
-    assert.deepEqual(readState(getStatePath('sessA')), { lang: 'en', dial: 'lite', flags: [] });
+    assert.deepEqual(readState(getStatePath('sessA')), { lang: 'en', dial: 'full', flags: [] });
     assert.deepEqual(readState(getDefaultPath()), { lang: 'ko', dial: 'full', flags: ['lean'] });
     assert.equal(fs.readFileSync(getVersionPath(), 'utf8'), '0.17.0');
     assert.equal(fs.readFileSync(getSuffixPath(), 'utf8'), 'sessA:~1k saved');
@@ -71,11 +71,11 @@ test('moves every legacy file kind to its subdir home, content intact', () => {
 test('new path wins when both generations exist; legacy copy is dropped', () => {
   const cfg = freshConfig();
   fs.mkdirSync(path.join(cfg, '.scrooge'), { recursive: true });
-  fs.writeFileSync(path.join(cfg, '.scrooge', 'default'), EN_LITE); // already migrated/written
+  fs.writeFileSync(path.join(cfg, '.scrooge', 'default'), EN_FULL); // already migrated/written
   fs.writeFileSync(path.join(cfg, '.scrooge-default'), KO_FULL); // stale straggler
   withConfigDir(cfg, () => {
     migrateLegacyState();
-    assert.deepEqual(readState(getDefaultPath()), { lang: 'en', dial: 'lite', flags: [] });
+    assert.deepEqual(readState(getDefaultPath()), { lang: 'en', dial: 'full', flags: [] });
   });
   assert.equal(fs.existsSync(path.join(cfg, '.scrooge-default')), false);
 });

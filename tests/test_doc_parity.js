@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS } from '../hooks/scrooge-config.js';
+import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
 import { deriveEstimate } from '../hooks/scrooge-stats.js';
 import { savingsMeta } from '../hooks/lang-meta.js';
 
@@ -39,8 +39,8 @@ const LINGUAL = { 1: 'monolingual', 2: 'bilingual', 3: 'trilingual', 4: 'quadril
 // (A) Every registry language appears in each README's register-axis roster.
 for (const f of ['README.md', 'README.ko.md']) {
   test(`${f} axis roster lists every registry language`, () => {
-    const axis = lineMatching(read(f), /`lite`\/`full`/);
-    assert.ok(axis, `${f}: register axis line (…× \`lite\`/\`full\`) not found`);
+    const axis = lineMatching(read(f), /`\/scrooge \[lang\] \[dial\]`/);
+    assert.ok(axis, `${f}: register axis line (\`/scrooge [lang] [dial]\` row) not found`);
     for (const lang of VALID_LANGS) {
       assert.ok(
         axis.includes(`\`${lang}\``),
@@ -64,11 +64,11 @@ for (const f of ['README.md', 'README.ko.md']) {
   });
 }
 
-// (C) The SKILL register table carries a lite + full row for every language.
+// (C) The SKILL register table carries a row for every language × shipped dial.
 test('skills/scrooge/SKILL.md register table covers every language × dial', () => {
   const body = read('skills/scrooge/SKILL.md');
   for (const lang of VALID_LANGS) {
-    for (const dial of ['lite', 'full']) {
+    for (const dial of VALID_DIALS) {
       const re = new RegExp('\\|\\s*' + lang.toUpperCase() + '\\s*·\\s*' + dial + '\\s*\\|');
       assert.match(body, re, `SKILL.md Registers table missing a "${lang.toUpperCase()} · ${dial}" row`);
     }

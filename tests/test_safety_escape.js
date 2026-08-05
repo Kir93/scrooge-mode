@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readState, VALID_LANGS } from '../hooks/scrooge-config.js';
+import { readState, VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
@@ -37,7 +37,7 @@ const ESCAPE_TOKENS = {
 // registry lang missing from it fails clearly (assert) instead of crashing on an
 // undefined-not-iterable — surfacing "this new lang needs escape tokens", not a stack.
 for (const lang of VALID_LANGS) {
-  for (const dial of ['lite', 'full']) {
+  for (const dial of VALID_DIALS) {
     test(`rule ${lang}/${dial} carries the Auto-Clarity escape section`, () => {
       const tokens = ESCAPE_TOKENS[lang];
       assert.ok(tokens, `no ESCAPE_TOKENS entry for '${lang}' — add its escape tokens to the per-lang map`);

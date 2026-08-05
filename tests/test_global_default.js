@@ -71,9 +71,9 @@ test('resolveActiveState: per-session state wins over the global default', () =>
   const cfg = freshConfig();
   const sp = stateFile(cfg, 'x');
   const dp = defaultFile(cfg);
-  writeState({ lang: 'en', dial: 'lite', flags: [] }, sp);
+  writeState({ lang: 'en', dial: 'full', flags: [] }, sp);
   writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, dp);
-  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'en', dial: 'lite', flags: [] });
+  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'en', dial: 'full', flags: [] });
 });
 
 test('resolveActiveState: seeds the session file from the global default when absent', () => {
@@ -132,9 +132,9 @@ test('off does not yank a concurrent peer: the peer keeps its seeded state this 
 test('default-aware activation: a change in a default-seeded session inherits the default lang/flags', () => {
   const cfg = freshConfig();
   runActivate(cfg, '/scrooge ko full lean', 'sessA'); // default = ko/full+lean
-  // fresh sessB changes only the dial; lang(ko) + flags(lean) come from the default.
-  runActivate(cfg, '/scrooge lite', 'sessB');
-  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'ko', dial: 'lite', flags: ['lean'] });
+  // fresh sessB changes only the lang; dial(full) + flags(lean) come from the default.
+  runActivate(cfg, '/scrooge en', 'sessB');
+  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: ['lean'] });
 });
 
 test('no global default → a fresh session stays inactive (baseline unchanged)', () => {

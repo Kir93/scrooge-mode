@@ -34,9 +34,9 @@ after(() => {
 
 test('readState returns whitelisted state for a valid file', () => {
   const p = path.join(tmpDir(), 'state');
-  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'lite' }));
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full' }));
   // A legacy {lang,dial} file normalizes to flags:[] (backward compat).
-  assert.deepEqual(readState(p), { lang: 'ko', dial: 'lite', flags: [] });
+  assert.deepEqual(readState(p), { lang: 'ko', dial: 'full', flags: [] });
 });
 
 test('readState refuses to follow a symlink (no exfil)', {
@@ -108,7 +108,7 @@ test('clearState removes the file and is idempotent', () => {
 test('isValidState enforces the whitelist', () => {
   assert.equal(isValidState({ lang: 'ko', dial: 'full' }), true);
   assert.equal(isValidState({ lang: 'ko', dial: 'ultra' }), false);
-  assert.equal(isValidState({ lang: 'jp', dial: 'lite' }), false);
+  assert.equal(isValidState({ lang: 'jp', dial: 'full' }), false);
   assert.equal(isValidState(null), false);
   assert.equal(isValidState('string'), false);
 });
