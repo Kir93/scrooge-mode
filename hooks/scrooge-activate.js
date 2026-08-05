@@ -68,12 +68,6 @@ function loadRegistry(repoRoot) {
   }
 }
 
-function resolveRulePath(repoRoot, lang, dial) {
-  const reg = loadRegistry(repoRoot);
-  const rel = reg && reg[lang] && reg[lang][dial];
-  return typeof rel === 'string' ? path.join(repoRoot, rel) : null;
-}
-
 // Assemble the injected register body: base rule + each active flag's fragment,
 // joined in order. Reads the registry once. Fragments are OPTIONAL — a flag with
 // no registry mapping (e.g. set before its fragment file exists) or an unreadable
@@ -261,8 +255,7 @@ function handlePayload(data) {
       // One off deactivates every surface, including the statusline. The suffix is
       // a single global file tagged "<sessionKey>:<text>"; clear it only when THIS
       // session owns it, so a concurrent session's statusline is not yanked — the
-      // same non-interference the per-session state files keep. (The memory-compress
-      // CLI is on-demand and holds no activation state, so nothing of it goes stale.)
+      // same non-interference the per-session state files keep.
       if (sessionKey && readSuffix().startsWith(`${sessionKey}:`)) writeSuffix('');
       if (prior) emit(buildCountermand(prior.lang));
       return;
@@ -343,4 +336,4 @@ if (isMain) main();
 // Exported for reuse by the SessionStart hook, which re-injects the same full
 // rule for an already-active session. Importing this module does NOT run the
 // stdin handler — main() is gated on isMain — so the import has no side effects.
-export { resolveRepoRoot, resolveRulePath, readRuleBody, buildFullInjection, assembleRuleBody };
+export { resolveRepoRoot, readRuleBody, buildFullInjection, assembleRuleBody };

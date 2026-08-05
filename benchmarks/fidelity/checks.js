@@ -135,8 +135,9 @@ function multisetDiff(a, b) {
 // register), not an edit of one another, so a candidate span absent from the
 // baseline can be a legitimate alternative rather than a true corruption. This rate
 // is therefore an informational signal for the register bench (the headline gates
-// on claim-equivalence); it is a hard gate only for edit-relationship surfaces
-// (e.g. memory-compress, where candidate IS a compression of the same source).
+// on claim-equivalence); it would be a hard gate only for an edit-relationship
+// surface, where the candidate IS a compression of the same source text. No such
+// surface ships today (memory-compress was removed in v0.23.0).
 export function byteExactCheck(baseline, candidate) {
   const b = extractSpans(baseline);
   const c = extractSpans(candidate);
@@ -478,8 +479,8 @@ function toStringArray(v) {
 // judge). `byteExact` (corruption) and `safety` are informational signals there —
 // on independent generations they are noisy (see byteExactCheck note). `strictPass`
 // is the STRICT all-axes gate (no corruption AND safety preserved AND equivalent),
-// reserved for edit-relationship surfaces like memory-compress where byte-exact and
-// safety preservation are hard requirements, not signals.
+// reserved for an edit-relationship surface, where byte-exact and safety
+// preservation would be hard requirements rather than signals. None ships today.
 export function scorePair(baseline, candidate, verdictText = null) {
   const byteExact = byteExactCheck(baseline, candidate);
   const safety = safetyCheck(baseline, candidate);

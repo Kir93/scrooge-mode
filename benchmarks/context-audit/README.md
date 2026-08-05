@@ -11,12 +11,21 @@ scores detection rate + byte-exact saving against a GO/NO-GO threshold.
 > `benchmarks/context-audit/` — the product surface (`lib/` · `hooks/` · `bin/`)
 > is never touched. Anchors: mcp-shrink 2.6% NO-GO, memory-compress 7.7% floor.
 
-## Status: closed at WEAK — not GO
+## Status: closed at WEAK — not GO; harness removed in v0.23.0, results kept
 
 The gate ran and returned **`WEAK`**, which is **not** GO ([`results/report.md`](./results/report.md)).
 `scrooge audit` was therefore never started, and the long-horizon initiative closed
 on that verdict. Nothing here is pending: a WEAK result is a finished measurement,
 not a half-done one. Re-opening it needs a new decision, not a re-run.
+
+**The harness code (`run.js`, `detectors.js`, `lib.js`, `mc-range.js`) was deleted
+in v0.23.0** along with `lib/memory-compress.js`, which it measured and imported.
+The measurement outputs stay — [`results/`](./results/), [`corpus.json`](./corpus.json),
+[`labels.jsonl`](./labels.jsonl), [`samples/`](./samples/) — because they are the
+evidence for the verdict, and a verdict whose evidence is deleted is just an
+assertion. The commands below are therefore **historical**: they describe how the
+committed numbers were produced, and no longer run against this tree. Anything
+re-opening this direction starts from a new Phase 0, not from this code.
 
 The committed artefacts under [`results/`](./results/) are kept as that decision's
 evidence, and `npm test` asserts they still match a fresh run — so a detector edit
