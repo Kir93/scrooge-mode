@@ -1,12 +1,12 @@
 {
   "name": "scrooge",
-  "description": "Korean-first output compression for AI coding agents — measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
+  "description": "Korean-first output compression for AI coding agents \u2014 measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
   "owner": {
     "name": "Kir93",
     "url": "https://github.com/Kir93"
   },
   "metadata": {
-    "version": "0.22.1",
+    "version": "0.23.0",
     "keywords": [
       "compression",
       "korean",
@@ -22,8 +22,8 @@
   "plugins": [
     {
       "name": "scrooge",
-      "description": "Korean-first output compression for AI coding agents — measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
-      "version": "0.22.1",
+      "description": "Korean-first output compression for AI coding agents \u2014 measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
+      "version": "0.23.0",
       "source": "./",
       "category": "productivity"
     }
