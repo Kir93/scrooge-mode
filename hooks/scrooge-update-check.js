@@ -25,17 +25,23 @@ import {
 } from './scrooge-config.js';
 import { resolveRepoRoot } from './scrooge-activate.js';
 
-const RELEASES_URL = 'https://api.github.com/repos/Kir93/scrooge-mode/releases/latest';
+const DEFAULT_REPO = 'Kir93/scrooge-mode';
 const FETCH_TIMEOUT_MS = 4000;
 
 // Fetch the latest release tag ("v0.19.0" → "0.19.0"). Unauthenticated GitHub
 // API is rate-limited to 60/hr per IP — a once-a-day probe stays well within it.
 // A User-Agent header is mandatory (GitHub rejects UA-less requests with 403).
-async function fetchLatest() {
+//
+// `repo` is a parameter, and bin/install.js imports this rather than keeping its
+// own copy: the installer and the probe must never disagree about which release
+// is "latest", and a fork previously had to edit the repo in two places (a const
+// here and another there) with nothing catching the mismatch. Same reasoning as
+// the shared `semverGt`.
+async function fetchLatest(repo = DEFAULT_REPO) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(RELEASES_URL, {
+    const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
       headers: { 'User-Agent': 'scrooge-mode', Accept: 'application/vnd.github+json' },
       signal: ctrl.signal,
     });

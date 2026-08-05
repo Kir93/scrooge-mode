@@ -19,6 +19,7 @@ import {
   claudeUpdatePlan,
   codexHookHash,
   detectMatch,
+  detectCompetingRegisters,
   mergeCodexHookConfig,
   pruneClaudeSkillLeak,
   removeCodexHookConfig,
@@ -468,4 +469,26 @@ test('pruneClaudeSkillLeak also unlinks a leaked scrooge-stats symlink', () => {
   assert.deepEqual(results.removed, ['claude-skill-leak']);
   fs.rmSync(cfg, { recursive: true, force: true });
   fs.rmSync(shared, { recursive: true, force: true });
+});
+
+// Cross-plugin conflict detection (caveman #574). Two output-compression
+// registers both emit `additionalContext` on UserPromptSubmit and cannot observe
+// each other, so the model receives contradictory style directives. The installer
+// cannot fix that — it can only say so, which is what this powers.
+test('detectCompetingRegisters finds other compression registers in a plugin list', () => {
+  assert.deepEqual(detectCompetingRegisters('scrooge@scrooge  enabled'), []);
+  assert.deepEqual(
+    detectCompetingRegisters('caveman@caveman enabled\nscrooge@scrooge enabled'),
+    ['caveman']
+  );
+  assert.deepEqual(detectCompetingRegisters('Grill-Me@marketplace'), ['grill-me']);
+  assert.deepEqual(detectCompetingRegisters('grillme@x'), ['grillme']);
+});
+
+test('detectCompetingRegisters is total on junk input', () => {
+  // It runs off `claude plugin list` stdout, which is absent when the CLI is
+  // missing or errored — it must degrade to "no conflict", never throw mid-install.
+  for (const junk of [null, undefined, '', 0, {}, []]) {
+    assert.deepEqual(detectCompetingRegisters(junk), []);
+  }
 });

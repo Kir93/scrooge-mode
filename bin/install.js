@@ -30,6 +30,7 @@ import crypto from 'node:crypto';
 // shared by `scrooge --version` and the session-start update notice, so the two
 // can never disagree about what "newer" means (and the hooks tests cover both).
 import { semverGt } from '../hooks/scrooge-config.js';
+import { fetchLatest } from '../hooks/scrooge-update-check.js';
 
 const REPO = 'Kir93/scrooge-mode';
 const PLUGIN = 'scrooge'; // used as BOTH plugin and marketplace name → install target `scrooge@scrooge` (line below). Task 6's .claude-plugin/marketplace.json MUST set name: "scrooge" or this target won't resolve.
@@ -355,10 +356,45 @@ function scroogePluginInstalled() {
   return (r.status || 0) === 0 && /scrooge/i.test(r.stdout || '');
 }
 
+// Other output-compression registers installed on the same host. Two of them
+// inject their own instructions as `additionalContext` on the SAME
+// UserPromptSubmit event, and the hooks cannot see each other — the model just
+// receives two contradictory style directives and the user blames whichever tool
+// they installed last. This is caveman issue #574 (open since 2026-06-26, naming
+// grill-me as the second instance); scrooge's emit path has the identical shape.
+//
+// The population most likely to hit it is exactly scrooge's acquisition funnel:
+// someone evaluating it against caveman has both installed at that moment.
+//
+// Detection only. Runtime arbitration is deliberately out of scope — the hooks
+// can't observe each other, no cross-plugin standard exists, and inventing one is
+// the `register-platform-kit` direction ADR-005 killed. Saying so at install time
+// costs nothing and turns a confusing outcome into a known one.
+const COMPETING_REGISTERS = ['caveman', 'grill-me', 'grillme'];
+
+export function detectCompetingRegisters(pluginListStdout) {
+  const text = String(pluginListStdout || '').toLowerCase();
+  return COMPETING_REGISTERS.filter((name) => text.includes(name));
+}
+
+function warnCompetingRegisters() {
+  const r = capture('claude', ['plugin', 'list']);
+  if ((r.status || 0) !== 0) return;
+  const found = detectCompetingRegisters(r.stdout);
+  if (!found.length) return;
+  process.stdout.write(
+    `  ! also installed: ${found.join(', ')} — another output-compression register.\n` +
+      `    Both inject a style directive on every turn and cannot see each other, so\n` +
+      `    the model gets contradictory instructions. Disable one:\n` +
+      `      claude plugin disable <name>   (or /scrooge off to stand scrooge down)\n`
+  );
+}
+
 function installClaude(opts, results) {
   results.detected++;
   process.stdout.write('→ Claude Code detected\n');
 
+  warnCompetingRegisters();
   const installed = opts.force ? false : scroogePluginInstalled();
   if (claudeAction(opts, installed) === 'update') {
     process.stdout.write(`  scrooge plugin already installed — ${opts.tag ? `re-pinning to ${opts.tag}` : 'updating to latest'}\n`);
@@ -839,33 +875,13 @@ function installedVersion() {
   } catch (_) { return null; }
 }
 
-// Latest published release tag from GitHub ("v0.19.0" → "0.19.0"), or null on any
-// failure (offline, rate-limited, pre-Node-18 without fetch). Best-effort only.
-async function fetchLatestRelease() {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 4000);
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
-      headers: { 'User-Agent': 'scrooge-mode', Accept: 'application/vnd.github+json' },
-      signal: ctrl.signal,
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return typeof data.tag_name === 'string' ? data.tag_name.replace(/^v/, '') : null;
-  } catch (_) {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 // On-demand version report: current + whether a newer release exists. The one
 // blocking network call is fine here — the user asked for it explicitly (unlike
 // the hooks, which must never fetch inline).
 async function printVersion() {
   const cur = installedVersion();
   process.stdout.write(`scrooge ${cur ? 'v' + cur : '(unknown version)'}\n`);
-  const latest = await fetchLatestRelease();
+  const latest = await fetchLatest(REPO);
   if (!latest || !cur) return;
   if (semverGt(latest, cur)) {
     process.stdout.write(`\nA newer release is available: v${latest}\n`);
