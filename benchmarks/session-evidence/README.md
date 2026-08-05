@@ -79,7 +79,8 @@ tr '\n' '\0' < /tmp/scrooge-sessions.txt \
 | Run | Sessions | Conclusive | Retained / drifting | Median late/early | Verdict |
 | --- | -------: | ---------: | ------------------- | ----------------: | ------- |
 | 2026-07-27 (first) | 372 | 134 | 103 / 31 | 0.845 † | `caveat-relax` |
-| 2026-07-31 (committed) | 744 | 177 | 136 / 41 | 0.834 | `caveat-relax` |
+| 2026-07-31 | 744 | 177 | 136 / 41 | 0.834 | `caveat-relax` |
+| 2026-08-05 (committed) | 930 | 188 | 145 / 43 | 0.833 | `caveat-relax` |
 
 Every cell in the committed row is a field of [`results.json`](./results.json) —
 `main.total`, `main.conclusive`, `main.retained` / `main.drifting`,
@@ -93,9 +94,44 @@ and rotates, so a re-run never reproduces the committed row exactly (an in-progr
 session's own transcript is part of the input). Treat the committed numbers as a
 dated snapshot; the stable finding is the verdict, which has held across both runs.
 
-The current run's subagent readout: 3,449 turns (395 prose), safety signals in
-293, verbatim spans in 787. The verdict is unchanged between runs and is applied
-to the README "Register-only isolation" caveat — retention axis only.
+The current run's subagent readout: 3,562 turns (409 prose), safety signals in
+297, verbatim spans in 747. The verdict is unchanged across all three runs and is
+applied to the README "Register-only isolation" caveat — retention axis only.
+
+### Reach — how much of the billed output the register can touch
+
+Retention answers "does the register hold across a long session". It does not
+answer the prior question: **how much of what gets billed is prose the register
+can act on at all.** Tool-call payloads — diffs, file writes, exact error
+strings, tool JSON — are left verbatim by design, so in an agentic session they
+are output the register never reaches.
+
+| Field | 2026-08-05 |
+| ----- | ---------: |
+| Sessions with output | 917 |
+| Prose output tokens | 4,865,944 |
+| Total output tokens | 35,312,551 |
+| **Pooled prose share** | **13.8%** |
+| **Median session prose share** | **29.5%** |
+
+Both are `results.json` → `reach.*`. They differ because they answer different
+questions: pooled is "of every output token billed, what share was prose" and is
+dominated by the largest sessions; the median is "in a typical session, what
+share was prose". Quoting only the higher one would defeat the point of measuring.
+
+This matters for how the headline numbers are read. Every published savings figure
+comes from a **single-turn, zero-tool chat corpus** — every row in
+[`published/`](../published/) has `tool_use_output_tokens: 0` and `turns: 1`. In an
+agentic session the register reaches roughly an eighth to a third of billed output,
+so whole-session savings are much smaller than the headline. That gap is a property
+of the workload, not a defect in the measurement — but it has to be stated, because
+the product installs into agentic harnesses while the corpus is conversational.
+
+**This is not a savings figure.** It is a direct measurement of billed tokens: what
+share was prose, never what an uncompressed run would have cost. ADR-003 rules out
+the latter from real sessions (there is no counterfactual), and nothing here
+attempts it. A reader can see the ceiling; a whole-session savings percentage is
+still not derivable.
 
 > **Reproducibility limit.** The input is the maintainer's own private session
 > transcripts, so a third party cannot re-run this. Committing `results.json`

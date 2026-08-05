@@ -67,6 +67,49 @@ export function classifySession(analysis, thresholds = DEFAULT_THRESHOLDS) {
   };
 }
 
+// Share of billed output tokens the register can even reach.
+//
+// The register rewrites PROSE. Tool-call payloads — diffs, file writes, exact
+// error strings, tool JSON — are left verbatim by design, so in an agentic
+// session they are output the register cannot touch. Every published savings
+// figure comes from a single-turn, zero-tool chat corpus, which makes this the
+// number that says how far those figures carry into real use.
+//
+// This is a direct measurement of billed tokens, not a counterfactual: it says
+// what fraction of output was prose, never what an uncompressed run would have
+// cost. ADR-003 forbids the latter from real sessions and this does not attempt
+// it — a whole-session savings percentage is still not derivable from here.
+//
+// Pooled and per-session medians are both reported because they answer different
+// questions: pooled is "of all the output tokens billed, what share was prose"
+// (dominated by the largest sessions), median is "in a typical session, what
+// share was prose". Quoting only the flattering one would be the whole problem.
+function proseShare(analyses) {
+  let proseTokens = 0;
+  let totalTokens = 0;
+  const perSession = [];
+  for (const a of analyses) {
+    const turns = a.turns || [];
+    let p = 0;
+    let t = 0;
+    for (const turn of turns) {
+      const n = Number(turn.outputTokens) || 0;
+      t += n;
+      if (!turn.isToolUse) p += n;
+    }
+    proseTokens += p;
+    totalTokens += t;
+    if (t > 0) perSession.push(p / t);
+  }
+  return {
+    sessions: perSession.length,
+    proseTokens,
+    totalTokens,
+    pooledShare: totalTokens > 0 ? proseTokens / totalTokens : null,
+    medianSessionShare: median(perSession),
+  };
+}
+
 // Aggregate compliance readout for a set of turns (used for the subagent
 // propagation readout, kept strictly separate from main-session judgment).
 function complianceReadout(turns) {
@@ -102,6 +145,10 @@ export function buildReport(analyses, thresholds = DEFAULT_THRESHOLDS) {
       medianRatio: median(conclusive.map((s) => s.ratio)),
       verdict,
     },
+    // Reach, not retention: how much of the billed output the register can act on
+    // at all. Committed alongside the retention numbers so both are checkable
+    // against this file rather than re-derived. See proseShare().
+    reach: proseShare(analyses),
     subagent: complianceReadout(analyses.flatMap((a) => a.subagentTurns || [])),
   };
 }

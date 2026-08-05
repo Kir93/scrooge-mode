@@ -1,0 +1,31 @@
+# Scrooge benchmark — EN agentic corpus (HELD-OUT)
+#
+# Every published savings figure in this repo is chat-prose: single-turn, zero
+# tool use. This corpus is the other workload class — tasks that require reading
+# and editing files, so the token stream contains what a real session's does
+# (file reads, diffs, test output, error strings), most of which the register
+# leaves verbatim by design.
+#
+# Run against benchmarks/agentic-fixture/ with `--cwd` pointed at it and
+# `--system-prompt-mode append` (the default `replace` strips the tool-use
+# scaffolding an agentic run needs). Reset the fixture with `git checkout` between
+# arms — tasks mutate files.
+#
+# Score with --metric total (the billed basis) AND --metric prose side by side.
+# Thresholds are pre-registered in benchmarks/README.md § Agentic workload;
+# they are fixed before the run and do not move afterwards.
+#
+# HELD-OUT: never tune rules/**/*.md against these tasks.
+#
+# One task per non-comment line.
+
+Run the test suite, find the one failing test, and fix the bug in src/ that causes it.
+Read src/cart.js and src/inventory.js and summarize what each exported function does and how they relate.
+Add a `total` field to the object returned by checkout so it also reports the pre-discount subtotal, and update the tests.
+Find every place in this repo that reads from the `inventory` object and list the file and line for each.
+reserve() mutates the inventory object it is given. Change it to return a new object instead, and update any caller and test.
+Add input validation to applyDiscount so a negative discount value throws, with a test covering it.
+The discount logic in cart.js handles two types with duplicated code. Refactor it without changing behaviour, and confirm the tests still pass.
+Write a new test file covering inventory.js — inStock and reserve, including the out-of-stock error path.
+Check whether any exported function in src/ lacks test coverage, and report which ones.
+Rename the `qty` field to `quantity` across src/ and test/, and verify the suite still passes.

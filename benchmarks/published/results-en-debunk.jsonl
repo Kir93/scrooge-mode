@@ -1,0 +1,10 @@
+{"arm": "scrooge:en/full", "prompt_id": 0, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 1, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 2, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 3, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 4, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 5, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 6, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 7, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 8, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}
+{"arm": "scrooge:en/full", "prompt_id": 9, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "error": null, "model_requested": "claude-opus-4-8"}

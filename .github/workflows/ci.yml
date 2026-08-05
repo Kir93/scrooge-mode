@@ -36,6 +36,13 @@ jobs:
       - name: Test
         run: npm test
 
+      # The benchmark harness is Python and is otherwise unguarded. Only the
+      # statistics helpers are covered — they decide whether a published CI can be
+      # re-derived from a committed JSONL, so a silent change to them would
+      # invalidate the numbers in README.md without moving any JS test.
+      - name: Test benchmark statistics
+        run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
+
       - name: Markdown lint
         run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
 

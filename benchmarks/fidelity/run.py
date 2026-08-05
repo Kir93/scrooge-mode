@@ -274,6 +274,10 @@ def main() -> int:
                     rec["safety_pass"] = scored.get("safety", {}).get("pass")
                     rec["strict_pass"] = scored.get("strictPass")
                     rec["judge_runs"] = scored.get("judge_runs")
+                    # Per-run verdicts, so judge self-agreement stays recomputable
+                    # from the file rather than being lost with the majority vote.
+                    rec["run_scores"] = scored.get("run_scores", [])
+                    rec["run_equivalents"] = scored.get("run_equivalents", [])
                     rec["missing_claims"] = (scored.get("verdict") or {}).get("missingClaims", [])
                 out.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 out.flush()

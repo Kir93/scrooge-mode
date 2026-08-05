@@ -8,16 +8,96 @@ savings ratio against a baseline arm.
 Only median is used for the savings headline (mean is reported alongside but
 distorts under outliers). Information equivalence between arms is the
 benchmark caller's responsibility — see benchmarks/README.md.
+
+Paired statistics (bootstrap CI, sign test, MDE) are computed with the stdlib
+only. When a file holds several runs per prompt the bootstrap resamples whole
+prompts, not prompt/run pairs: repeated runs of one prompt are correlated, so
+treating them as independent draws would understate the interval.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
+import random
 import statistics
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+# α = .05 two-sided, power = .80 → z_{.975} + z_{.80}.
+MDE_Z_SUM = 2.802
+METRIC_FIELDS = {
+    "prose": "output_tokens",
+    "total": "total_output_tokens",
+    "tool": "tool_use_output_tokens",
+}
+
+
+def bootstrap_ci(clusters: list[list[float]], n_resamples: int, seed: int,
+                 alpha: float = 0.05) -> tuple[float | None, float | None]:
+    """Percentile bootstrap CI for the median of pooled cluster values.
+
+    Each cluster is resampled as a unit, so passing single-element clusters
+    gives a plain paired bootstrap and passing per-prompt groups gives a
+    cluster bootstrap.
+    """
+    clusters = [c for c in clusters if c]
+    if len(clusters) < 2:
+        return (None, None)
+    rng = random.Random(seed)
+    k = len(clusters)
+    stats: list[float] = []
+    for _ in range(n_resamples):
+        drawn: list[float] = []
+        for _ in range(k):
+            drawn.extend(clusters[rng.randrange(k)])
+        stats.append(statistics.median(drawn))
+    stats.sort()
+    lo = stats[int(alpha / 2 * len(stats))]
+    hi = stats[min(len(stats) - 1, int((1 - alpha / 2) * len(stats)))]
+    return (lo, hi)
+
+
+def sign_test(wins: int, losses: int) -> float | None:
+    """Exact two-sided binomial sign test. Ties are discarded, per convention."""
+    n = wins + losses
+    if n == 0:
+        return None
+    k = min(wins, losses)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2 ** n)
+    return min(1.0, 2 * tail)
+
+
+def mde(values: list[float]) -> float | None:
+    """Smallest paired effect this sample size can resolve at α=.05, power=.80."""
+    if len(values) < 2:
+        return None
+    return MDE_Z_SUM * statistics.stdev(values) / math.sqrt(len(values))
+
+
+def noise_floor(cells: list[list[float]]) -> dict | None:
+    """Within-cell coefficient of variation across repeated runs of one arm.
+
+    An effect smaller than the same-arm run-to-run spread is not a finding.
+    """
+    cvs = []
+    for values in cells:
+        if len(values) < 2:
+            continue
+        mean = statistics.mean(values)
+        if mean:
+            cvs.append(statistics.stdev(values) / mean * 100.0)
+    if not cvs:
+        return None
+    cvs.sort()
+    return {
+        "cells": len(cvs),
+        "median": statistics.median(cvs),
+        "p90": cvs[min(len(cvs) - 1, int(0.9 * len(cvs)))],
+        "max": cvs[-1],
+    }
 
 
 def load_results(path: Path) -> list[dict]:
@@ -142,6 +222,84 @@ def print_control_comparison(by_key: dict[str, dict[tuple[int, int], int]],
     print()
 
 
+def print_paired_stats(by_key: dict[str, dict[tuple[int, int], int]],
+                       arms: list[str], baseline: str,
+                       keys: set[tuple[int, int]] | None,
+                       n_resamples: int, cluster_by: str, seed: int) -> None:
+    """Per-prompt savings deltas against the baseline, with an interval."""
+    if baseline not in by_key or n_resamples <= 0:
+        return
+    candidates = [arm for arm in arms if arm != baseline and arm in by_key]
+    if not candidates:
+        return
+
+    print("## Paired statistics vs baseline")
+    print()
+    print("| Arm | N | Median savings | 95% CI | Smaller on | Sign test p | MDE |")
+    print("| --- | -:| -------------: | -----: | ---------: | ----------: | --: |")
+    for arm in candidates:
+        common = set(by_key[arm]) & set(by_key[baseline])
+        if keys is not None:
+            common &= keys
+        grouped: dict[object, list[float]] = defaultdict(list)
+        deltas: list[float] = []
+        for key in sorted(common):
+            base = by_key[baseline][key]
+            if not base:
+                continue
+            delta = (base - by_key[arm][key]) / base * 100.0
+            deltas.append(delta)
+            grouped[key[0] if cluster_by == "prompt" else key].append(delta)
+        if not deltas:
+            print(f"| `{arm}` | 0 | — | — | — | — | — |")
+            continue
+        lo, hi = bootstrap_ci(list(grouped.values()), n_resamples, seed)
+        wins = sum(1 for d in deltas if d > 0)
+        losses = sum(1 for d in deltas if d < 0)
+        p = sign_test(wins, losses)
+        m = mde(deltas)
+        unit = "clusters" if cluster_by == "prompt" else "pairs"
+        n_label = f"{len(deltas)}" if cluster_by != "prompt" else f"{len(deltas)} / {len(grouped)}c"
+        ci = "—" if lo is None else f"{lo:+.1f}–{hi:+.1f}%"
+        print(f"| `{arm}` | {n_label} | {statistics.median(deltas):+.1f}% | {ci} | "
+              f"{wins}/{len(deltas)} | {'—' if p is None else f'{p:.2g}'} | "
+              f"{'—' if m is None else f'{m:.1f}pp'} |")
+    print()
+    print(f"- CI: percentile bootstrap, {n_resamples} resamples, seed {seed}, "
+          f"resampling unit `{cluster_by}`"
+          f"{' (`c` = prompt clusters)' if cluster_by == 'prompt' else ''}.")
+    print("- MDE: smallest paired effect this N resolves at α=.05, power=.80. "
+          "A point estimate below its own MDE is not a finding.")
+    print()
+
+
+def print_noise_floor(by_key: dict[str, dict[tuple[int, int], int]],
+                      arms: list[str]) -> None:
+    """Same-arm, same-prompt run-to-run spread — the floor an effect must clear."""
+    rows = []
+    for arm in arms:
+        per_prompt: dict[int, list[float]] = defaultdict(list)
+        for (pid, _run), tok in by_key[arm].items():
+            per_prompt[pid].append(tok)
+        nf = noise_floor(list(per_prompt.values()))
+        if nf:
+            rows.append((arm, nf))
+    if not rows:
+        return
+
+    print("## Noise floor (within-cell, same arm)")
+    print()
+    print("| Arm | Cells | Median CV | p90 CV | Max CV |")
+    print("| --- | ----: | --------: | -----: | -----: |")
+    for arm, nf in rows:
+        print(f"| `{arm}` | {nf['cells']} | {nf['median']:.1f}% | "
+              f"{nf['p90']:.1f}% | {nf['max']:.1f}% |")
+    print()
+    print("- Repeated runs of one prompt under one arm vary this much with nothing changed. "
+          "A between-arm effect of comparable size is noise, not a result.")
+    print()
+
+
 def compact_text(text: str, limit: int) -> str:
     text = " ".join(text.split())
     if len(text) <= limit:
@@ -187,6 +345,21 @@ def main() -> int:
                          "Defaults to scrooge:* vs caveman:full when both exist.")
     ap.add_argument("--show-text", type=int, default=0,
                     help="Print paired output text samples truncated to N characters per arm.")
+    ap.add_argument("--metric", choices=sorted(METRIC_FIELDS), default="prose",
+                    help='Token field to score. "prose" (default) is the register\'s '
+                         'target; "total" is the billed basis; "tool" isolates tool payload.')
+    ap.add_argument("--drop-tool-rows", action="store_true",
+                    help="Exclude rows that used tools (tool_use_output_tokens > 0 or turns > 1). "
+                         "A prose-only comparison against a row that answered via tools is not "
+                         "like-for-like. No effect when --metric is total or tool.")
+    ap.add_argument("--exclude-prompts", default="",
+                    help="Comma-separated prompt_ids to drop, e.g. '15'.")
+    ap.add_argument("--bootstrap", type=int, default=10000,
+                    help="Bootstrap resamples for the paired CI. 0 disables. Default 10000.")
+    ap.add_argument("--cluster-by", choices=["prompt", "pair"], default="",
+                    help="Bootstrap resampling unit. Defaults to 'prompt' when the input has "
+                         "several runs per prompt, else 'pair'.")
+    ap.add_argument("--seed", type=int, default=0, help="Bootstrap seed. Default 0.")
     args = ap.parse_args()
 
     results = load_results(args.input)
@@ -194,11 +367,31 @@ def main() -> int:
         print(f"error: no results in {args.input}", file=sys.stderr)
         return 2
 
+    metric_field = METRIC_FIELDS[args.metric]
+    try:
+        excluded_prompts = {int(p) for p in args.exclude_prompts.split(",") if p.strip()}
+    except ValueError:
+        print("error: --exclude-prompts takes comma-separated integers", file=sys.stderr)
+        return 2
+
+    # A tool-using row is dropped for every arm at that prompt/run, not just the
+    # arm that used tools: dropping it on one side only would leave the paired
+    # comparison scoring an inline answer against a missing counterpart.
+    tool_keys: set[tuple[int, int]] = set()
+    if args.metric == "prose":
+        for r in results:
+            if (r.get("tool_use_output_tokens") or 0) > 0 or (r.get("turns") or 1) > 1:
+                pid, run = r.get("prompt_id"), r.get("run")
+                if isinstance(pid, int) and isinstance(run, int):
+                    tool_keys.add((pid, run))
+
     all_arms: list[str] = []
     by_arm: dict[str, list[int]] = defaultdict(list)
     by_key: dict[str, dict[tuple[int, int], int]] = defaultdict(dict)
     error_keys: dict[str, set[tuple[int, int] | tuple[str, int]]] = defaultdict(set)
     providers: set[str] = set()
+    dropped_tool = 0
+    dropped_excluded = 0
     for r in results:
         arm = r["arm"]
         if arm not in all_arms:
@@ -206,6 +399,12 @@ def main() -> int:
         provider = r.get("provider")
         if isinstance(provider, str) and provider:
             providers.add(provider)
+        if r.get("prompt_id") in excluded_prompts:
+            dropped_excluded += 1
+            continue
+        if args.drop_tool_rows and (r.get("prompt_id"), r.get("run")) in tool_keys:
+            dropped_tool += 1
+            continue
         if r.get("error"):
             pid = r.get("prompt_id")
             run = r.get("run")
@@ -214,7 +413,7 @@ def main() -> int:
             else:
                 error_keys[arm].add(("unknown", len(error_keys[arm])))
             continue
-        tok = r.get("output_tokens")
+        tok = r.get(metric_field)
         if isinstance(tok, int):
             key = (r["prompt_id"], r["run"])
             by_arm[arm].append(tok)
@@ -239,13 +438,34 @@ def main() -> int:
     baseline_stats = stats_for(by_arm.get(args.baseline, []))
     baseline_median = baseline_stats["median"]
 
+    runs_per_prompt = defaultdict(set)
+    for arm in all_arms:
+        for pid, run in by_key[arm]:
+            runs_per_prompt[pid].add(run)
+    repeated_runs = any(len(runs) > 1 for runs in runs_per_prompt.values())
+    cluster_by = args.cluster_by or ("prompt" if repeated_runs else "pair")
+
     print(f"# Scrooge benchmark report")
     print()
     print(f"- Source: `{args.input}`")
     print(f"- Baseline: `{args.baseline}`")
     print(f"- Arms: {', '.join(arms)}")
+    print(f"- Metric: `{args.metric}` (`{metric_field}`)")
     if args.paired:
         print(f"- Paired prompt/run keys: {len(paired_keys)}")
+    if repeated_runs:
+        print(f"- Structure: {len(runs_per_prompt)} prompts x up to "
+              f"{max(len(r) for r in runs_per_prompt.values())} runs "
+              f"(bootstrap resamples by {cluster_by})")
+    if dropped_excluded:
+        print(f"- Excluded prompts {sorted(excluded_prompts)}: {dropped_excluded} rows dropped")
+    if args.drop_tool_rows:
+        print(f"- Tool-using prompt/run keys dropped from every arm: "
+              f"{len(tool_keys)} keys, {dropped_tool} rows")
+    elif tool_keys and args.metric == "prose":
+        print(f"- **Warning:** {len(tool_keys)} prompt/run key(s) answered via tools "
+              f"({sorted(tool_keys)}) but are scored on prose tokens only. "
+              f"Re-run with `--drop-tool-rows` for a like-for-like comparison.")
     print()
     print("## Output-token distribution per arm")
     print()
@@ -262,6 +482,13 @@ def main() -> int:
         print(f"| `{arm}` | {fmt(s['n'])} | {fmt(s['median'])} | {fmt(s['mean'])} | "
               f"{fmt(s['min'])} | {fmt(s['max'])} | {fmt(s['stdev'])} | {savings} |")
     print()
+
+    print_paired_stats(by_key, arms, args.baseline,
+                       paired_keys if args.paired else None,
+                       args.bootstrap, cluster_by, args.seed)
+
+    if repeated_runs:
+        print_noise_floor(by_key, arms)
 
     compare = choose_compare_arms(arms, args.compare)
     if compare:

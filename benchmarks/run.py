@@ -190,7 +190,8 @@ NORMAL_BASELINE_SYSTEM = (
 
 
 def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
-              disallow_tools: bool = False) -> list[str]:
+              disallow_tools: bool = False,
+              system_prompt_mode: str = "replace") -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -220,7 +221,23 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
     elsewhere in this module.
     """
     system = rule_text if rule_text else NORMAL_BASELINE_SYSTEM
-    cmd = ["claude", "--print", "--system-prompt", system]
+    if system_prompt_mode == "append":
+        # Agentic mode. `--system-prompt` REPLACES Claude Code's system prompt,
+        # which strips the tool-use scaffolding an agentic run needs — the model
+        # is left without the instructions that make it act on a repo. `--append`
+        # keeps that scaffolding and adds the register on top, which is also what
+        # a real `/scrooge` session looks like.
+        #
+        # It is NOT the isolation the conversational corpus uses, and the two are
+        # not comparable: the host prompt is present in every arm here, so this
+        # measures the register's marginal effect on top of it rather than the
+        # register alone. Kept behind a flag, defaulting to `replace`, so no
+        # published number moves.
+        cmd = ["claude", "--print"]
+        if rule_text:
+            cmd += ["--append-system-prompt", rule_text]
+    else:
+        cmd = ["claude", "--print", "--system-prompt", system]
     if model:
         cmd += ["--model", model]
     if disallow_tools:
@@ -409,7 +426,8 @@ def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
 def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             cwd: Path, dry_run: bool, timeout: int, model: Optional[str] = None,
             isolation_verified: Optional[bool] = None,
-            disallow_tools: bool = False) -> RunResult:
+            disallow_tools: bool = False,
+            system_prompt_mode: str = "replace") -> RunResult:
     session_dir = cwd_session_dir(cwd)
     before = newest_session_file(session_dir)
     before_mtime = before.stat().st_mtime if before else 0
@@ -437,7 +455,7 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          total_output_tokens=fake_tokens, raw_output_tokens=fake_tokens,
                          turns=1, isolation_verified=isolation_verified)
 
-    cmd = build_cmd(rule_text, prompt, model, disallow_tools)
+    cmd = build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode)
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
     except subprocess.TimeoutExpired:
@@ -750,6 +768,13 @@ def main() -> int:
     ap.add_argument("--allow-contaminated", action="store_true",
                     help="Continue even if caveman activation channels are detected pre-run. "
                          "Off by default: a clean run aborts on any finding.")
+    ap.add_argument("--system-prompt-mode", choices=["replace", "append"], default="replace",
+                    help="How the register reaches the model. 'replace' (default) swaps out Claude "
+                         "Code's system prompt so the register is the only system-level instruction "
+                         "— the isolation every published conversational number uses. 'append' keeps "
+                         "the host prompt and adds the register on top: required for agentic corpora "
+                         "(replacing it strips the tool-use scaffolding) and closer to a real session, "
+                         "but NOT comparable to the isolated numbers.")
     ap.add_argument("--disallow-tools", action="store_true",
                     help="Deny file-mutating tools (Write/Edit/NotebookEdit/Bash) so every arm "
                          "emits its answer inline. Use for document-generation corpora: otherwise "
@@ -803,7 +828,8 @@ def main() -> int:
                             cwd=call_cwd, dry_run=args.dry_run,
                             timeout=args.timeout, model=args.model,
                             isolation_verified=isolation_verified,
-                            disallow_tools=args.disallow_tools)
+                            disallow_tools=args.disallow_tools,
+                            system_prompt_mode=args.system_prompt_mode)
 
     def write_result(idx, result):
         out.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")
