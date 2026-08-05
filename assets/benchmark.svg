@@ -1,6 +1,6 @@
 <svg viewBox="0 0 760 276" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl dsc">
 <title id="ttl">Scrooge median output tokens vs baselines</title>
-<desc id="dsc">Korean N=21: normal 3413, terse 2242, caveman 1005, scrooge 1042 (-70%). English N=25: normal 2397, terse 1803, caveman 703, scrooge 816 (-66%). caveman is smaller in raw tokens but discards information; scrooge preserves the answer. claude-opus-4-8, paired median.</desc>
+<desc id="dsc">Korean N=21: normal 3413, terse 2242, caveman 1005, scrooge 1042 (-70%). English N=24: normal 2344, terse 1796, caveman 649, scrooge 773 (-67%). caveman is smaller in raw tokens but discards information; scrooge preserves the answer. claude-opus-4-8, paired median.</desc>
 <style>@media (prefers-color-scheme:dark){.t{fill:#e6edf3}.m{fill:#8b949e}.card{fill:#0d1117;stroke:#30363d}.grid{stroke:#21262d}.bar{fill:#454d59}.hi{fill:#2ea043}}</style>
 <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12">
 <rect class="card" x="1" y="1" width="758" height="274" rx="16" fill="#ffffff" stroke="#e5e7eb"/>
@@ -27,23 +27,23 @@
 <text class="hi" x="205" y="210" fill="#1f9d57" font-weight="600">−70%</text>
 
 <text class="t" x="396" y="66" fill="#1f2937" font-size="15" font-weight="500">English</text>
-<text class="hi" x="732" y="66" fill="#1f9d57" font-size="14" font-weight="600" text-anchor="end">−66% vs normal</text>
-<text class="m" x="396" y="84" fill="#6b7280" font-size="11">N = 25</text>
+<text class="hi" x="732" y="66" fill="#1f9d57" font-size="14" font-weight="600" text-anchor="end">−67% vs normal</text>
+<text class="m" x="396" y="84" fill="#6b7280" font-size="11">N = 24</text>
 
 <text class="t" x="396" y="108" fill="#1f2937">normal</text>
 <rect class="base" x="478" y="96" width="126" height="16" rx="3" fill="#e15c4a"/>
-<text class="t" x="610" y="108" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">2397</text>
+<text class="t" x="610" y="108" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">2344</text>
 <text class="m" x="644" y="108" fill="#6b7280" font-size="11">baseline</text>
 <text class="t" x="396" y="142" fill="#1f2937">terse</text>
-<rect class="bar" x="478" y="130" width="95" height="16" rx="3" fill="#9aa7b8"/>
-<text class="t" x="579" y="142" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">1803</text>
+<rect class="bar" x="478" y="130" width="97" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="581" y="142" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">1796</text>
 <text class="t" x="396" y="176" fill="#1f2937">caveman</text>
-<rect class="bar" x="478" y="164" width="37" height="16" rx="3" fill="#9aa7b8"/>
-<text class="t" x="521" y="176" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">703</text>
+<rect class="bar" x="478" y="164" width="35" height="16" rx="3" fill="#9aa7b8"/>
+<text class="t" x="519" y="176" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">649</text>
 <text class="t" x="396" y="210" fill="#1f2937">scrooge</text>
-<rect class="hi" x="478" y="198" width="43" height="16" rx="3" fill="#1f9d57"/>
-<text class="t" x="527" y="210" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">816</text>
-<text class="hi" x="561" y="210" fill="#1f9d57" font-weight="600">−66%</text>
+<rect class="hi" x="478" y="198" width="42" height="16" rx="3" fill="#1f9d57"/>
+<text class="t" x="526" y="210" fill="#1f2937" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">773</text>
+<text class="hi" x="560" y="210" fill="#1f9d57" font-weight="600">−67%</text>
 
 <line class="grid" x1="28" y1="232" x2="732" y2="232" stroke="#e9ecef"/>
 <rect class="base" x="28" y="247" width="10" height="10" rx="2" fill="#e15c4a"/>

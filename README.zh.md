@@ -30,7 +30,7 @@ npx -y github:Kir93/scrooge-mode
 
 ## 启用
 
-`/scrooge zh full`(或 `/scrooge zh lite`)启用中文 register,`/scrooge off` 解除。在 Claude Code 的 hook 上,自然语言也能触发 —「像斯克鲁奇一样回答」启用,「关闭斯克鲁奇」解除。否定句(「别像斯克鲁奇一样」)会被忽略。
+`/scrooge zh full` 启用中文 register,`/scrooge off` 解除。在 Claude Code 的 hook 上,自然语言也能触发 —「像斯克鲁奇一样回答」启用,「关闭斯克鲁奇」解除。否定句(「别像斯克鲁奇一样」)会被忽略。
 
 ## Before / After
 

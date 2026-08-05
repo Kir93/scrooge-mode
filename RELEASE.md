@@ -36,7 +36,7 @@ Run from a clean tree on `main`:
   for `package.json`, `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json` — all parse.
 - Every `registry.json` path resolves to an existing `rules/**` file, and every
   `rules/**` file is reachable from the registry.
-- Bilingual + dial parity holds (`ko`/`en`, `lite`/`full`, `README.md`/`README.ko.md`).
+- Bilingual parity holds (`ko`/`en`, `README.md`/`README.ko.md`).
 - Doc-truth: no language with a measured savings/fidelity section still carries a
   "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
 - The six version sources above match (`npm test` guards this).
@@ -74,6 +74,23 @@ to re-measuring — the conservative direction.
 [`benchmarks/README.md`](benchmarks/README.md) § "Fidelity bench" (Steps 1–2 of
 `benchmarks/fidelity/run.py`). Pin `--model` for a reproducible headline; update a
 cited savings/fidelity number only if it actually moves.
+
+**Third disposition — Disclose.** Re-measure and exempt were the only two options, and
+that is how this gate went decorative: v0.22.0 shipped a substantive `rules/**` change
+(safety-guard and pro-drop porting across all ten registers) with the marker firing, no
+judge run, and no record — twice, counting v0.22.1. A gate whose only options are
+"expensive" and "not applicable" gets silently skipped under release pressure.
+
+So a substantive rule change may also ship **disclosed**: if the judge is not re-run,
+[`benchmarks/published/README.md`](benchmarks/published/README.md) must carry a dated
+register-drift note naming the version and the affected registers, so the published
+fidelity numbers are labelled as measurements of a **prior** register version rather
+than implied to be current.
+
+**A release with the re-measurement marker firing and neither a judge run nor a drift
+note is a doc-truth failure and blocks the release.** That sentence is greppable and
+belongs to the §1 doc-truth pre-flight — which is the only kind of gate a one-person
+project actually holds.
 
 ## 2. Bump version
 

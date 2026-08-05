@@ -52,8 +52,9 @@ GitHub branch protection은 `main` merge 전 `CI / verify` workflow 필수로 �
 Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 
 - User-facing docs는 English/Korean mirror 유지. 일본어·중국어는 경량 `README.ja.md`·`README.zh.md` 랜딩(가치 + 설치 + 예시 1개)으로 출하 — 풀 미러 아님, canonical은 영문/국문.
+- **JA/ZH 랜딩은 벤치마크 수치를 싣지 않으며, 앞으로도 싣지 않음.** mirror 의무 없이 정직성을 유지하는 방법이 그것 — 수치가 들어가는 순간 측정이 바뀔 때마다 조용히 stale해지고, 이를 막는 가드가 없음. 가치·설치·활성화·before/after 예시 1개까지만 두고 모든 수치는 canonical README로 링크.
 - **힌디어는 register만 출하하며 README 랜딩이 없음.** 누락이 아니라 결정임: `rules/hi/*`와 `LANG_META.hi` 행은 완비돼 다른 언어와 동일한 테스트로 가드되지만, `README.hi.md`는 없고 수요가 생기기 전까지 만들지 않음. parity 수정 명목으로 추가 PR을 열지 말 것.
-- 실질 rule 변경은 `ko`/`en`/`ja`/`hi`/`zh`, `lite`/`full` mirror 유지. 의도적 비동기면 PR에 이유 명시.
+- 실질 rule 변경은 `ko`/`en`/`ja`/`hi`/`zh` mirror 유지. 의도적 비동기면 PR에 이유 명시.
 - `rules/**` rename/move는 같은 PR에서 `registry.json` 수정.
 - Safety auto-clarity는 모든 dial에 유지.
 - Docs/prose 압축 경계와 Docs escape도 모든 dial에 유지. `test_doc_boundaries.js`·`test_safety_escape.js`가 `ko`/`en`/`ja`/`hi`/`zh`를 순회하고, `test_registry_parity.js`가 `registry ↔ LANG_META ↔ VALID_DIALS` 완전성 + rule 도달성을 가드 — 신규 언어는 registry·`LANG_META`·해당 루프에 합류하면 rule 파일과 활성화 메타가 자동 보증됨.
@@ -62,9 +63,9 @@ Source of truth는 [CLAUDE.md Conventions](CLAUDE.md#conventions). 요약:
 
 활성화는 registry-driven dispatch라 새 언어는 분기 추가가 아니라 데이터 추가:
 
-1. `rules/{lang}/lite.md`, `rules/{lang}/full.md` 신규 작성.
-2. `registry.json[lang]`에 `lite`, `full` path 추가. `VALID_LANGS`가 이 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식.
-3. `hooks/lang-meta.js`에 `LANG_META[lang]` 1행 추가 — `reminder`(lite/full body), `countermand`, `flagHint`, `nlCue`(activate/off/negate/meta/strong). per-turn reminder·off countermand·자연어 활성화를 구동; 없으면 rule은 로드되나 reminder·NL cue 부재. `test_registry_parity.js`가 행 누락 언어를 fail 처리.
+1. `rules/{lang}/full.md` 신규 작성.
+2. `registry.json[lang]`에 `full` path 추가. `VALID_LANGS`가 이 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식.
+3. `hooks/lang-meta.js`에 `LANG_META[lang]` 1행 추가 — `reminder`(full body), `countermand`, `flagHint`, `nlCue`(activate/off/negate/meta/strong). per-turn reminder·off countermand·자연어 활성화를 구동; 없으면 rule은 로드되나 reminder·NL cue 부재. `test_registry_parity.js`가 행 누락 언어를 fail 처리.
 4. sample output 5건 생성 후 [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md)와 같은 QA checklist로 self-check: register 일관, code/error/technical term 원문, safety prose, 조사 드롭 명확성, honorific policy.
 5. README, INSTALL, CONTRIBUTING mirror 검토. 새 언어가 설치/활성화/기여 흐름을 바꾸면 user-facing docs 갱신.
 6. sample self-check 요약과 [Test & Lint](#test--lint) 명령 결과 포함해 PR open.

@@ -23,16 +23,40 @@ reproduce them exactly.
 | File | Backs (README) | Model | Register ver | Measured (approx) | Corpus | Isolation |
 | ---- | -------------- | ----- | ------------ | ----------------- | ------ | --------- |
 | [`results-ko-clean-opus48.jsonl`](./results-ko-clean-opus48.jsonl) | KO conversational ~70% (paired median, N=21) | `claude-opus-4-8` | v0.19.1 | 2026-07-09 | `prompts/ko.txt` | `--cwd` empty (no host CLAUDE.md) |
-| [`results-en-clean-opus48.jsonl`](./results-en-clean-opus48.jsonl) | EN conversational ~66% (paired median, N=25) | `claude-opus-4-8` | v0.19.1 | 2026-07-09 | `prompts/en.txt` | `--cwd` empty + global CLAUDE.md aside |
-| [`results-ko-report-iso-opus48.jsonl`](./results-ko-report-iso-opus48.jsonl) | KO held-out ~71% (paired median, N=11) | `claude-opus-4-8` | ≈v0.7.0 | 2026-06-17 | `prompts/ko-report.txt` | cwd-isolated |
+| [`results-en-clean-opus48.jsonl`](./results-en-clean-opus48.jsonl) | EN conversational ~67% (paired median, N=24) | `claude-opus-4-8` | v0.19.1 | 2026-07-09 | `prompts/en.txt` | `--cwd` empty + global CLAUDE.md aside |
+| [`results-ko-report-iso-opus48.jsonl`](./results-ko-report-iso-opus48.jsonl) | KO held-out ~70% (paired median, N=10) | `claude-opus-4-8` | ≈v0.7.0 | 2026-06-17 | `prompts/ko-report.txt` | cwd-isolated |
 | [`results-en-report-iso-opus48.jsonl`](./results-en-report-iso-opus48.jsonl) | EN held-out ~68% (paired median, N=11) | `claude-opus-4-8` | ≈v0.7.0 | 2026-06-17 | `prompts/en-report.txt` | cwd-isolated |
-| [`results-ja-report.jsonl`](./results-ja-report.jsonl) | JA table ~64% (ratio-of-medians, per-prompt median 69.6%, N=11) | `claude-opus-4-8` | ≈v0.14.0 | 2026-06-29 | `prompts/ja-report.txt` | cwd-isolated |
+| [`results-ja-report.jsonl`](./results-ja-report.jsonl) | JA table ~65% (ratio-of-medians, per-prompt median 69.6%, N=10) | `claude-opus-4-8` | ≈v0.14.0 | 2026-06-29 | `prompts/ja-report.txt` | cwd-isolated |
 | [`results-hi-report.jsonl`](./results-hi-report.jsonl) | HI held-out ~63% ratio-of-medians (per-prompt median 66.6%, N=11) | `claude-opus-4-8` | ≈v0.15.0 | 2026-07-01 | `prompts/hi-report.txt` | cwd-isolated |
 | [`results-zh-report.jsonl`](./results-zh-report.jsonl) | ZH held-out ~67% ratio-of-medians (per-prompt median 62.9%, N=11) | `claude-opus-4-8` | ≈v0.15.0 | 2026-07-01 | `prompts/zh-report.txt` | cwd-isolated |
-| [`results-lean2-ko.jsonl`](./results-lean2-ko.jsonl) | KO `lean` +34.6% on top of `full` (paired median, n=22) | `claude-opus-4-8` | ≈v0.9.0 | 2026-06-22 | `prompts/ko.txt` | `--cwd` empty |
-| [`results-lean2-en.jsonl`](./results-lean2-en.jsonl) | EN `lean` +10.3% on top of `full` (paired median, n=21) | `claude-opus-4-8` | ≈v0.9.0 | 2026-06-22 | `prompts/en.txt` | `--cwd` empty |
+| [`results-lean2-ko.jsonl`](./results-lean2-ko.jsonl) | KO `lean` +17.6% on top of `full` (per-prompt median, 8 prompts x 3 runs) | `claude-opus-4-8` | ≈v0.9.0 | 2026-06-22 | `prompts/ko.txt` | `--cwd` empty |
+| [`results-lean2-en.jsonl`](./results-lean2-en.jsonl) | EN `lean` +18.1% on top of `full` (per-prompt median, 8 prompts x 3 runs) | `claude-opus-4-8` | ≈v0.9.0 | 2026-06-22 | `prompts/en.txt` | `--cwd` empty |
 | [`results-hi-tuning.jsonl`](./results-hi-tuning.jsonl) | HI **tuning** corpus: +68.7% vs `normal`, +47.0% vs `terse` (n=16) | `claude-opus-4-8` | v0.21.0 | 2026-07-31 | `prompts/hi.txt` | `--cwd` empty + global CLAUDE.md aside |
 | [`results-zh-tuning.jsonl`](./results-zh-tuning.jsonl) | ZH **tuning** corpus: +75.6% vs `normal`, +49.0% vs `terse` (n=15) | `claude-opus-4-8` | v0.21.0 | 2026-07-31 | `prompts/zh.txt` | `--cwd` empty + global CLAUDE.md aside |
+| [`results-en-agentic.jsonl`](./results-en-agentic.jsonl) | EN **agentic** workload: `scrooge:en/full` +52.0% total output (paired median, N=10) — `append` mode, not comparable to the conversational tables | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/en-agentic.txt` over `agentic-fixture/` | `--cwd` fixture, reset per call + global CLAUDE.md aside |
+| [`results-en-debunk.jsonl`](./results-en-debunk.jsonl) | EN false-premise: `scrooge:en/full` 10/10 debunked (judge N=3) | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/en-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
+| [`results-ko-debunk.jsonl`](./results-ko-debunk.jsonl) | KO false-premise: `scrooge:ko/full` **19/20** debunked (judge N=3), vs `normal` 19/19 — Fisher exact p=1.000 | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/ko-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
+| [`results-debunk-controls.jsonl`](./results-debunk-controls.jsonl) | `normal` / `terse` control arms for both false-premise corpora (judge N=1) | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/{en,ko}-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
+
+The three `-debunk` files are the **safety axis**, not claim-preservation: each row
+is one boolean — did the answer reject the false premise the question asserted.
+They back [False premises](../README.md#false-premises--one-demonstrated-failure-no-measurable-deficit),
+which reports one reproducible Korean failure at a rate the sample cannot separate from the baseline. They are published because a measurement you
+might fail is only worth running if you publish it either way.
+
+**Register drift, 2026-08 — these fidelity numbers describe a prior register.**
+The judge rows in this manifest were measured against register version v0.21.x.
+`rules/**` then changed substantively in v0.22.0 (safety-guard and pro-drop porting
+across all ten registers) and again in v0.23.0 (the `lite` dial removed entirely).
+Those judge rows have **not** been re-run since. They are published as dated
+measurements of the register version named in each row, not as guarantees about the
+current one. The token rows are unaffected — they measure output length, not
+claim-preservation, and their register version is recorded per file above.
+
+This is the `Disclose` disposition [`RELEASE.md`](../../RELEASE.md) §1a defines:
+a substantive rule change may ship without a judge re-run **only** if it is recorded
+here. v0.22.0 and v0.22.1 shipped with the CI re-measurement marker firing and no
+record at all; this note closes that gap and the release gate now blocks a repeat.
 
 The two `-tuning` files are the **dev/tuning** corpus, not the held-out one every
 language table quotes. ADR-003 keeps the two separate, so these numbers exist to
@@ -50,10 +74,39 @@ the harness's contamination detector only looks for register-hook injection. The
 row is kept in the published file so the exclusion is auditable rather than
 invisible.
 
+**Generalised in v0.23.0.** That exclusion was hand-applied and ZH-only, so the
+reproduce command printed next to the ZH table returned different numbers than the
+table. `report.py --drop-tool-rows` now drops any prompt/run key whose row used
+tools (`tool_use_output_tokens > 0` or `turns > 1`) **from every arm**, and it
+reproduces the published ZH figures exactly. Re-deriving the other files under the
+same rule found the same defect in four more places, all previously unnoticed:
+
+| File | Row | Effect of the fix |
+| ---- | --- | ----------------- |
+| `results-en-clean-opus48.jsonl` | `normal` pid=5 — 2,649 prose beside 3,153 tool tokens | EN 66% → **67%** |
+| `results-ja-report.jsonl` | `normal` pid=9 — 7,351 prose, 4,622 tool, `turns=5` | JA 64% → **65%** |
+| `results-ko-report-iso-opus48.jsonl` | `normal` pid=7 — 3,676 prose, 4,754 tool, `turns=4` | KO held-out 71% → **70%** |
+| `results-lean2-en.jsonl` | `scrooge:en/full` pid=1 run=0 — 119 prose beside 7,645 tool tokens | EN `lean` +10.3% → **+18.1%** |
+| `results-lean2-ko.jsonl` | `scrooge:ko/full+lean` pid=4 run=0 — 569 prose, 3,060 tool | KO `lean` +34.6% → **+17.6%** |
+
+Three of the five sat in a baseline arm, so the correction moved two language
+headlines up and one down. The underlying JSONL is unchanged — every row is still
+published, including the dropped ones, so any reader can re-run with and without
+the flag and see both numbers.
+
+The `lean` restatement is the larger one: those two files are **8 prompts × 3
+runs**, and the superseded figures quoted the 21–22 paired-key count as though it
+were the prompt count. Corrected, the two languages agree (+17.6% / +18.1%) instead
+of differing by 24pp. See
+[The `lean` flag numbers](../README.md#the-lean-flag-numbers).
+
 The two `lean` files are flag A/B rows, not language headlines: each pairs
 `scrooge:{lang}/full+lean` against `scrooge:{lang}/full` on the same prompt, so
-the baseline is the register itself rather than `normal`. Both corpora ran 24
-prompt/run pairs; the usable n differs only because of failed runs (KO 2, EN 3).
+the baseline is the register itself rather than `normal`. Each corpus is **8
+prompts run 3 times** (24 prompt/run pairs; the usable count drops to 21/20 on
+failed runs and the tool-row exclusion above). The bootstrap resamples the 8
+prompts rather than the pairs — repeated runs of one prompt are correlated, so
+treating them as independent draws would understate the interval.
 
 KO/EN conversational rows were re-measured on 2026-07-09 (v0.19.1) under a pure
 baseline — `--cwd` pointed at an empty dir so no project `CLAUDE.md` reaches any

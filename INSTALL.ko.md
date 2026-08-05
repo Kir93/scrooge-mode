@@ -40,6 +40,12 @@ claude plugin uninstall scrooge@scrooge
 
 원라이너로 statusline까지 설치했다면 project uninstaller도 실행.
 
+> **caveman·grill-me 등 다른 출력 압축 register를 함께 쓰고 있다면:** 하나를
+> 끄세요. 둘 다 같은 `UserPromptSubmit` 이벤트로 매 턴 스타일 지시를 주입하는데
+> 서로를 볼 수 없어서, 모델은 상충하는 지시를 받습니다(caveman issue #574).
+> one-line installer는 감지 시 경고를 출력하지만, **이 plugin 경로는 그 installer를
+> 거치지 않으므로 여기서는 경고할 수 없습니다.**
+
 ## Codex Skills Ecosystem Path
 
 `skills` ecosystem으로 설치할 때 사용. Codex와 다른 supported agent 대상.
@@ -171,22 +177,13 @@ export SCROOGE_DEFAULT_FLAGS=           # 전체 해제
 
 `lean`만 적용 — 미지 토큰은 무시. (`/scrooge …` 활성화는 **글로벌 기본값**도 저장해 `/scrooge off` 전까지 새 세션을 자동 활성화.)
 
-## Memory Compress (선택 CLI)
+## v0.23.0에서 제거: `memory-compress`
 
-`hooks/scrooge-memory.js`는 memory 파일(CLAUDE.md·AGENTS.md·notes)을 input 토큰 적게 압축하되 code·URL·path를 byte-exact 보존하는 on-demand CLI. 모델이 산문을 줄이면, 이 CLI가 그 변경의 결정적 가드 역할:
-
-> 측정 예시: 이 repo의 이미 압축된(dogfood) `CLAUDE.md`에서 input 토큰 ~8% 절감, byte-exact 보존 검증됨 — verbose/누적된 memory 파일은 더 많이 줄므로 이는 하한.
-
-```bash
-# 1) dry run — 압축본이 protected span을 전부 보존하는가?
-node "<scrooge>/hooks/scrooge-memory.js" verify <original> <candidate>
-# 2) input 절감을 /scrooge-stats가 보고하는 같은 honest bill에 기록
-node "<scrooge>/hooks/scrooge-memory.js" record <original> <candidate> --session <id>
-```
-
-`verify`는 code block·URL·path가 하나라도 빠지면 non-zero exit; `record`는 손상 압축에 절감 기록을 거부한다. `<scrooge>`는 설치 경로(Claude Code 플러그인: 플러그인 루트).
-
-**메모리 파일을 제자리에서 덮어쓰는 작업은 되돌릴 수 없습니다 — 실행 취소가 없습니다.** 먼저 `verify`를 실행하고 변경 내용(diff)을 검토한 다음에만 원본을 덮어쓰세요(또는 압축본을 새 경로에 저장하고 원본을 그대로 두세요). `verify`가 non-zero로 끝나면 절대 덮어쓰지 마세요.
+선택 CLI였던 `memory-compress`(CLAUDE.md·AGENTS.md 입력측 압축)를 제거했습니다.
+자체 측정이 근거입니다 — Phase 0 floor 7.7%, 후속 context-audit의 실현 가능 중앙값
+~3~4%, 그리고 prompt caching이 캐시된 prefix를 input 요금의 약 1/10로 청구하므로
+그 prefix를 압축해 얻는 값이 사실상 없습니다. Scrooge는 **출력측** register이고,
+이제 그것이 제품 전부입니다. 기존 CLI가 기록한 ledger 항목은 그대로 읽히며 무시됩니다.
 
 ## Update
 
@@ -247,6 +244,30 @@ npx markdownlint-cli2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
 
+## Statusline
+
+토큰 절감 배지(`[SCROOGE:ko/full] ⛏ ~12.3k saved (est)`)는 **one-line installer**만
+배선합니다. plugin manifest는 `statusLine`을 선언할 수 없으므로,
+`claude plugin marketplace add` + `claude plugin install` 경로 — `/plugin` Discover
+창이 쓰는 그 경로 — 는 **배선하지 않으며 그 사실을 알려주지도 않습니다.** README
+호스트 표의 `Statusline ✓`는 "이 호스트에서 지원됨"이지 "모든 설치 경로가 배선함"이
+아닙니다.
+
+수동으로 추가하려면 설치된 plugin의 스크립트를 `statusLine`에 지정하세요:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/plugins/cache/scrooge/scrooge/<version>/hooks/scrooge-statusline.sh\""
+  }
+}
+```
+
+installer는 `statusLine` 키가 없을 때만 기록하므로 기존 statusline을 덮어쓰지
+않습니다(`claude-hud` 같은 바가 그대로 동작 — 대신 배지 합성은 사용자 몫).
+Windows에서는 `bash`가 PATH에 있어야 합니다 — [플랫폼 지원](#platform-support) 참고.
+
 ## Platform support
 
 Linux·macOS가 CI 검증 플랫폼 — 매 push마다 `ubuntu-latest`에서 `npm test` 실행. **Windows는 best-effort, CI 미검증.** installer에 Windows 분기(경로 처리, `where` 프로브, shell spawn, `EPERM`/`EISDIR` 정리)와 PowerShell shim이 있으나 `windows-latest` job이 이를 실행하지 않으므로 릴리스 보장 대상에서 Windows는 unsupported로 간주. 세 known-limit는 닫지 않고 문서화만:
@@ -277,7 +298,9 @@ command -v claude
 
 ### Project-Scope Skills Files Appear
 
-scrooge는 항상 user(global) scope로 설치하므로 프로젝트에 `.agents/`, `skills/<name>`, `skills-lock.json` 생기지 않음. 구버전 잔재 발견되면 설치된 agent별로 skills CLI 제거 (`npx -y skills remove Kir93/scrooge-mode -a codex` 등) 후 프로젝트 루트에 남은 `.agents/`·`skills-lock.json` 수동 삭제.
+scrooge는 항상 user(global) scope로 설치하므로 **프로젝트에** `.agents/`, `skills/<name>`, `skills-lock.json` 생기지 않음.
+
+두 scope는 다릅니다. **user scope인 `~/.agents/skills/`는 누출이 아니라 표준의 수렴 위치**입니다 — `npx skills add … -g`가 쓰는 경로이며 Codex가 로드하고 Windsurf가 탐지하며 Gemini CLI가 alias합니다. 그 디렉토리는 있는 게 정상입니다. 청소 대상은 **프로젝트 로컬** `.agents/`뿐입니다. 구버전 잔재 발견되면 설치된 agent별로 skills CLI 제거 (`npx -y skills remove Kir93/scrooge-mode -a codex` 등) 후 프로젝트 루트에 남은 `.agents/`·`skills-lock.json` 수동 삭제.
 
 ### Permission Errors
 

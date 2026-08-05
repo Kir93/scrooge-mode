@@ -1,6 +1,6 @@
 {
   "name": "scrooge",
-  "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
+  "description": "Korean-first output compression for AI coding agents — measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
   "owner": {
     "name": "Kir93",
     "url": "https://github.com/Kir93"
@@ -22,7 +22,7 @@
   "plugins": [
     {
       "name": "scrooge",
-      "description": "Same answer, fewer tokens — multilingual LLM output-compression skill.",
+      "description": "Korean-first output compression for AI coding agents — measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
       "version": "0.22.1",
       "source": "./",
       "category": "productivity"

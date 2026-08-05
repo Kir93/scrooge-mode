@@ -28,7 +28,7 @@ npx -y github:Kir93/scrooge-mode
 
 ## 有効化
 
-`/scrooge ja full`（または `/scrooge ja lite`）で日本語 register を on。`/scrooge off` で解除。Claude Code の hook 上では自然言語でも動作 — 「スクルージみたいに答えて」で有効化、「スクルージやめて」で解除。
+`/scrooge ja full` で日本語 register を on。`/scrooge off` で解除。Claude Code の hook 上では自然言語でも動作 — 「スクルージみたいに答えて」で有効化、「スクルージやめて」で解除。
 
 ## Before / After
 

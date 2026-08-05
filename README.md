@@ -33,10 +33,10 @@
 
 KO-first pentalingual (KO/EN/JA/HI/ZH) output-compression skill for AI coding agents: full on [Claude Code](https://docs.anthropic.com/en/docs/claude-code), hook + stats on Codex, skill-only on Cursor, Windsurf, Cline, Continue, Gemini CLI (see [Host support](#host-support)). The Korean register is designed around its own grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default), **not** translated from English compression rules.
 
-**`~70% KO · ~66% EN · ~64% JA · ~63% HI · ~67% ZH · output-only · honorifics stripped`** — `claude-opus-4-8`; KO/EN N=21–25 paired median, JA/HI/ZH held-out N=11.
+**`~70% KO · ~67% EN · ~65% JA · ~63% HI · ~67% ZH · single-turn chat prose · output-only`** — `claude-opus-4-8`; KO/EN N=21–24 paired median, JA/HI/ZH held-out N=10–11. **Not an agentic-session figure** — agentic work is measured separately (52% total-output savings on a 10-task corpus; the register reaches ~14–30% of billed output in real sessions). [Measurement conditions](#benchmarks).
 
 <p align="center">
-  <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 1042 vs normal 3413 (−70%); English scrooge:en/full 816 vs normal 2397 (−66%)" width="760"></a>
+  <a href="#benchmarks"><img src="assets/benchmark.svg" alt="Median output tokens per turn (claude-opus-4-8, paired median): Korean scrooge:ko/full 1042 vs normal 3413 (−70%); English scrooge:en/full 773 vs normal 2344 (−67%)" width="760"></a>
 </p>
 
 ## Demo
@@ -90,6 +90,15 @@ Same three metrics, same technical decision shape — **~73% fewer output tokens
 > [!IMPORTANT]
 > Output only. Reasoning, thinking, accuracy — untouched. A miser ledgers the spend, not the thought.
 
+## Why a register, not a setting
+
+There is no setting that does this, and the vendor says so.
+
+- **Anthropic documents the problem and prescribes this exact remedy.** The Opus 5 prompting guide records three verbosity regressions on what is now Claude Code's default model — longer user-facing responses, longer per-message output in agentic sessions, and longer files written to disk — and its prescribed fix is a **prompt-level brevity register**, down to recommended text (`<tone_preference>Keep outputs reasonably concise.</tone_preference>`). Scrooge is a measured, multilingual, safety-gated implementation of the mechanism Anthropic itself recommends.
+- **No parameter does it.*_ The Messages API has no `verbosity` parameter (`output_config` is `effort` + `format` + `task_budget`). The effort doc states outright that on Opus 5 _"changing effort does not reliably shorten responses, so prompt for length instead."_ `max_tokens` truncates rather than compresses, and `task_budget` is explicitly unsupported on Claude Code.
+- **No hook does it either.** `MessageDisplay` changes only what is rendered on screen — the transcript and what Claude sees keep the original text, so it cannot reduce a billed token. The request for a hook that _could_ (`updatedAssistantMessage` / `PreRender`, anthropics/claude-code#61152) was closed as duplicate. **System-prompt-level instruction is the only lever that actually reduces billed output.** That is why Scrooge injects on `UserPromptSubmit` — and why it bills that injection back to you as input in `/scrooge-stats` instead of pretending it is free.
+- **Claude Code ships no terse output style.** The two custom styles it does ship, Explanatory and Learning, are documented to make output _longer_; `/output-style` itself was removed in v2.1.91.
+
 ## Install
 
 Recommended quick-start:
@@ -108,7 +117,7 @@ npx -y github:Kir93/scrooge-mode#v0.21.0
 
 Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
-**Activate.** `/scrooge ko full` (or `/scrooge en lite`, `/scrooge ja full`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
+**Activate.** `/scrooge ko full` (or `/scrooge en`, `/scrooge ja`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
 
 ### Host support
 
@@ -121,25 +130,28 @@ The installer sets up each detected host at its capability tier:
 | Cursor · Windsurf · Cline · Continue | skills (skill-only) | — | — | — |
 | Gemini CLI (**opt-in**, `--only gemini`) | skills (skill-only) | — | — | — |
 
-Skill-only hosts get the register rule as a skill, but activation is manual — no per-turn reinject hook and no token stats. The full hook + stats + statusline experience is Claude Code; Codex gets the hook + stats via `~/.codex/config.toml`. Codex wires only `UserPromptSubmit` (no `SessionStart`), so its update notice and `↑vX` marker are Claude-only. On Codex, upgrades are a reinstall (see [Update](INSTALL.md#update) in INSTALL.md).
+**One `SKILL.md`, seven runtimes.** Agent Skills is an open standard under the Agentic AI Foundation (Linux Foundation) requiring only `name` and `description`, with runtimes mandated to ignore frontmatter keys they do not recognize — and [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md) carries exactly those two fields. The register therefore reaches Claude Code, Codex, Cursor, Windsurf, Cline, Continue, and Gemini CLI from one file; the table above is about how much _automation_ wraps it per host, not about how many ports exist.
+
+What the tiers mean: skill-only hosts load the register but activation is manual — no per-turn reinject hook, no token stats. Codex wires only `UserPromptSubmit` (no `SessionStart`), so its update notice and `↑vX` marker are Claude-only and upgrades are a reinstall (see [Update](INSTALL.md#update)). The statusline `✓` is narrower than it looks: it is wired by the one-line installer, and **the `/plugin install` path does not wire it** — see [INSTALL.md](INSTALL.md#statusline) for the manual `settings.json` entry.
+
+For a host not in the table, the standard's convergent location is `~/.agents/skills/` — which is where `npx skills add … -g` already writes.
 
 ## Surface
 
 | Component                | What                                                                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/scrooge [lang] [dial]` | Activate a register. Two axes — `ko`/`en`/`ja`/`hi`/`zh` × `lite`/`full`. Persists per session, and is saved as a global default that auto-activates new sessions. `full` is the measured dial; `lite` was measured and quotes no savings estimate — it compresses less than `full` _and_ preserves less ([why](./benchmarks/README.md#the-lite-dial--measured-then-not-adopted)). |
-| `/scrooge … [flag]`      | Behavior flag orthogonal to the dial: `lean` (minimal code output) is **on by default** (KO +34.6% / EN +10.3% on top of `full`, est — provenance and reproduce command in [`benchmarks/README.md`](./benchmarks/README.md#the-lean-flag-numbers)). Toggle with `nolean` (per session) or `SCROOGE_DEFAULT_FLAGS` (global). |
+| `/scrooge [lang] [dial]` | Activate a register. Language axis — `ko`/`en`/`ja`/`hi`/`zh`; dial is `full`. Persists per session, and is saved as a global default that auto-activates new sessions. `full` is the only dial: `lite` shipped through v0.22.1, was measured, and lost on **both** axes — less compression _and_ less preservation than `full` — so v0.23.0 removed it rather than keep shipping a dial its own benchmark rejected ([measurement](./benchmarks/README.md#the-lite-dial--measured-then-removed)). Saved state naming `lite` migrates to `full`. |
+| `/scrooge … [flag]`      | Behavior flag orthogonal to the dial: `lean` (minimal code output) is **on by default** (~+18% on top of `full` in both KO and EN, est — provenance and reproduce command in [`benchmarks/README.md`](./benchmarks/README.md#the-lean-flag-numbers)). Toggle with `nolean` (per session) or `SCROOGE_DEFAULT_FLAGS` (global). |
 | `/scrooge off`           | Clear state + the global default (global off), return to normal prose.                                                                                                             |
 | Natural language (hook)  | "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答" activates; "stop scrooge" / "스크루지 꺼" clears. Negations ignored; slash wins. Language from the phrase, dial `full`. |
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
-| Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Every language, every dial. |
+| Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Every language. **Measured:** on false-premise questions KO debunks 19/20 and EN 10/10, against an uncompressed baseline of 19/19 and 9/9 — one reproducible KO failure, no deficit the sample can resolve ([detail](./benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit)). |
 | `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = one rule file + one registry entry + one `hooks/lang-meta.js` row.    |
 | `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Reports measured input + output tokens from the session JSONL; never asks the model to estimate.    |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
-| `memory-compress` CLI    | **Opt-in**, input-side and separate from the register: compresses a memory file (CLAUDE.md, AGENTS.md) to fewer input tokens with code, URLs, and paths kept byte-exact. Nothing runs automatically — see [Memory Compress](INSTALL.md#memory-compress-optional-cli). |
 
-**Why Korean matters.** Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language, with the register designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default). It is not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English. CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script. Chinese ships as the fifth, but unlike JA/HI it is **not** a port of the Korean mechanism: Chinese is an isolating language with no honorific morphology or case particles to strip, so its register is a **zh-native** design (drop politeness `请`/`您`, conservatively drop redundant structural particles `的`/`了`/`着` and measure words, cut connective filler). It is modern concise prose rather than caveman's wenyan.
+**Why Korean matters.** There is an economic reason as well as a grammatical one: Claude's tokenizer charges Korean about **1.88x** the tokens of equivalent English text, against 1.38x on OpenAI's o200k — so the per-language argument is strongest on precisely the host where Scrooge runs at full tier. Most output-compression skills are English-first or assume Classical Chinese as the only non-English target. Scrooge treats Korean as a first-class language, with the register designed around Korean grammar primitives (개조식 · 음슴체 · 존댓말 제거 · 반말 default). It is not translated from English. The architecture is i18n pluggable, so the rule engine loads any language from `registry.json` with no surgery. Japanese ships as the third language, mapping the Korean mechanism (keigo stripping · 体言止め · 助詞 drop) rather than translating English. CJK token inefficiency makes it a natural compression target. Hindi ships as the fourth, mapping the same mechanism (honorific leveling · noun-stop endings · postposition drop) onto Devanagari, another token-inefficient script. Chinese ships as the fifth, but unlike JA/HI it is **not** a port of the Korean mechanism: Chinese is an isolating language with no honorific morphology or case particles to strip, so its register is a **zh-native** design (drop politeness `请`/`您`, conservatively drop redundant structural particles `的`/`了`/`着` and measure words, cut connective filler). It is modern concise prose rather than caveman's wenyan.
 
 ## Benchmarks
 
@@ -147,11 +159,15 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 
 **Measurement conditions** (read before quoting the numbers):
 
-- **N=21–25 prompts × 1 run, paired median.** No variance estimate; treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly").
+- **Chat-prose workload only — this is the biggest limitation here.** Every published row has `tool_use_output_tokens: 0` and `turns: 1`: the corpus is single-turn conversational Q&A with no tool calls. In a real agentic session the register only reaches the prose fraction of billed output, and that fraction is small — measured over 930 scrooge-active sessions of the maintainer's own transcripts, prose was **13.8% of billed output tokens pooled (4.87M of 35.3M), 29.5% in the median session** ([`session-evidence/`](./benchmarks/session-evidence/), committed as `reach.*` in [`results.json`](./benchmarks/session-evidence/results.json)). The rest is tool-call payload — diffs, file writes, exact error strings — that the register leaves verbatim by design. Whole-session savings in _your_ sessions are still not claimed — a real session has no verbose counterfactual (ADR-003). What is measured is a **separate agentic benchmark**: 10 held-out tasks over a fixed scratch repo, where `scrooge:en/full` cut total billed output by **52%** (paired median, 95% CI +38.7 to +55.8, smaller on 10/10, p=0.002) while using _more_ turns than the baseline, and where a spot check confirmed the work was actually completed. That corpus's prose share is 18.7%, between the pooled and median real-session figures above, so a heavier session has a lower ceiling by construction. For contrast, JetBrains measured **8.5%** for `caveman` across 86 of 87 SkillsBench tasks (~240 billed trials, quality statistically unchanged, 2026-07) — a much larger and heavier corpus. Both numbers, and why they differ: [Agentic workload](./benchmarks/README.md#agentic-workload--measured).
+- **N=21–24 prompts × 1 run, paired median.** Treat headline percentages as one-significant-figure estimates (`~70%`, not "69.5% exactly"). Each headline arm is smaller on **every** paired prompt (exact sign test p ≤ 1e-3) and its 95% bootstrap CI stays above 56%, so the hedge is about the second digit, not about whether the effect is real. `report.py --paired` prints the interval, the sign test, and the resolvable-effect floor for any published file.
+- **Tool-using rows are excluded, from every arm (changed in v0.23.0).** A handful of rows answered by calling tools instead of replying inline — 119 prose tokens beside 7,645 tool tokens, in one case. Scoring those against an inline answer on a prose-only basis is not like-for-like, so `--drop-tool-rows` discards the whole prompt/run key across all arms. This was previously a manual, ZH-only exclusion described in prose but missing from the printed reproduce command, which is why that command used to return different numbers than the table above it. **Disclosure: the excluded rows sat mostly in the `normal` baseline, so applying the rule moved two headlines up — EN 66%→67%, JA 64%→65%, plus KO held-out 71%→70% the other way.** The rule is the same in both directions; it just happened to favour us twice.
 - **Register-clean run.** Both register hooks (scrooge's own and caveman) are neutralized so they cannot inject into the `normal`/`terse` baseline; tokens are deduped by `message.id` (prose-only basis).
-- **Held-out cross-check.** A disjoint prompt set (N=11 each) gives KO ~71%, EN ~68%, JA ~64%, HI ~63%, ZH ~67% — consistent with the headline, so the savings are not overfitting. Method and per-prompt medians: [`benchmarks/README.md`](./benchmarks/README.md#reproducing-a-published-number).
-- **Register-only isolation.** Each arm runs under `claude --print --system-prompt <rule>`, which _replaces_ Claude Code's default system prompt. That isolates the register cleanly, but a real `/scrooge` session keeps the full system prompt alongside it, so real savings may differ from the headline. Register **retention** does have direct real-session evidence: a drift analysis over dogfood sessions (177 conclusive of 744 scrooge-active, 2026-07-31, [`benchmarks/session-evidence/`](./benchmarks/session-evidence/)) shows late-session prose output stayed flat vs early turns — median late/early ratio 0.83, 77% of conclusive sessions retained. The aggregate is committed as [`results.json`](./benchmarks/session-evidence/results.json) so those four numbers can be checked against a file. The private transcripts behind it are not third-party reproducible. Retention only — real-session _savings_ remain unmeasurable (no verbose counterfactual, ADR-003). Full caveat list: [`benchmarks/README.md`](./benchmarks/README.md).
+- **Held-out cross-check.** A disjoint prompt set (N=10–11 each) gives KO ~70%, EN ~68%, JA ~65%, HI ~63%, ZH ~67% — consistent with the headline, so the savings are not overfitting. Method and per-prompt medians: [`benchmarks/README.md`](./benchmarks/README.md#reproducing-a-published-number).
+- **Register-only isolation.** Each arm runs under `claude --print --system-prompt <rule>`, which _replaces_ Claude Code's default system prompt. That isolates the register cleanly, but a real `/scrooge` session keeps the full system prompt alongside it, so real savings may differ from the headline. Register **retention** does have direct real-session evidence: a drift analysis over dogfood sessions (188 conclusive of 930 scrooge-active, 2026-08-05, [`benchmarks/session-evidence/`](./benchmarks/session-evidence/)) shows late-session prose output stayed flat vs early turns — median late/early ratio 0.83, 77% of conclusive sessions retained. The aggregate is committed as [`results.json`](./benchmarks/session-evidence/results.json) so those four numbers can be checked against a file. The private transcripts behind it are not third-party reproducible. Retention only — real-session _savings_ remain unmeasurable (no verbose counterfactual, ADR-003). Full caveat list: [`benchmarks/README.md`](./benchmarks/README.md).
 - **Real `output_tokens`.** Numbers come from the session JSONL's `output_tokens` field — what the API actually billed, not a tokenizer estimate.
+- **The safety register was tested against false premises, and has one reproducible failure.** Brevity-emphasising instructions are known to cost hallucination resistance (Giskard Phare, 2025-04-30: up to 20%), so the register was tested on questions where the correct answer is to reject the question's own assumption. EN: 10/10 (judge N=3, unanimous). KO: **19/20**, against an uncompressed baseline of 19/19 — **Fisher exact p=1.000, so the two are not distinguishable at this sample size**. The one KO miss is real and unanimous, and a generic `terse` control passed the same prompt, so it is attributable to this register rather than to shortness. No safety claim is made from this, and the register was not edited — the failing prompt, its mechanism, and that reasoning: [False premises](./benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit).
+- **Pinned to `claude-opus-4-8`, and not re-measured since.** Claude Code's default model became Opus 5 on 2026-07-24 (v2.1.219). Anthropic's own Opus 5 prompting guide documents that its default responses run longer than prior Opus models', so the uncompressed baseline has very likely moved — **which direction the savings percentage moves is unmeasured, and is not claimed.**
 
 ### Korean
 
@@ -164,18 +180,18 @@ Measured on **`claude-opus-4-8`**. Full methodology and raw reproduction command
 | **`scrooge:ko/full`** |                    **1042** |            **~70%** |
 | `caveman:full`        |                        1005 |                ~71% |
 
-`scrooge:ko/full` cuts Korean output by **~70%** and beats the `terse` control, so the gain is the register, not generic brevity. `caveman:full` lands at a similar token count (**1005** vs **1042**) but breaks grammar to get there, and on the held-out corpus it preserves fewer claims (**0.60** vs scrooge's **0.68**). That fidelity gap is the axis, not raw tokens; safety prose survives equally in both (12/16 each). Fidelity (held-out, judge N=3): **0.68 median claim-preservation, safety preserved 12/16**, over the 16 rows with all three judge runs; the loss is breadth, not wrong information. Token rows: [`results-ko-clean-opus48.jsonl`](./benchmarks/published/results-ko-clean-opus48.jsonl) (v0.19.1) · judge rows: [`results-ko-fidelity.jsonl`](./benchmarks/published/results-ko-fidelity.jsonl).
+`scrooge:ko/full` cuts Korean output by **~70%** and beats the `terse` control, so the gain is the register, not generic brevity. `caveman:full` lands at a similar token count (**1005** vs **1042**) but breaks grammar to get there. On claim-preservation the two files' medians read 0.68 vs 0.60 — but both arms answered the same prompts, and **paired the difference is +0.01 with a 95% CI of −0.02 to +0.10 (8 wins, 4 ties, 4 losses)**. In Korean the two are not distinguishable on this corpus; the median gap was an artifact of comparing two samples separately instead of pairing them, and this repo quoted it as its stronger fidelity result through v0.22.1. Safety prose survives equally in both (12/16 each). See [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). Fidelity (held-out, judge N=3): **0.68 median claim-preservation, safety preserved 12/16**, over the 16 rows with all three judge runs; the loss is breadth, not wrong information. Token rows: [`results-ko-clean-opus48.jsonl`](./benchmarks/published/results-ko-clean-opus48.jsonl) (v0.19.1) · judge rows: [`results-ko-fidelity.jsonl`](./benchmarks/published/results-ko-fidelity.jsonl).
 
 ### English
 
-| Mode                  | Median output tokens (N=25) | Savings vs `normal` |
+| Mode                  | Median output tokens (N=24) | Savings vs `normal` |
 | --------------------- | --------------------------: | ------------------: |
-| `normal`              |                        2397 |          (baseline) |
-| `terse`               |                        1803 |                ~25% |
-| **`scrooge:en/full`** |                     **816** |            **~66%** |
-| `caveman:full`        |                         703 |                ~71% |
+| `normal`              |                        2344 |          (baseline) |
+| `terse`               |                        1796 |                ~23% |
+| **`scrooge:en/full`** |                     **773** |            **~67%** |
+| `caveman:full`        |                         649 |                ~72% |
 
-`scrooge:en/full` cuts English output by **~66%** and beats the `terse` control. `caveman:full` is smaller in raw tokens (**703** vs **816**). Both arms are now judged: on the held-out corpus scrooge preserves more claims (**0.72** vs caveman's **0.69**, 9 of 11 prompts), but the margin is small and safety preservation is identical (9/11 each) — see [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 9/11** — higher claim retention than JA; the loss is breadth, not wrong information. Token rows: [`results-en-clean-opus48.jsonl`](./benchmarks/published/results-en-clean-opus48.jsonl) (v0.19.1) · judge rows: [`results-en-fidelity.jsonl`](./benchmarks/published/results-en-fidelity.jsonl).
+`scrooge:en/full` cuts English output by **~67%** and beats the `terse` control. `caveman:full` is smaller in raw tokens (**649** vs **773**). Both arms are now judged, and English is where the fidelity difference actually shows: scrooge is ahead on **9 of 11 prompts**, paired median **+0.09 (95% CI +0.04 to +0.11)**. That interval excludes zero, but the exact sign test at n=11 gives p=0.065, so read it as a consistent direction rather than an established result. Safety preservation is identical (9/11 each) — see [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). Fidelity (held-out, judge N=3): **0.72 median claim-preservation, safety preserved 9/11** — higher claim retention than JA; the loss is breadth, not wrong information. Token rows: [`results-en-clean-opus48.jsonl`](./benchmarks/published/results-en-clean-opus48.jsonl) (v0.19.1) · judge rows: [`results-en-fidelity.jsonl`](./benchmarks/published/results-en-fidelity.jsonl).
 
 ### Japanese, Hindi, Chinese
 
@@ -183,7 +199,7 @@ All three are held-out-only measurements (N=11, `prompts/{ja,hi,zh}-report.txt`)
 
 | Register | `normal` | `scrooge` | Savings vs `normal` | Fidelity (judge N=3) |
 | -------- | -------: | --------: | ------------------: | -------------------: |
-| `scrooge:ja/full` | 2477 | **880** | **~64%** (per-prompt 69.6%) | 0.60, safety 11/11 |
+| `scrooge:ja/full` | 2399 | **833** | **~65%** (per-prompt 69.6%) | 0.60, safety 11/11 |
 | `scrooge:hi/full` | 2436 | **897** | **~63%** (per-prompt 66.6%) | 0.76, safety 10/11 |
 | `scrooge:zh/full` | 2703 | **897** | **~67%** (per-prompt 62.9%) | 0.72, safety 11/11 |
 
@@ -209,32 +225,32 @@ scrooge was smaller than the verbose baseline on **every** prompt and beat the `
 | Primary target             | Aggressive English compression             | Korean-native bilingual compression                          |
 | Languages                  | EN (+ wenyan classical Chinese)            | KO, EN, JA, HI, ZH; i18n via `registry.json`                 |
 | Korean register            | None                                       | Native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default        |
-| English result in this run | `703` median tokens (telegraphic)          | `816` median tokens — a few more, for a modestly higher claim-preservation score |
-| Fidelity, judged head-to-head | 0.60 KO · 0.69 EN                          | **0.68** KO · **0.72** EN (same corpus, judge N=3; safety preservation ties) |
+| English result in this run | `649` median tokens (telegraphic)          | `773` median tokens — a few more, for a modestly higher claim-preservation score |
+| Fidelity, judged head-to-head | 0.60 KO · 0.69 EN                          | 0.68 KO · 0.72 EN — but **paired**, KO is a tie (+0.01, CI spans zero) and only EN separates (+0.09, 9 of 11). Same corpus, judge N=3; safety preservation ties in both |
 | Benchmarking here          | Comparison arm (`caveman:full`)            | Real `output_tokens` runner, paired reports                  |
-| Input-side compression     | None                                       | `memory-compress`, an opt-in CLI (see the Surface table above) — separate from the always-on output register |
+| Input-side compression     | `caveman-shrink` (npm MCP middleware)      | None — output register only. An opt-in `memory-compress` CLI shipped through v0.22.1 and was removed once its own measurements (7.7% floor, ~3–4% realizable) and prompt-cache pricing showed it was not worth its surface |
 
 In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.
 
 ## Mechanics
 
-1. `/scrooge [lang] [dial]` activates a mode. Tokens compose on two independent axes — `/scrooge ko`, `/scrooge full`, `/scrooge ko lite`, etc.
+1. `/scrooge [lang] [dial]` activates a mode. Tokens are order-independent — `/scrooge ko`, `/scrooge full`, `/scrooge ko full`, etc.
 2. The `UserPromptSubmit` hook parses the command, persists `{lang, dial}` to a state file, looks up the rule via [`registry.json`](registry.json), and injects it as `additionalContext`.
 3. Every subsequent turn reinjects a lightweight reminder so the register does not drift.
 4. `/scrooge off` clears state and the global default (global off; see below). Auto-clarity contexts inside the rule itself drop compression for safety-critical replies (security warnings, irreversible-action confirmations, ambiguous multi-step sequences) without the user having to opt out.
 
 **Global default.** Activating in any session saves the choice as a global default (`~/.claude/.scrooge/default`). Every new session then auto-activates with the same lang/dial/flags — set it once, anywhere. The `SessionStart` hook seeds a fresh session from the default and re-injects the full rule. `/scrooge off` clears the default too (global off); a session already running keeps its register until it restarts, so an off in one worktree never yanks a concurrent one.
 
-**Flags.** Beyond lang/dial, a behavior flag composes orthogonally. `lean` (minimal code output) is **on by default** — `/scrooge` trims over-engineering and narration, never correctness (its fragment pins the safety floor). Measured on top of `full`, paired against the same register without the flag: **KO +34.6%** (n=22) and **EN +10.3%** (n=21), est, prose-only, `claude-opus-4-8`. The two languages differ by 24pp, so no single averaged figure fits either. Both corpora ran 24 prompt/run pairs; the usable n differs only because of failed runs (KO 2, EN 3). Reproduce with `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`. Toggle per session with `/scrooge … nolean`, or globally via `SCROOGE_DEFAULT_FLAGS` (a comma-separated set, or empty to disable all). Each active flag appends its register fragment (`rules/{lang}/fragments/{flag}.md`) to the injected rule.
+**Flags.** Beyond lang/dial, a behavior flag composes orthogonally. `lean` (minimal code output) is **on by default** — `/scrooge` trims over-engineering and narration, never correctness (its fragment pins the safety floor). Measured on top of `full`, paired against the same register without the flag: **KO +17.6%** (95% CI 10.2–43.7%) and **EN +18.1%** (95% CI 10.7–28.3%), est, prose-only, `claude-opus-4-8`, 8 prompts × 3 runs each. Both intervals exclude zero and both sign tests clear p<0.05, so the direction is established; the intervals are wide, so read `lean` as "roughly a fifth off the top", not a precise figure. Reproduce with `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. These supersede the KO +34.6% / EN +10.3% pair published through v0.22.1, which misread the corpus structure and included a tool-using row on each side ([why](./benchmarks/README.md#the-lean-flag-numbers)). Toggle per session with `/scrooge … nolean`, or globally via `SCROOGE_DEFAULT_FLAGS` (a comma-separated set, or empty to disable all). Each active flag appends its register fragment (`rules/{lang}/fragments/{flag}.md`) to the injected rule.
 
 **Adding a language** (registry-driven dispatch — data, not new branches):
 
-1. Author `rules/{lang}/{lite,full}.md`.
+1. Author `rules/{lang}/full.md`.
 2. Add one entry to [`registry.json`](registry.json) — `VALID_LANGS` derives from these keys, so the slash parser and rule loader pick up the language with no code edit:
 
    ```json
    {
-     "ja": { "lite": "rules/ja/lite.md", "full": "rules/ja/full.md" }
+     "ja": { "full": "rules/ja/full.md" }
    }
    ```
 

@@ -40,6 +40,13 @@ claude plugin uninstall scrooge@scrooge
 
 If the statusline was installed by the one-line installer, run the project uninstaller too.
 
+> **If you also run caveman, grill-me, or another output-compression register:**
+> disable one. Both inject a style directive on every turn via the same
+> `UserPromptSubmit` event and cannot see each other, so the model receives
+> contradictory instructions (caveman issue #574). The one-line installer prints a
+> warning when it detects one — **this plugin path never runs that installer, so it
+> cannot warn you here.**
+
 ## Codex Skills Ecosystem Path
 
 Use this when you want the skill through the `skills` ecosystem, especially for Codex and other supported agents.
@@ -171,22 +178,15 @@ export SCROOGE_DEFAULT_FLAGS=           # disable all flags
 
 Only `lean` is honored; unknown tokens are ignored. (Activating with `/scrooge …` also saves a **global default** that auto-activates new sessions until `/scrooge off`.)
 
-## Memory Compress (optional CLI)
+## Removed in v0.23.0: `memory-compress`
 
-`hooks/scrooge-memory.js` is an on-demand CLI that compresses a memory file (CLAUDE.md, AGENTS.md, notes) to fewer input tokens while keeping all code, URLs, and paths byte-exact. The model rewrites the prose tighter; this CLI is the deterministic guard around the change:
-
-> Measured example: on this repo's already-tight (dogfooded) `CLAUDE.md`, ~8% input tokens saved with byte-exact preservation verified — a lower bound, since verbose/accumulated memory files compress more.
-
-```bash
-# 1) dry run — does the compressed candidate preserve every protected span?
-node "<scrooge>/hooks/scrooge-memory.js" verify <original> <candidate>
-# 2) record the input saving on the same honest bill /scrooge-stats reports
-node "<scrooge>/hooks/scrooge-memory.js" record <original> <candidate> --session <id>
-```
-
-`verify` exits non-zero if any code block, URL, or path was dropped; `record` refuses to book a saving for a corrupting compress. `<scrooge>` is your install path (Claude Code plugin: the plugin root).
-
-**Overwriting a memory file in place is irreversible — there is no undo.** Run `verify` first, review the diff, and only then overwrite the original (or write the compressed copy to a new path and keep the original). Never overwrite on a non-zero `verify`.
+The optional `memory-compress` CLI (input-side compression of CLAUDE.md / AGENTS.md)
+was removed. Its own measurements closed it: Phase 0 put the floor at 7.7%, the
+follow-up context-audit measured a realizable live median of ~3–4%, and prompt
+caching prices a cached prefix at roughly a tenth of the input rate — so
+compressing one is worth close to nothing. Scrooge is an **output**-side register;
+that is now the whole product. Ledger entries written by the old CLI are still
+readable and are simply ignored.
 
 ## Update
 
@@ -247,6 +247,31 @@ npx markdownlint-cli2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
 
+## Statusline
+
+The token-savings badge (`[SCROOGE:ko/full] ⛏ ~12.3k saved (est)`) is wired only by
+the **one-line installer**. Plugin manifests cannot declare a `statusLine`, so the
+`claude plugin marketplace add` + `claude plugin install` path — the one the
+`/plugin` Discover pane uses — **does not wire it**, and says nothing about that.
+The README host table's `Statusline ✓` means "supported on this host", not
+"wired by every install path".
+
+To add it by hand, point `statusLine` at the installed plugin's script:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/plugins/cache/scrooge/scrooge/<version>/hooks/scrooge-statusline.sh\""
+  }
+}
+```
+
+The installer only writes `statusLine` when the key is absent, so it never
+overwrites an existing statusline (a `claude-hud`-style bar keeps working — but
+then the badge is yours to compose). On Windows the badge needs `bash` on PATH; see
+[Platform support](#platform-support).
+
 ## Platform support
 
 Linux and macOS are the CI-verified platforms — every push runs `npm test` on `ubuntu-latest`. **Windows is best-effort, not CI-verified.** The installer carries Windows branches (path handling, `where` probe, shell spawn, `EPERM`/`EISDIR` cleanup) and a PowerShell shim, but no `windows-latest` job exercises them, so treat Windows as unsupported for release guarantees. Three known limits are documented, not closed:
@@ -277,7 +302,9 @@ If this fails, install Claude Code first or use the `skills` ecosystem path for 
 
 ### Project-Scope Skills Files Appear
 
-Scrooge always installs skills at user (global) scope, so `.agents/`, `skills/<name>`, or `skills-lock.json` should never appear in a project. If you find leftovers from an older version, clean up by running the skills CLI removal for each installed agent (e.g. `npx -y skills remove Kir93/scrooge-mode -a codex`) and deleting any remaining `.agents/` or `skills-lock.json` from the project root.
+Scrooge always installs skills at user (global) scope, so `.agents/`, `skills/<name>`, or `skills-lock.json` should never appear in **a project**.
+
+Note the two scopes are not the same thing. **User scope — `~/.agents/skills/` — is the standard's convergent location, not leakage**: it is where `npx skills add … -g` writes, and Codex loads it, Windsurf discovers it, and Gemini CLI aliases it. That directory is supposed to exist. Only a **project-local** `.agents/` is leftover to clean up. If you find leftovers from an older version, clean up by running the skills CLI removal for each installed agent (e.g. `npx -y skills remove Kir93/scrooge-mode -a codex`) and deleting any remaining `.agents/` or `skills-lock.json` from the project root.
 
 ### Permission Errors
 
