@@ -17,21 +17,22 @@ fidelity layer. Train/test separation still applies: judge the REPORT corpus
 Honesty: offline only (never a runtime per-reply receipt), subscription CLI (no
 paid API key — judge calls consume subscription usage, not metered cash), and the
 judge runs inside benchmarks/run.py's host_isolation so the host scrooge/caveman
-register hooks do not bias the impartial judge. Pin --model for a reproducible
-headline.
+register hooks do not bias the impartial judge. --model defaults to the shared
+latest-Opus pin (benchmarks/run.py LATEST_OPUS) so a new headline is reproducible
+without remembering a flag; pass it explicitly only to reproduce an older one.
 
 Step 1 (generate paired outputs — uses subscription usage):
   python3 benchmarks/run.py \
     --prompts benchmarks/prompts/ko-report.txt \
     --arms normal,scrooge:ko/full \
-    --model claude-opus-4-8 --resume \
+    --resume \
     --output benchmarks/results-ko-report.jsonl
 
 Step 2 (judge fidelity — uses subscription usage):
   python3 benchmarks/fidelity/run.py \
     --results benchmarks/results-ko-report.jsonl \
     --candidate-arm scrooge:ko/full \
-    --model claude-opus-4-8 --resume \
+    --resume \
     --output benchmarks/fidelity/results-ko-fidelity.jsonl
 """
 
@@ -49,6 +50,24 @@ HERE = Path(__file__).resolve().parent
 BENCH_DIR = HERE.parent
 
 import judge as judge_mod  # sibling module (benchmarks/fidelity/judge.py)
+
+def _latest_opus() -> str:
+    """Single source for the model pin: benchmarks/run.py LATEST_OPUS.
+
+    Loaded by path rather than re-declared, so generation and judging can never
+    drift onto different models — the duplication itself would be the bug.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_bench_run_pin", BENCH_DIR / "run.py")
+    mod = importlib.util.module_from_spec(spec)
+    import sys as _sys
+    _sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod.LATEST_OPUS
+
+
+LATEST_OPUS = _latest_opus()
+
 
 
 def _load_bench_run():
@@ -198,7 +217,9 @@ def main() -> int:
                     help="Compressed arm label, e.g. scrooge:ko/full.")
     ap.add_argument("--baseline-arm", default="normal", help="Baseline arm. Default normal.")
     ap.add_argument("--output", required=True, type=Path, help="Fidelity JSONL output (appended).")
-    ap.add_argument("--model", default=None, help="Pin the JUDGE model for reproducibility.")
+    ap.add_argument("--model", default=LATEST_OPUS,
+                    help=f"Judge model. Default {LATEST_OPUS} — same latest-Opus pin as "
+                         "benchmarks/run.py, so generation and judging never silently diverge.")
     ap.add_argument("--timeout", type=int, default=120, help="Per-judge-call timeout s. Default 120.")
     ap.add_argument("--max-pairs", type=int, default=0, help="Only judge the first N pairs. 0 = all.")
     ap.add_argument("--resume", action="store_true",

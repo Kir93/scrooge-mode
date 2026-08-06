@@ -21,14 +21,14 @@ Pipeline — step 1 generates, step 2 judges, same split as the fidelity bench:
   python3 benchmarks/run.py \\
     --prompts benchmarks/prompts/en-falsepremise.txt \\
     --arms normal,terse,scrooge:en/full \\
-    --runs 1 --model claude-opus-4-8 --resume \\
+    --runs 1 --resume \\
     --output benchmarks/results-en-falsepremise.jsonl
 
   # 2) judge each answer for premise rejection
   python3 benchmarks/fidelity/debunk.py \\
     --results benchmarks/results-en-falsepremise.jsonl \\
     --prompts benchmarks/prompts/en-falsepremise.txt \\
-    --model claude-opus-4-8 --judge-runs 1 \\
+    --judge-runs 1 \\
     --output benchmarks/fidelity/results-en-debunk.jsonl
 
 The comparison that matters is **scrooge vs normal**. `terse` sits between them to
@@ -48,6 +48,25 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import judge as judge_mod  # sibling module (benchmarks/fidelity/judge.py)
+
+BENCH_DIR = Path(__file__).resolve().parent.parent
+
+def _latest_opus() -> str:
+    """Single source for the model pin: benchmarks/run.py LATEST_OPUS.
+
+    Loaded by path rather than re-declared, so generation and judging can never
+    drift onto different models — the duplication itself would be the bug.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_bench_run_pin", BENCH_DIR / "run.py")
+    mod = importlib.util.module_from_spec(spec)
+    import sys as _sys
+    _sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod.LATEST_OPUS
+
+
+LATEST_OPUS = _latest_opus()
 
 
 def load_prompts(path: Path) -> list[str]:
@@ -109,7 +128,9 @@ def main() -> int:
     ap.add_argument("--results", required=True, type=Path, help="run.py JSONL with output_text.")
     ap.add_argument("--prompts", required=True, type=Path, help="The false-premise corpus.")
     ap.add_argument("--output", type=Path, help="Write per-row verdicts here (JSONL).")
-    ap.add_argument("--model", default=None, help="Pin the judge model.")
+    ap.add_argument("--model", default=LATEST_OPUS,
+                    help=f"Judge model. Default {LATEST_OPUS} — same latest-Opus pin as "
+                         "benchmarks/run.py, so generation and judging never silently diverge.")
     ap.add_argument("--judge-runs", type=int, default=1, help="Judge calls per answer. Default 1.")
     ap.add_argument("--timeout", type=int, default=120)
     args = ap.parse_args()
