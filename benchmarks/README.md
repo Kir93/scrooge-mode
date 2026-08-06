@@ -82,14 +82,20 @@ over another.
   for headline numbers. Never tune `rules/{ko,en}/*.md` against the report set, or
   the headline overstates real-world savings. The dev and report sets mirror the
   same categories (debug/explain/review/plan) and domains with disjoint prompts.
-- **Every new measurement uses the latest Opus.** Always pass `--model <id>` —
-  without it the CLI's configured model is used and the headline drifts silently —
-  and make that id the newest Opus available, which is also what Claude Code
-  defaults to. That is the model users actually run the register on; a number
-  measured on anything else describes a product nobody is using.
+- **Every new measurement uses the latest Opus — enforced, not requested.** The
+  pin is the `--model` **default**, not a note asking you to pass one:
+  `LATEST_OPUS` in [`run.py`](./run.py), shared by `fidelity/run.py` and
+  `fidelity/debunk.py` so generation and judging can never drift apart, with
+  `test_report_stats.py` asserting all three agree and that this README documents
+  the same value. Leaving `--model` unset used to fall through to the CLI's
+  configured model — which is exactly how the published tables ended up sitting on
+  `claude-opus-4-8` months after Claude Code moved to Opus 5, with only a caveat to
+  show for it. A prose rule did not stop that; a default does.
 
   Current pin: **`claude-opus-5`** (Claude Code's default since 2026-07-24,
-  v2.1.219).
+  v2.1.219). When a newer Opus ships, change that one constant. Override `--model`
+  only to reproduce an older published number — every row records the model the API
+  actually served, parsed from the session transcript, not the flag.
 
   Do **not** pin a headline to a non-default tier such as `claude-fable-5`: it is
   not what Claude Code runs and it sits at a different price tier, so the number
@@ -892,6 +898,24 @@ without dropping the parent session's other hooks or risking a plugin re-enable.
 wired there directly (off by default). All moved files are restored on exit; a
 stale backup (parent re-created the file mid-run) is discarded rather than
 clobbered.
+
+One `settings.json` key is an exception, rewritten in place rather than moved:
+**`ultracode`**. It instructs every session — a `claude --print` child included — to
+author a multi-agent workflow for any substantive task. The child announces the
+delegation ("I'll run a multi-agent workflow to cover…"), tries to spawn subagents,
+and dies mid-response (`API Error: Connection closed mid-response`), or returns a
+90-token stub saying the work is proceeding in the background. It does **not** hit
+the arms equally: a compressed arm's register suppresses the delegation, so on the
+2026-08-06 re-measure the `normal` baseline completed **8/19 with the flag on and
+19/19 with it off**, while the scrooge arm was ~unaffected. That is a selection
+effect on the baseline — the surviving rows are the answers that happened not to
+delegate — not noise that averages out, and a partially-delegated baseline is
+inflated on top of it (KO p0: 7446 tokens with it on, 4157 with it off). So
+`host_isolation` sets `ultracode: false` for the run and restores the file
+afterwards. Only that key is touched; moving the whole file would take
+`enabledPlugins` with it. The published ZH prompt-15 stub recorded in
+[`published/README.md`](./published/README.md) was this same mechanism before it was
+identified.
 
 After moving them, the harness runs a **pre-flight register check**
 (`verify_register_clean`) inside the isolation window: a remaining scrooge state file

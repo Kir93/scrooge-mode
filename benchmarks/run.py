@@ -56,6 +56,20 @@ TERSE_CONTROL_SYSTEM = (
 # Arm rule-text resolution
 # ---------------------------------------------------------------------------
 
+# The model every new measurement runs on. This is the *policy*, expressed as a
+# default rather than a note: leaving --model unset used to fall through to the
+# CLI's configured model, which is how the published tables silently ended up on
+# claude-opus-4-8 months after Claude Code moved to Opus 5. A doc line did not stop
+# that; a default does.
+#
+# Pin to the newest Opus, which is also Claude Code's default — that is the model
+# users actually run the register on. Do NOT point this at a non-default tier
+# (claude-fable-5): different tier, different price, not what the product runs on.
+# When a newer Opus ships, change this one line; benchmarks/README.md documents the
+# re-measurement policy and tests/test_report_stats.py asserts the two agree.
+LATEST_OPUS = "claude-opus-5"
+
+
 def resolve_arm(spec: str) -> tuple[str, str]:
     """Return (label, rule_text) for an arm spec. Empty rule_text = baseline."""
     if spec == "normal":
@@ -544,6 +558,47 @@ def iter_jobs(arms: list[tuple[str, str]], prompts: list[str], runs: int,
 ISOLATION_LOCK_DIR = Path("/tmp/scrooge-bench-isolation.lock.d")
 
 
+def _neutralize_ultracode(settings: Path, pid: int) -> Optional[tuple[Path, Path]]:
+    """Turn `ultracode` off in the host settings.json for the duration of a run.
+
+    This is isolation, not a preference. `ultracode: true` tells EVERY session —
+    including a `claude --print` child — to author a multi-agent workflow for any
+    substantive task. The child announces the delegation, tries to spawn subagents,
+    and dies mid-response in --print mode ("API Error: Connection closed"). It hits
+    the `normal` baseline hardest, because the compressed arms' register suppresses
+    delegation: measured on the 2026-08-06 re-measure, normal completed 8/19 with it
+    on and 19/19 with it off, while the scrooge arm was ~unaffected. Leaving it on
+    therefore does not add noise — it silently selects for the baseline answers that
+    happened NOT to delegate, and inflates the baseline of the ones that partially
+    did (KO p0: 7446 tokens with it on, 4157 with it off).
+
+    Only this one key is rewritten. `--isolate-settings` moves the whole file, which
+    also drops `enabledPlugins` and risks re-enabling marketplace plugins into every
+    arm — see host_isolation's docstring.
+    """
+    if not settings.exists():
+        return None
+    try:
+        data = json.loads(settings.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not data.get("ultracode"):
+        return None
+    backup = Path(f"/tmp/scrooge-bench-settings-ultracode.{pid}.bak")
+    if backup.exists():
+        raise RuntimeError(
+            f"refusing to clobber existing backup {backup}; resolve manually "
+            f"before re-running"
+        )
+    shutil.copy2(str(settings), str(backup))
+    data["ultracode"] = False
+    settings.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                        encoding="utf-8")
+    print(f"[isolation] ultracode disabled in {settings} for this run "
+          f"(backup {backup})", file=sys.stderr)
+    return (settings, backup)
+
+
 @contextlib.contextmanager
 def host_isolation(enabled: bool, isolate_settings: bool = False):
     """Neutralize host register hooks for the benchmark by moving their *state
@@ -620,7 +675,9 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
         safe = re.sub(r"[^A-Za-z0-9.]+", "-", str(sf.relative_to(claude)))
         targets.append((sf, Path(f"/tmp/scrooge-bench-{safe}.{pid}.bak")))
     moved = []
+    settings_edit = None
     try:
+        settings_edit = _neutralize_ultracode(claude / "settings.json", pid)
         for live, backup in targets:
             if live.exists():
                 if backup.exists():
@@ -640,6 +697,10 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
             elif backup.exists():
                 backup.unlink()
                 print(f"[isolation] discarded stale backup {backup}", file=sys.stderr)
+        if settings_edit:
+            live, backup = settings_edit
+            shutil.move(str(backup), str(live))
+            print(f"[isolation] restored {live} (ultracode)", file=sys.stderr)
         try:
             (ISOLATION_LOCK_DIR / "holder.pid").unlink(missing_ok=True)
             ISOLATION_LOCK_DIR.rmdir()
@@ -762,9 +823,11 @@ def main() -> int:
                     help="Skip successful (arm, prompt_id, run) keys already present in --output.")
     ap.add_argument("--keep-going-on-limit", action="store_true",
                     help="Do not stop serial execution when Claude reports a session/rate limit.")
-    ap.add_argument("--model", default=None,
-                    help="Pin the model passed to `claude --print` (e.g. claude-opus-4-7). "
-                         "Default: the CLI's configured model. Pin it for reproducible headline numbers.")
+    ap.add_argument("--model", default=LATEST_OPUS,
+                    help=f"Model passed to `claude --print`. Default {LATEST_OPUS} — the newest "
+                         "Opus, which is Claude Code's default and the model users actually run "
+                         "the register on. Override only to reproduce an older published number; "
+                         "every row records the model the API actually served.")
     ap.add_argument("--allow-contaminated", action="store_true",
                     help="Continue even if caveman activation channels are detected pre-run. "
                          "Off by default: a clean run aborts on any finding.")

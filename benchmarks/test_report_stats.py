@@ -8,6 +8,13 @@ cannot be re-derived from a committed JSONL.
 
 import unittest
 
+import importlib.util
+import json
+import os
+import pathlib
+import shutil
+import tempfile
+
 from report import bootstrap_ci, mde, noise_floor, sign_test
 
 
@@ -87,6 +94,96 @@ class TestNoiseFloor(unittest.TestCase):
 
     def test_zero_mean_cell_is_skipped(self):
         self.assertIsNone(noise_floor([[0.0, 0.0]]))
+
+
+def _load(name, rel):
+    import sys
+    here = pathlib.Path(__file__).resolve().parent
+    # fidelity/run.py imports its sibling `judge`; without this the load fails on
+    # ModuleNotFoundError rather than on anything this test is about.
+    fid = str(here / "fidelity")
+    if fid not in sys.path:
+        sys.path.insert(0, fid)
+    spec = importlib.util.spec_from_file_location(name, here / rel)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class TestModelPin(unittest.TestCase):
+    """The latest-Opus pin is a policy; these keep it from becoming a note.
+
+    The published tables sat on claude-opus-4-8 for months after Claude Code moved
+    to Opus 5, with only a README caveat to show for it. A prose rule did not stop
+    that, so the pin now lives in code as a default and CI asserts the docs agree.
+    """
+
+    def test_every_harness_shares_one_pin(self):
+        run = _load("_pin_run", "run.py")
+        fid = _load("_pin_fid", "fidelity/run.py")
+        deb = _load("_pin_deb", "fidelity/debunk.py")
+        self.assertEqual(run.LATEST_OPUS, fid.LATEST_OPUS)
+        self.assertEqual(run.LATEST_OPUS, deb.LATEST_OPUS)
+
+    def test_pin_is_an_opus_and_not_a_side_tier(self):
+        run = _load("_pin_run2", "run.py")
+        self.assertIn("opus", run.LATEST_OPUS)
+        # fable/mythos are a different tier and price: not what Claude Code runs,
+        # so a headline measured there would describe neither behaviour nor cost.
+        for other in ("fable", "mythos", "sonnet", "haiku"):
+            self.assertNotIn(other, run.LATEST_OPUS)
+
+    def test_readme_documents_the_pin_the_code_uses(self):
+        run = _load("_pin_run3", "run.py")
+        readme = (pathlib.Path(__file__).resolve().parent / "README.md").read_text(encoding="utf-8")
+        self.assertIn(f"`{run.LATEST_OPUS}`", readme)
+
+
+class TestUltracodeNeutralization(unittest.TestCase):
+    """`ultracode: true` makes a --print child spawn a workflow and die mid-response,
+    which silently biases the `normal` baseline. Isolation must switch it off for the
+    run and put the file back byte-for-byte otherwise."""
+
+    def setUp(self):
+        self.run = _load("_uc_run", "run.py")
+        self.tmp = pathlib.Path(tempfile.mkdtemp())
+        self.settings = self.tmp / "settings.json"
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        for b in pathlib.Path("/tmp").glob("scrooge-bench-settings-ultracode.*.bak"):
+            if b.stem.endswith(f".{os.getpid()}"):
+                b.unlink()
+
+    def _write(self, data):
+        self.settings.write_text(json.dumps(data), encoding="utf-8")
+
+    def test_disables_the_flag_and_keeps_every_other_key(self):
+        self._write({"ultracode": True, "enabledPlugins": {"a": True}, "model": "opus"})
+        edit = self.run._neutralize_ultracode(self.settings, os.getpid())
+        self.assertIsNotNone(edit)
+        after = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertFalse(after["ultracode"])
+        self.assertEqual(after["enabledPlugins"], {"a": True})
+        self.assertEqual(after["model"], "opus")
+        # the backup restores the original verbatim
+        live, backup = edit
+        self.assertTrue(backup.exists())
+        self.assertTrue(json.loads(backup.read_text(encoding="utf-8"))["ultracode"])
+        backup.unlink()
+
+    def test_no_op_when_the_flag_is_absent_or_off(self):
+        for data in ({"model": "opus"}, {"ultracode": False}):
+            self._write(data)
+            before = self.settings.read_text(encoding="utf-8")
+            self.assertIsNone(self.run._neutralize_ultracode(self.settings, os.getpid()))
+            self.assertEqual(self.settings.read_text(encoding="utf-8"), before)
+
+    def test_missing_or_unparseable_settings_is_not_fatal(self):
+        self.assertIsNone(self.run._neutralize_ultracode(self.tmp / "absent.json", os.getpid()))
+        self.settings.write_text("{not json", encoding="utf-8")
+        self.assertIsNone(self.run._neutralize_ultracode(self.settings, os.getpid()))
 
 
 if __name__ == "__main__":
