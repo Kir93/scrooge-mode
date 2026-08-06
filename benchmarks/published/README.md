@@ -37,6 +37,11 @@ reproduce them exactly.
 | [`results-en-debunk.jsonl`](./results-en-debunk.jsonl) | EN false-premise: `scrooge:en/full` 10/10 debunked (judge N=3) | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/en-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
 | [`results-ko-debunk.jsonl`](./results-ko-debunk.jsonl) | KO false-premise: `scrooge:ko/full` **19/20** debunked (judge N=3), vs `normal` 19/19 — Fisher exact p=1.000 | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/ko-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
 | [`results-debunk-controls.jsonl`](./results-debunk-controls.jsonl) | `normal` / `terse` control arms for both false-premise corpora (judge N=1) | `claude-opus-4-8` | v0.23.0 | 2026-08-05 | `prompts/{en,ko}-falsepremise.txt` | `--cwd` empty + global CLAUDE.md aside |
+| [`results-ko-report-opus5.jsonl`](./results-ko-report-opus5.jsonl) | KO held-out **+77.3%** ratio-of-medians (per-prompt median 78.3%, N=19) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/ko-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-en-report-opus5.jsonl`](./results-en-report-opus5.jsonl) | EN held-out **+71.2%** ratio-of-medians (per-prompt median 71.7%, N=19) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/en-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-ja-report-opus5.jsonl`](./results-ja-report-opus5.jsonl) | JA held-out **+77.4%** ratio-of-medians (per-prompt median 74.0%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/ja-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-hi-report-opus5.jsonl`](./results-hi-report-opus5.jsonl) | HI held-out **+79.1%** ratio-of-medians (per-prompt median 81.1%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/hi-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-zh-report-opus5.jsonl`](./results-zh-report-opus5.jsonl) | ZH held-out **+72.9%** ratio-of-medians (per-prompt median 70.7%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/zh-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
 
 The three `-debunk` files are the **safety axis**, not claim-preservation: each row
 is one boolean — did the answer reject the false premise the question asserted.
@@ -44,19 +49,42 @@ They back [False premises](../README.md#false-premises--one-demonstrated-failure
 which reports one reproducible Korean failure at a rate the sample cannot separate from the baseline. They are published because a measurement you
 might fail is only worth running if you publish it either way.
 
-**Register drift, 2026-08 — these fidelity numbers describe a prior register.**
-The judge rows in this manifest were measured against register version v0.21.x.
-`rules/**` then changed substantively in v0.22.0 (safety-guard and pro-drop porting
-across all ten registers) and again in v0.23.0 (the `lite` dial removed entirely).
-Those judge rows have **not** been re-run since. They are published as dated
-measurements of the register version named in each row, not as guarantees about the
-current one. The token rows are unaffected — they measure output length, not
-claim-preservation, and their register version is recorded per file above.
+**Register drift 2026-08 — disclosed, then closed by re-measurement (2026-08-06).**
+The `claude-opus-4-8` judge rows were measured against register v0.21.x. `rules/**`
+then changed substantively in v0.22.0 (safety-guard and pro-drop porting across all
+ten registers) and again in v0.23.0 (the `lite` dial removed), and v0.22.0/v0.22.1
+shipped with the CI re-measurement marker firing and no record at all. v0.23.0 took
+the `Disclose` disposition [`RELEASE.md`](../../RELEASE.md) §1a defines. The judge
+has now been re-run on the current register — the `-opus5` rows below — so the
+disclosure is discharged rather than carried forward.
 
-This is the `Disclose` disposition [`RELEASE.md`](../../RELEASE.md) §1a defines:
-a substantive rule change may ship without a judge re-run **only** if it is recorded
-here. v0.22.0 and v0.22.1 shipped with the CI re-measurement marker firing and no
-record at all; this note closes that gap and the release gate now blocks a repeat.
+**What the re-measure found: the drop is the model, not the register.** Every
+language fell on claim-preservation (KO 0.68→0.42, EN 0.72→0.50, JA 0.60→0.40,
+HI 0.76→0.42, ZH 0.72→0.40) while output saved rose (+4 to +15pp). That reads like
+a register regression until you check English: `rules/en/full.md` is **byte-identical
+between v0.21.0 and v0.23.0** (`git show v0.21.0:rules/en/full.md | shasum` matches
+`HEAD`), yet EN fell 0.22 on the same 11 prompts — inside the −0.20…−0.34 range of
+the four languages whose register *did* change. An unchanged register cannot cause
+its own regression, so the common cause is the model pin, `claude-opus-4-8` →
+`claude-opus-5`.
+
+The mechanism is on the candidate side, not the baseline. Median `scrooge` output
+fell in every language (KO 986→768, EN 1076→665, JA 880→750, HI 897→675,
+ZH 897→702) while the `normal` baseline moved both ways (EN 2575→2311, ZH
+2703→2594, KO 3285→3381, JA 2477→3313, HI 2436→3226). So opus-5 applies the same
+rule text **more aggressively** — it compresses harder and drops more claims doing
+it. Higher savings and lower claim-preservation are the same fact seen twice.
+Fidelity is measured against whatever the baseline asserted, so these figures are
+not comparable across model pins; both sets stay published side by side rather than
+one replacing the other.
+
+Both `-opus5` sets ran with `ultracode` disabled in the host `settings.json`. Left
+on, it tells every `claude --print` child to author a multi-agent workflow; the child
+announces the delegation and dies mid-response, and it hits the `normal` baseline far
+harder than the compressed arms (measured: `normal` completed 8/19 with it on,
+19/19 with it off). That is a selection effect on the baseline, not noise, so
+`benchmarks/run.py` host isolation now switches the flag off for the duration of a
+run and restores it afterwards.
 
 The two `-tuning` files are the **dev/tuning** corpus, not the held-out one every
 language table quotes. ADR-003 keeps the two separate, so these numbers exist to
@@ -134,6 +162,17 @@ from these rows.
 | [`results-ja-fidelity.jsonl`](./results-ja-fidelity.jsonl) | JA fidelity 0.60 median claim-preservation, safety 11/11 | `claude-opus-4-8` | 3 | 2026-06-29 |
 | [`results-hi-fidelity.jsonl`](./results-hi-fidelity.jsonl) | HI fidelity 0.76, safety 10/11 | `claude-opus-4-8` | 3 | 2026-07-01 |
 | [`results-zh-fidelity.jsonl`](./results-zh-fidelity.jsonl) | ZH fidelity 0.72, safety 11/11 | `claude-opus-4-8` | 3 | 2026-07-01 |
+| [`results-ko-fidelity-opus5.jsonl`](./results-ko-fidelity-opus5.jsonl) | KO fidelity **0.42**, safety 13/19 — current register on the current model pin | `claude-opus-5` | 3 | 2026-08-06 |
+| [`results-en-fidelity-opus5.jsonl`](./results-en-fidelity-opus5.jsonl) | EN fidelity **0.50**, safety 15/19 | `claude-opus-5` | 3 | 2026-08-06 |
+| [`results-ja-fidelity-opus5.jsonl`](./results-ja-fidelity-opus5.jsonl) | JA fidelity **0.40**, safety 10/11 | `claude-opus-5` | 3 | 2026-08-06 |
+| [`results-hi-fidelity-opus5.jsonl`](./results-hi-fidelity-opus5.jsonl) | HI fidelity **0.42**, safety 10/11 | `claude-opus-5` | 3 | 2026-08-06 |
+| [`results-zh-fidelity-opus5.jsonl`](./results-zh-fidelity-opus5.jsonl) | ZH fidelity **0.40**, safety 11/11 | `claude-opus-5` | 3 | 2026-08-06 |
+
+The `-opus5` rows are the v0.23.0 register re-measure; their paired token rows are
+the `-report-opus5` files in the provenance table above. They supersede nothing —
+the `claude-opus-4-8` rows above stay, because they are what the KO/EN/JA/HI/ZH
+tables were measured on and a table keeps the model it was measured on
+([`benchmarks/README.md`](../README.md#pin-the-model-and-isolate-the-host)).
 
 ### Not published
 

@@ -178,7 +178,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | **`scrooge:ko/full`** |                  **1042** |         **~70%** |
 | `caveman:full`        |                      1005 |             ~71% |
 
-`terse`보다도 짧으므로 단순 brevity가 아니라 register 효과임. `caveman:full`은 비슷한 token 수(**1005** vs **1042**)지만 문법을 깨고 그럼. 주장 보존은 두 파일의 median만 보면 0.68 vs 0.60이나, 두 arm이 **같은 프롬프트**를 답했으므로 paired가 옳은 통계량 — paired 차이는 **+0.01, 95% CI −0.02~+0.10(8승 4무 4패)**. 한국어에서는 이 코퍼스로 두 도구가 **구분되지 않음**. median 격차는 두 표본을 따로 비교한 데서 온 착시였고, v0.22.1까지 이 repo는 그것을 자기 fidelity 근거 중 강한 쪽으로 인용했음. safety prose 보존은 양쪽 동일(각 12/16). 손실은 breadth이지 오정보가 아님. [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). rows: [토큰](./benchmarks/published/results-ko-clean-opus48.jsonl) · [judge](./benchmarks/published/results-ko-fidelity.jsonl).
+`terse`보다도 짧으므로 단순 brevity가 아니라 register 효과임. `caveman:full`은 비슷한 token 수(**1005** vs **1042**)지만 문법을 깨고 그럼. 주장 보존은 두 파일의 median만 보면 0.68 vs 0.60이나, 두 arm이 **같은 프롬프트**를 답했으므로 paired가 옳은 통계량 — paired 차이는 **+0.01, 95% CI −0.02~+0.10(8승 4무 4패)**. 한국어에서는 이 코퍼스로 두 도구가 **구분되지 않음**. median 격차는 두 표본을 따로 비교한 데서 온 착시였고, v0.22.1까지 이 repo는 그것을 자기 fidelity 근거 중 강한 쪽으로 인용했음. safety prose 보존은 양쪽 동일(각 12/16). 손실은 breadth이지 오정보가 아님. 현재 모델 pin(`claude-opus-5`, 2026-08-06)에서 같은 코퍼스는 **0.42 · safety 13/19**, 절감은 **+78.3%**로 더 큼 — opus-5가 같은 rule text를 더 공격적으로 적용해 더 많이 압축하고 그만큼 더 버림([근거](./benchmarks/published/README.md#fidelity-judge-scored-n3)). [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). rows: [토큰](./benchmarks/published/results-ko-clean-opus48.jsonl) · judge [opus-4-8](./benchmarks/published/results-ko-fidelity.jsonl) · [opus-5](./benchmarks/published/results-ko-fidelity-opus5.jsonl).
 
 ### 영어
 
@@ -189,7 +189,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | **`scrooge:en/full`** |                   **773** |         **~67%** |
 | `caveman:full`        |                       649 |             ~72% |
 
-`caveman:full`은 raw token이 더 적음(**649** vs **773**). fidelity 차이가 실제로 드러나는 쪽은 영어임: scrooge가 **11개 중 9개**에서 앞서고 paired median **+0.09(95% CI +0.04~+0.11)**. 구간은 0을 제외하나 n=11 exact sign test는 p=0.065라 "방향은 일관되나 확정은 아님"으로 읽어야 함. safety 보존은 동일(각 9/11) — [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). rows: [토큰](./benchmarks/published/results-en-clean-opus48.jsonl) · [judge](./benchmarks/published/results-en-fidelity.jsonl).
+`caveman:full`은 raw token이 더 적음(**649** vs **773**). fidelity 차이가 실제로 드러나는 쪽은 영어임: scrooge가 **11개 중 9개**에서 앞서고 paired median **+0.09(95% CI +0.04~+0.11)**. 구간은 0을 제외하나 n=11 exact sign test는 p=0.065라 "방향은 일관되나 확정은 아님"으로 읽어야 함. safety 보존은 동일(각 9/11) — [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). 현재 pin(`claude-opus-5`, 2026-08-06)에서는 **0.50 · safety 15/19**, 절감 **+71.7%**. 영어가 원인을 특정하는 통제군임 — `rules/en/full.md`는 v0.21.0 이후 바이트 단위로 안 바뀌었는데도 같은 폭으로 하락했으므로 register 회귀가 아니라 모델 pin 효과임([전체 논증](./benchmarks/published/README.md#fidelity-judge-scored-n3)). rows: [토큰](./benchmarks/published/results-en-clean-opus48.jsonl) · judge [opus-4-8](./benchmarks/published/results-en-fidelity.jsonl) · [opus-5](./benchmarks/published/results-en-fidelity-opus5.jsonl).
 
 ### 일본어 · 힌디어 · 중국어
 
@@ -200,6 +200,8 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | `scrooge:ja/full` | 2399 | **833** | **~65%** (per-prompt 69.6%) | 0.60, safety 11/11 |
 | `scrooge:hi/full` | 2436 | **897** | **~63%** (per-prompt 66.6%) | 0.76, safety 10/11 |
 | `scrooge:zh/full` | 2703 | **897** | **~67%** (per-prompt 62.9%) | 0.72, safety 11/11 |
+
+`claude-opus-4-8` 측정치이며 표는 측정된 모델을 그대로 유지함. 현재 pin(`claude-opus-5`, 2026-08-06, 같은 코퍼스·N) 재측정: JA **+77.4%**·0.40·safety 10/11, HI **+79.1%**·0.42·10/11, ZH **+72.9%**·0.40·11/11 — KO·EN 절과 같은 교환이고 원인도 같음.
 
 register별 설계 노트·격리 caveat·전체 fidelity 판독: [`benchmarks/README.md`](./benchmarks/README.md#per-language-detail). Raw rows는 [`published/`](./benchmarks/published/).
 
@@ -224,7 +226,7 @@ scrooge가 **모든** 프롬프트에서 baseline보다 작았고 `terse` contro
 | 언어              | EN (+ wenyan 한문)                 | KO, EN, JA, HI, ZH; `registry.json` 기반 i18n          |
 | 한국어 register   | 없음                               | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default  |
 | 이번 영어 결과    | `649` median tokens (telegraphic)  | `773` median tokens — 약간 많고 주장 보존 점수가 소폭 높음 |
-| 정면 비교 fidelity | 0.60 KO · 0.69 EN                  | 0.68 KO · 0.72 EN — 단 **paired**로는 KO 무승부(+0.01, CI가 0 포함), EN만 분리됨(+0.09, 11개 중 9개). 같은 코퍼스·judge N=3, safety는 양쪽 동률 |
+| 정면 비교 fidelity (`claude-opus-4-8`) | 0.60 KO · 0.69 EN                  | 0.68 KO · 0.72 EN — 단 **paired**로는 KO 무승부(+0.01, CI가 0 포함), EN만 분리됨(+0.09, 11개 중 9개). 같은 코퍼스·judge N=3, safety는 양쪽 동률. `claude-opus-5`에서는 정면 비교 미실시 — scrooge arm만 재측정했으므로 현재 pin의 caveman 대조군은 없음 |
 | 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
 | 입력측 압축       | `caveman-shrink`(npm MCP 미들웨어) | 없음 — 출력 register 전용. v0.22.1까지 있던 opt-in `memory-compress` CLI는 자체 측정(floor 7.7%, 실현 가능 ~3~4%)과 prompt cache 요금 구조상 표면 값어치가 없어 제거 |
 
