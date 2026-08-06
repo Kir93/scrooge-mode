@@ -51,24 +51,33 @@ export function scanText(text) {
   return leaks;
 }
 
-// Structural checks on a parsed JSONL row: output_text must be gone (D2, full
+// Prose-bearing keys that must never reach published/. `output_text` is the D2
+// case; `missing_claims` is the judge's verbatim excerpt of what the compressed
+// answer dropped — same category, and it leaks the same way: the 2026-08-06
+// re-measure published a zh row whose missing_claims quoted an answer that had
+// echoed the bench working directory, so the excerpt carried a /Users/ path the
+// enumerated-token scan would otherwise have to guess at. Excerpts stay in the
+// gitignored local file; published rows keep only the scores derived from them.
+const PROSE_KEYS = ['output_text', 'missing_claims'];
+
+// Structural checks on a parsed JSONL row: the prose keys must be gone (D2, full
 // removal — a truncated remnant is rejected because its key still being present
 // signals partial-preservation), and session_file must be a bare filename.
 export function scanRow(row) {
   const leaks = [];
   if (!row || typeof row !== 'object') return leaks;
-  if ('output_text' in row) leaks.push('output_text-present');
+  for (const k of PROSE_KEYS) if (k in row) leaks.push(`${k}-present`);
   const sf = row.session_file;
   if (typeof sf === 'string' && /[/\\]/.test(sf)) leaks.push(`session-path:${sf}`);
   return leaks;
 }
 
-// Publish-ready row: drop output_text entirely (D2), reduce session_file to its
+// Publish-ready row: drop the prose keys entirely (D2), reduce session_file to its
 // bare basename so any leaked directory path is stripped.
 export function toPublishRow(row) {
   const out = {};
   for (const [k, v] of Object.entries(row)) {
-    if (k === 'output_text') continue;
+    if (PROSE_KEYS.includes(k)) continue;
     if (k === 'session_file' && typeof v === 'string') out[k] = v.replace(/^.*[/\\]/, '');
     else out[k] = v;
   }
