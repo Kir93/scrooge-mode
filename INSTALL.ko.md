@@ -165,7 +165,7 @@ mv ~/.codex/config.toml.bak ~/.codex/config.toml
 
 ## 플래그 (lean 기본 on)
 
-`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +34.6%**(n=22) / **EN +10.3%**(n=21), est·prose-only·`claude-opus-4-8`. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`. 기본값 변경:
+`lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 양보 안 함(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%) / **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체함([근거](benchmarks/README.md#the-lean-flag-numbers)). 기본값 변경:
 
 - 세션 단위: `/scrooge … nolean`(lean 해제).
 - shell 프로필로 전역:

@@ -166,7 +166,7 @@ mv ~/.codex/config.toml.bak ~/.codex/config.toml
 
 ## Flags (lean on by default)
 
-`lean` (minimal code output) is **on by default** — `/scrooge` trims over-engineering and narration, never correctness (its fragment pins the safety floor). Measured on top of `full`, paired against the same register without the flag: **KO +34.6%** (n=22) / **EN +10.3%** (n=21), est, prose-only, `claude-opus-4-8`. Reproduce with `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired`. To change the default:
+`lean` (minimal code output) is **on by default** — `/scrooge` trims over-engineering and narration, never correctness (its fragment pins the safety floor). Measured on top of `full`, paired against the same register without the flag: **KO +17.6%** (95% CI 10.2–43.7%) / **EN +18.1%** (95% CI 10.7–28.3%), est, prose-only, `claude-opus-4-8`, 8 prompts × 3 runs each. Reproduce with `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. These supersede the KO +34.6% / EN +10.3% pair published through v0.22.1 ([why](benchmarks/README.md#the-lean-flag-numbers)). To change the default:
 
 - Per session: `/scrooge … nolean` (drop lean).
 - Globally via your shell profile:
