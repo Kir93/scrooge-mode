@@ -703,19 +703,64 @@ These doc-generation numbers are **noisier than the conversational headline** �
 
 `run.py` measures one turn per session — its `--resume` resumes a results file,
 not a conversation — so "does a `## Boundaries` exclusion survive a long session,
-compaction included?" had no reproducible path. Three scripts answer it:
+compaction included?" had no reproducible path. Four scripts answer it:
 
-| Script | Question |
-| ------ | -------- |
-| `persistence-run.py` | Does the boundary hold across N turns of ONE session, past forced compaction? |
-| `iso-single.py` | Does it hold when the register is the ONLY instruction in scope (no host prompt, no project `CLAUDE.md`)? |
-| `persistence-score.py` | Deterministic verdict per response — no judge model, no judge variance. |
+| Script | Question | Quota |
+| ------ | -------- | ----- |
+| `transcript-scan.py` | Did the boundary hold in the sessions that ALREADY happened — real hooks, real work? | **none** |
+| `persistence-run.py` | Does it hold across N turns of one hooked session, past compaction? | 1 call/turn/arm |
+| `iso-single.py` | Does it hold when the register is the ONLY instruction in scope? | 1 call/prompt/arm |
+| `persistence-score.py` | Deterministic verdict per artifact — no judge model, no judge variance. | none |
+
+**Start with `transcript-scan.py`.** It spends nothing and measures the shipped
+product rather than a reconstruction of it: sessions where scrooge was actually
+active are already on disk, they ran under the real hooks, and their artifacts are
+real work. It buckets every artifact by how many user turns had passed since the
+last full-rule injection.
+
+All three `## Boundaries` classes are reachable, because each one is a whole tool
+argument rather than prose — the structural fence the `=== OUTPUT ===` marker has
+to manufacture in a live run:
+
+| Class | Where the artifact is |
+| ----- | --------------------- |
+| `commit` | the body of `git commit -m` |
+| `pr` | `gh pr create/edit --body`, and `--body-file` resolved back to the `Write`/heredoc that produced the file |
+| `outbound` | the `text` argument of a Slack MCP send |
+
+```bash
+benchmarks/transcript-scan.py                  # summary
+benchmarks/transcript-scan.py --min-drift 10   # only the deep end
+```
+
+Reading on this machine, 2026-08-25: **614 artifacts across 190 sessions, of which
+67 are scorable — 2 violations, both in the `pr` class**, drift depth p50 6 / p90 15
+/ p99 22 / max 33. Per class: `commit` 550 (3 scorable, 0 violations), `outbound` 24
+(24 scorable, 0), `pr` 40 (40 scorable, 2). The corpus grows with every session, so
+these move; that is the point of a scan that costs nothing to re-run.
+
+**Read `violations` against `scorable`, not against `artifacts`.** 547 of the 550
+commit artifacts are single-line Korean subjects (`type: 한글 설명`) with no
+sentence ending in them at all, so they cannot carry a leak this scorer can see
+whatever the register did — pooling them into a clean rate manufactures a
+near-tautology, and the commit class as written by these repos is close to
+unfalsifiable. What the prose-shaped subset shows is the `pr` pair: one real 음슴체
+leak in an otherwise 존댓말 PR body (`…를 빌드함`) and one checklist bullet
+(`- [x] … 유지됨`). A third flag turned out to be a scorer false positive on a line
+ending in the noun 포함, which is what added the `포함` lookbehind to
+`persistence-score.py` — the first defect this scan found in the scorer rather than
+in the register.
+
+Rows carry verbatim commit messages, PR bodies, and Slack text from every project
+on the machine, most of them not this repo's. `--output` is a local diagnostic: do
+not commit the raw file, and scrub anything derived from it.
 
 Corpora: `prompts/{ko,en}-outbound.txt` — both boundary classes: commit messages
 and PR descriptions (permanently excluded) and Slack/DM/mail drafts (Docs·prose —
-compressed for padding, tone kept). Neither may come out in 음슴체. Every prompt asks for a
-`=== OUTPUT ===` line before the artifact, which is what lets the scorer separate
-the artifact from talk about the artifact.
+compressed for padding, tone kept). Neither may come out in 음슴체. Every prompt asks
+for a `=== OUTPUT ===` / `=== END ===` PAIR around the artifact, which is what lets
+the scorer separate the artifact from talk about it — meta lands on both sides, so
+a start-only marker scored a trailing note as part of the artifact.
 
 Reproduce:
 
@@ -724,12 +769,18 @@ Reproduce:
 benchmarks/persistence-run.py --dry-run --arms "scrooge:ko/full,normal" \
   --prompts benchmarks/prompts/ko-outbound.txt --turns 4 --output /tmp/smoke.jsonl
 
-# multi-turn: one session per arm, probes interleaved with unscored filler turns
+# multi-turn: one session per arm; probes and unscored filler turns interleaved,
+# plus a `liveness` turn every 4th. The filler corpus is `ko-docgen.txt`, NOT
+# `ko.txt`: the short conversational prompts reach only ~50-60k tokens over 16
+# turns and the measured compaction floor is ~64.7k, so they finish having never
+# compacted. FILLER COUNT is the variable: 8 docgen fillers produced 5-6
+# compactions, 4 produced none — and with a liveness turn every 4th, 20 turns is
+# what yields 8 fillers.
 benchmarks/persistence-run.py \
   --arms "scrooge:ko/full,normal" \
   --prompts benchmarks/prompts/ko-outbound.txt \
-  --filler-prompts benchmarks/prompts/ko.txt \
-  --turns 12 --autocompact 100k \
+  --filler-prompts benchmarks/prompts/ko-docgen.txt \
+  --turns 20 --autocompact 100k \
   --output benchmarks/results-ko-persistence.jsonl
 benchmarks/persistence-score.py --input benchmarks/results-ko-persistence.jsonl
 
@@ -740,25 +791,79 @@ benchmarks/iso-single.py \
   --output benchmarks/results-ko-outbound-iso.jsonl
 ```
 
+**Measured, 2026-08-25** (`claude-opus-5`, register v0.23.1, rows:
+[`published/results-ko-persistence.jsonl`](./published/results-ko-persistence.jsonl)):
+
+| Arm | Boundary violations | Liveness | Compactions | Injections | Failed turns |
+| --- | ------------------- | -------- | ----------- | ---------- | ------------ |
+| `scrooge:ko/full` | **0 / 7** | 5/5 compressed | 1 | 2 | 0 |
+| `normal` | 0 / 7 | 0/5 compressed (expected) | 2 | 0 | 1 |
+
+All three validity gates pass on the register arm: the liveness control says the
+register was live for the whole session, the compaction count says the run crossed
+the window it claims to test, and 2 injections against 1 compaction is
+startup-plus-compaction — the persistence shape, not one re-assertion per turn. So
+the reading is: **a permanently-excluded artifact class stayed uncompressed across
+20 turns of boundary-free reminders and one compaction.** The baseline's 0/7 is the
+control it should be — ordinary Korean does not trip this scorer either, which is
+what keeps the register arm's zero from being an artifact of a lenient rule.
+
+The sample is one session per arm and 7 probes each. It shows the boundary holding
+where it had never been measured at all; it is not a rate.
+
 Caveats that decide whether a run is valid:
 
-- **Host isolation is a precondition, not an option.** Both runners take the same
-  `host_isolation` + `check_register_clean` preflight `run.py` does, and abort on a
-  blocking finding. Without it the user's own scrooge hook injects the register
-  into every child call — re-injecting each turn the very thing whose survival is
-  the question, and compressing the `normal` arm too.
+- **The multi-turn runner delivers the register through the REAL hook channel.**
+  Not `--system-prompt`: that was measured not to survive `--resume` at all, and
+  even where it applies it re-asserts the whole rule every turn, which the product
+  never does. `persistence-run.py` instead writes a bench `settings.json` wiring
+  this repo's `SessionStart` + `UserPromptSubmit` hooks against a throwaway
+  `CLAUDE_CONFIG_DIR`, and the arm IS that config dir's state file (`normal`
+  leaves it absent, and the hook then emits nothing — same code path, not a
+  different one). Isolation comes from `--setting-sources project`, which drops
+  the user's own settings and with them their scrooge plugin, so no register state
+  or settings under `~/.claude` are touched: no lock, no restore step, and no way
+  for an interrupted run to leave the user deactivated. The session TRANSCRIPT does
+  still land under `~/.claude/projects` — the override is set on the hook commands,
+  not on the `claude` process — and that is what `compactions_seen()` reads back.
+  `--model` must be passed explicitly, since
+  that flag drops the user's model setting too. `iso-single.py` still goes through
+  `run.py`'s `host_isolation` preflight — it replaces the host prompt on purpose,
+  which is a different question.
+- **One injection per session is persistence; one per turn is not.** Every turn is
+  a separate `claude --print --resume` process, so whether the CLI raises
+  `SessionStart` on resume decides what this harness measures at all. Measured on
+  CLI 2.1.220 it does not: a 22-turn bench session recorded exactly two full-rule
+  injections, `SessionStart:startup` and `SessionStart:compact`. That is a CLI
+  behavior nothing here controls, so it is counted rather than trusted — each row
+  carries `injections`, and an arm with more of them than startup-plus-compactions
+  can explain is reported as having measured **re-injection, not persistence**.
+- **Liveness gates the whole run.** Every probe artifact is a `## Boundaries`
+  class, so "the boundary held" and "the register was never applied" produce
+  identical rows. A `liveness` turn every 4th — an ordinary technical question,
+  outside every Boundaries class — is scored in REVERSE: compressed is the pass.
+  An arm whose liveness turns came back uncompressed is reported **void, not
+  clean**. This is the internal control that makes a single-arm hooked run valid
+  without a neutral arm. The verdict is a MAJORITY, not unanimity: the scorer's
+  uncompressed-register test fires on 9.0% of answers that are demonstrably
+  compressed (n=1464 real KO answers carrying 음슴체 endings), so over 5 liveness
+  turns a unanimity rule would void a valid run ~38% of the time. A single odd turn
+  is reported as within that rate; a majority is reported as a mid-session lapse.
 - **Only probe turns are scored.** Filler turns are ordinary conversation where a
   compressed register is the correct behavior; the scorer reads each row's `kind`
   and skips the rest, then reports per arm (a pooled rate mixes a register with
   its own baseline).
-- **Check `register_in_transcript` on the first real run.** The harness assumes a
-  `--resume` turn inherits the `--system-prompt` set on turn 1. If that is wrong,
-  every arm collapses to the same thing and the run reports "boundary held" for
-  the wrong reason. The field records the answer per row; it is never used as a
-  verdict.
-- **Compaction has to be forced.** `--autocompact` takes `auto` or 100k-1M
-  tokens and the CLI rejects anything else. A session that never compacts has not
-  tested the claim; a rejected value fails loudly rather than running without it.
+- **Compaction is verified, not assumed.** `--autocompact` sets the auto-compact
+  window; it does not trigger one, and it takes `auto` or 100k-1M — the CLI rejects
+  anything else, so a bad value fails loudly rather than running unset. Measured
+  locally, the smallest observed trigger was ~64.7k tokens, and a 12-turn run of the
+  short outbound probes reaches roughly 50-60k, so the obvious command finishes
+  every turn having never compacted. A long `--filler-prompts` corpus (e.g.
+  `prompts/ko-docgen.txt`) is what crosses the window. Each row records the running
+  `compact_boundary` count and an arm ending at 0 is reported as not having tested
+  the post-compaction path — read that field rather than assuming a turn count is
+  enough. The published run crossed it: 20 turns with 8 docgen fillers produced 1
+  compaction on the register arm and 2 on the baseline.
 - **File-mutating tools stay denied** (the default). With tools available the
   model writes the document to a file and answers "wrote X.md", leaving no
   artifact to score — the same reason the doc-generation corpus needs

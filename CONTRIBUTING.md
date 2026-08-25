@@ -47,7 +47,7 @@ node --test tests/test_registry_parity.js
 
 `npm test` already runs it. `tests/test_registry_parity.js` is the single source for this check — it also guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness, so keep new checks there instead of adding another copy to a doc or workflow.
 
-GitHub branch protection should require the `CI / verify` workflow before merging to `main`. That makes test (registry reachability included), markdownlint, and JSON failures block merges.
+GitHub branch protection should require three checks before merging to `main`: `verify (18)`, `verify (22)`, and `markdown-lint`. Name them exactly — `verify` runs as a node-version matrix, so GitHub publishes one check per entry and there is no check called `verify` to select. `markdown-lint` is a separate job (it needs node>=20, and keeping it out of the matrix means neither a lower matrix entry breaks it nor a matrix edit silently drops it), so requiring the `verify` pair alone would let a markdownlint failure merge. Together they make test (registry reachability included), markdownlint, and JSON failures block merges. Adding a matrix entry adds a check name — require it too, or that version's failures stop blocking.
 
 ## Bilingual + Dial Parity
 
@@ -80,7 +80,7 @@ The registry parity check catches a forgotten registry entry, an unreachable rul
 - State whether bilingual parity is preserved.
 - Include verification commands and results.
 - Do not commit generated local agent files such as `.claude/`, `.agents/`, `skills-lock.json`, or `node_modules/`.
-- Do not merge unless the required `CI / verify` branch protection check passes.
+- Do not merge unless all three required branch protection checks pass: `verify (18)`, `verify (22)`, and `markdown-lint`.
 
 ## Code of Conduct
 

@@ -42,6 +42,32 @@ reproduce them exactly.
 | [`results-ja-report-opus5.jsonl`](./results-ja-report-opus5.jsonl) | JA held-out **+77.4%** ratio-of-medians (per-prompt median 74.0%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/ja-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
 | [`results-hi-report-opus5.jsonl`](./results-hi-report-opus5.jsonl) | HI held-out **+79.1%** ratio-of-medians (per-prompt median 81.1%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/hi-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
 | [`results-zh-report-opus5.jsonl`](./results-zh-report-opus5.jsonl) | ZH held-out **+72.9%** ratio-of-medians (per-prompt median 70.7%, N=11) | `claude-opus-5` | v0.23.0 | 2026-08-06 | `prompts/zh-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-ko-persistence.jsonl`](./results-ko-persistence.jsonl) | KO **register persistence**: 0/7 `## Boundaries` violations in a 20-turn hooked session past a compaction, register live 5/5 on the liveness control | `claude-opus-5` | v0.23.1 | 2026-08-25 | `prompts/ko-outbound.txt` probes + `prompts/ko-docgen.txt` filler | bench `CLAUDE_CONFIG_DIR` + `--setting-sources project` (real hooks, host plugin off) |
+
+`results-ko-persistence.jsonl` is the one file here that **cannot** be re-scored by
+its own scorer: `persistence-score.py` reads `output_text`, and D2 removes it. The
+verdict travels in the row instead (`violated`, `violation_count`, `violations` on
+probe rows; `liveness_compressed` on the liveness control; `compactions` and
+`injections` on every row), so the headline is re-derivable without the prose:
+
+```python
+import json
+rows = [json.loads(l) for l in open("benchmarks/published/results-ko-persistence.jsonl")]
+for arm in ("scrooge:ko/full", "normal"):
+    a = [r for r in rows if r["arm"] == arm]
+    pr = [r for r in a if r["kind"] == "probe"]
+    lv = [r for r in a if r["kind"] == "liveness"]
+    print(arm, f"violations={sum(1 for r in pr if r['violated'])}/{len(pr)}",
+          f"liveness={sum(1 for r in lv if r['liveness_compressed'])}/{len(lv)}",
+          f"compactions={max(r['compactions'] or 0 for r in a)}",
+          f"injections={max(r['injections'] or 0 for r in a)}")
+```
+
+Read `injections` before the violation count. Two per session (`SessionStart:startup`
+plus one per compaction) is the persistence shape; one per turn would mean the rule
+was re-asserted every turn and the run measured re-injection instead. This file
+records 2 for the register arm against 1 compaction, and 0 for the baseline — which
+is also what shows the baseline had no register rather than a quiet one.
 
 The three `-debunk` files are the **safety axis**, not claim-preservation: each row
 is one boolean — did the answer reject the false premise the question asserted.
