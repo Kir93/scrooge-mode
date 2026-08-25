@@ -43,9 +43,6 @@ jobs:
       - name: Test benchmark statistics
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
-      - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
-
       # registry 경로/도달성 검증은 `npm test`의 tests/test_registry_parity.js가 단일 정본으로
       # 수행한다 (integrity-sweep Task 1). 여기에 사본을 다시 만들지 말 것.
 
@@ -121,3 +118,21 @@ jobs:
           else
             echo "rules/ 무변경 — 재측정 마커 미노출"
           fi
+
+  # markdownlint-cli2 requires node>=20, and its result does not depend on the
+  # runtime version. Kept out of the `verify` matrix so that neither a matrix
+  # entry below 20 breaks it, nor a matrix edit silently drops it.
+  markdown-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
