@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import {
   VALID_FLAGS,
   VALID_LANGS,
+  VALID_DIALS,
   resolveActiveState,
   readState,
   writeState,
@@ -130,14 +131,17 @@ function hasActivationArtifact() {
 // session-scope state-model migration silently deactivated prior users), so tell
 // them how to turn Scrooge back on.
 function buildUpgradeNotice({ from, to }) {
-  // The lang options are listed dynamically from VALID_LANGS (registry-derived), so a
-  // newly-added language appears in the re-activation hint with no edit here.
+  // Both option lists are generated from the config arrays (VALID_LANGS is
+  // registry-derived), so adding a language or a dial updates the re-activation
+  // hint with no edit here — and a retired dial can never be advertised as valid.
   const langs = VALID_LANGS.join('/');
   const example = VALID_LANGS[0] || 'ko';
+  const dials = VALID_DIALS.join('/');
+  const exampleDial = VALID_DIALS[0];
   return (
     `Scrooge was updated (v${from} → v${to}) and is not active in this session — ` +
     'a version change can reset activation. Tell the user, in their language, how ' +
-    `to re-activate: run \`/scrooge ${example} full\` (pick lang ${langs} + dial lite/full). ` +
+    `to re-activate: run \`/scrooge ${example} ${exampleDial}\` (pick lang ${langs} + dial ${dials}). ` +
     'Re-activating now saves a global default, so every new session stays active ' +
     'until `/scrooge off`.'
   );

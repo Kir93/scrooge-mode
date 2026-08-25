@@ -192,6 +192,34 @@ function readmeMedians(body, lang) {
   return null;
 }
 
+// (J) A register-drift note's version must stop being provisional once the release
+// it names has actually shipped. RELEASE.md §1a requires the note to NAME a version,
+// but the version is unknowable while the bump is still undecided — /my-release picks
+// the level from Conventional Commit types, so the note is written with a provisional
+// value and corrected in the release commit. Nothing forced that correction: a stale
+// `(provisional` marker reads exactly like a real disposition to the next reader, and
+// §1's pre-flight is human-run prose. This is the same shape as the "measurement
+// pending" doc-truth guard above — the moment the version sources reach the version
+// the note names, the marker is a lie and `npm test` says so.
+test('a shipped register-drift note is no longer marked provisional', () => {
+  const body = read('benchmarks/published/README.md');
+  const current = JSON.parse(read('package.json')).version;
+  const lines = body.split('\n').filter((l) => /\(provisional/i.test(l));
+  for (const line of lines) {
+    const m = line.match(/v(\d+\.\d+\.\d+)/);
+    assert.ok(
+      m,
+      `drift note marked provisional but names no version — RELEASE.md §1a requires one:\n  ${line.trim()}`
+    );
+    assert.notEqual(
+      m[1],
+      current,
+      `drift note still says "(provisional" for v${m[1]}, which is the shipped version ` +
+        `in package.json — drop the provisional marker (or fix the version) before releasing`
+    );
+  }
+});
+
 test('LANG_META ratios match the README tables they are derived from', () => {
   const body = read('README.md');
   for (const lang of benchmarkedLangs) {
@@ -204,4 +232,85 @@ test('LANG_META ratios match the README tables they are derived from', () => {
       `${lang}/full: LANG_META ratio disagrees with README (normal ${medians.normal} → scrooge ${medians.scrooge} = ${derived})`
     );
   }
+});
+
+// (I) The compression-scope contract (`## Boundaries` in the rules) is exposed in
+// the product README. Without a row here an installer reads the whole README and
+// still cannot tell whether their commit messages get compressed — the contract
+// lived only in the rule bodies and `SKILL.md`. Both halves must be on the row:
+// the permanent exclusion AND the docs-are-compressed side; stating one alone is
+// the doc/behavior mismatch this spec exists to remove.
+//
+// The row label is the English literal `| Boundaries |` in BOTH READMEs (the KO
+// table already labels a row `Safety auto-clarity`), so one anchor finds it in
+// each. Scope is the KO/EN canonical pair; `README.ja.md`/`README.zh.md` are
+// lightweight landings with no Surface table at all.
+//
+// Marker provenance differs per language, and only the EN side is a shared string:
+// `tests/test_doc_boundaries.js` pins `Docs / prose artifacts` and the English
+// exclusion label in all five rule bodies, so the EN row cannot describe a
+// boundary the rules do not state. The KO markers are that same contract in
+// Korean — `rules/ko/full.md` writes the exclusion label in English, so there is
+// no Korean string in the rules to share. They are pinned here alone, which is
+// what the row-correspondence check below exists to cover.
+const BOUNDARIES_MARKERS = {
+  'README.md': {
+    heading: '## Surface',
+    markers: ['commit messages', 'PR descriptions', 'Docs / prose artifacts'],
+  },
+  'README.ko.md': {
+    heading: '## 표면',
+    markers: ['커밋 메시지', 'PR 설명', 'Docs·prose 산출물'],
+  },
+};
+
+// The lines of one `## ` section's first markdown table, header and separator
+// dropped. Bounded by the next `## ` heading so a vanished table fails loudly
+// instead of silently measuring whatever table comes next.
+function surfaceRows(f, heading) {
+  const lines = read(f).split('\n');
+  const start = lines.findIndex((l) => l.trim() === heading);
+  assert.ok(start !== -1, `${f}: "${heading}" section not found`);
+  const rows = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('## ')) break;
+    if (!line.startsWith('|')) {
+      if (rows.length > 0) break; // table ended
+      continue; // not reached it yet
+    }
+    if (/^\|[\s|:-]+\|$/.test(line)) continue; // separator
+    rows.push(line);
+  }
+  assert.ok(rows.length > 0, `${f}: no table found under "${heading}"`);
+  return rows.slice(1); // drop the header row
+}
+
+for (const [f, { heading, markers }] of Object.entries(BOUNDARIES_MARKERS)) {
+  test(`${f} Surface table carries the Boundaries row`, () => {
+    // Searched inside the section, not the whole file: a row that migrated out of
+    // the Surface table would otherwise keep this test green.
+    const rows = surfaceRows(f, heading).filter((l) => /^\|\s*Boundaries\s*\|/.test(l));
+    // Exactly one: a duplicated row passes a presence check AND the row-count
+    // check below when both READMEs duplicate it, so neither would catch it.
+    assert.equal(rows.length, 1, `${f}: expected exactly one \`| Boundaries |\` row in ${heading}, found ${rows.length}`);
+    const [row] = rows;
+    for (const marker of markers) {
+      assert.ok(
+        row.includes(marker),
+        `${f}: Boundaries row does not mention "${marker}" — state both halves of the contract`
+      );
+    }
+  });
+}
+
+test('both README Surface tables have the same number of rows', () => {
+  // A row added to one README only is the drift class this catches: the two
+  // tables are hand-maintained mirrors, and a missing row reads as a contract
+  // that does not apply to that language's readers.
+  assert.equal(
+    surfaceRows('README.md', '## Surface').length,
+    surfaceRows('README.ko.md', '## 표면').length,
+    'README.md and README.ko.md Surface tables disagree on row count'
+  );
 });

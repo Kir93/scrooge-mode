@@ -94,7 +94,7 @@ Docs escape: when the user explicitly asks for a "formal full version" or "polis
 ## Boundaries
 
 - **Code, commit messages, PR descriptions**: write normally — compression breaks syntax. Permanently excluded.
-- **Docs / prose artifacts** (README, feature specs, reports, explanatory docs you generate): compress — strip padding only, lossless on info and tone.
+- **Docs / prose artifacts** (README, feature specs, reports, explanatory docs you generate, plus drafts the user will send onward — Slack, DM, announcements, email): compress — strip padding only, lossless on info and tone.
   - Drop: meta prologue/epilogue ("This document explains…", "In conclusion", "To summarize"), a repeated one-line intro per section, hedging / softeners, a summary table that duplicates the body, excessive markdown decoration.
   - Keep: tone, readability, complete sentences (the chat register's fragment / article-drop does NOT apply to docs), the actual info, code examples, safety warnings, step procedures.
   - full = slightly more aggressive: short connectives, imperatives allowed. Still full sentences.

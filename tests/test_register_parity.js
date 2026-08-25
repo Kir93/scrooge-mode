@@ -16,6 +16,9 @@
 //
 // Matching is per-language token-based (a Korean rule is written in Korean), so
 // each entry carries either one shared token or a per-language token map.
+//
+// The declarations live in `fixtures/register-rules.js` so `test_skill_register_parity.js`
+// checks the SAME item list against `skills/scrooge/SKILL.md` — two copies would drift.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,96 +27,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
+import { RULES, langsFor, tokenFor } from './fixtures/register-rules.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const body = (lang, dial) =>
   fs.readFileSync(path.join(REPO_ROOT, 'rules', lang, `${dial}.md`), 'utf8');
 
-// token: a string every language shares, or { lang: string } when each language
-// states the rule in its own words.
-// langs: 'all', or { list: [...], reason: '...' } — a subset MUST carry a reason.
-const RULES = [
-  {
-    id: 'ultra-tactics-floor',
-    what: 'the "do not compress into ultra tactics" floor',
-    dials: ['full'],
-    token: 'ultra tactics',
-    langs: 'all',
-  },
-  {
-    id: 'non-actionable-guard',
-    what: 'never shorten into a non-actionable answer',
-    dials: ['full'],
-    token: 'non-actionable',
-    langs: 'all',
-  },
-  {
-    id: 'auto-clarity-anti-abuse',
-    what: 'Auto-Clarity must not become a general escape to lengthen answers',
-    dials: ['full'],
-    token: { en: 'general escape', ko: '남용', ja: '濫用', zh: '滥用', hi: 'दुरुपयोग' },
-    langs: 'all',
-  },
-  {
-    id: 'docs-escape',
-    what: 'the Docs-escape clause (formal full version on explicit request)',
-    dials: ['full'],
-    token: 'Docs escape',
-    langs: 'all',
-  },
-  {
-    id: 'pro-drop',
-    what: 'subject pro-drop where unambiguous',
-    dials: ['full'],
-    token: 'pro-drop',
-    langs: 'all',
-  },
-  {
-    id: 'particle-hazard',
-    what: 'a warning that dropping a case particle can flip argument roles',
-    dials: ['full'],
-    token: { ko: '논항 역할이 뒤집힐', ja: '項の役割が逆転', hi: 'अर्थ बदलने का जोखिम', zh: '过删改变义' },
-    langs: {
-      list: ['ko', 'ja', 'hi', 'zh'],
-      reason:
-        'English has no case particles to drop, so the hazard does not exist there. ' +
-        'The other four all mark arguments with particles/postpositions.',
-    },
-  },
-  {
-    id: 'hangul-only',
-    what: 'the Han-character block (write Sino-Korean in Hangul)',
-    dials: ['full'],
-    // The exact rule phrasing, not the bare word "Hangul": ja/full
-    // legitimately NAME this rule while stating its inverse ("KO の Hangul-only
-    // 規則とは逆方向"), and a looser token would read that mention as the rule.
-    token: 'Hangul script only',
-    langs: {
-      list: ['ko'],
-      reason:
-        'Korean-specific and deliberately inverted elsewhere: Japanese kanji are correct ' +
-        'orthography, and Chinese is written in Han characters by definition. Porting this ' +
-        'rule would corrupt ja/zh output.',
-    },
-  },
-  {
-    id: 'em-dash-sub-clause',
-    what: 'the em-dash sub-clause restriction in Scope discipline',
-    dials: ['full'],
-    token: 'em-dash',
-    langs: {
-      list: ['en'],
-      reason:
-        'Known drift, kept as a documented exception rather than ported blind: the rule ' +
-        'targets an English punctuation habit. Porting it needs a per-language judgement ' +
-        'about whether the same padding pattern exists — not a translation.',
-    },
-  },
-];
-
-const langsFor = (rule) => (rule.langs === 'all' ? [...VALID_LANGS] : rule.langs.list);
-const tokenFor = (rule, lang) => (typeof rule.token === 'string' ? rule.token : rule.token[lang]);
 
 for (const rule of RULES) {
   test(`register rule "${rule.id}" is present everywhere it should be`, () => {

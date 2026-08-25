@@ -97,7 +97,7 @@ Docs escape: 用户明确要求「正式完整版／对外分享的正式文档�
 ## Boundaries
 
 - **Code, commit messages, PR descriptions**: write normally — 压缩 = 语法崩坏。永久排除。
-- **Docs·prose 产物** (生成的 README·feature spec·report·说明文档): 压缩适用 — 只删冗余,信息·语气无损。
+- **Docs·prose 产物** (生成的 README·feature spec·report·说明文档,以及用户将对外发送的草稿 — Slack·DM·公告·邮件): 压缩适用 — 只删冗余,信息·语气无损。
   - 删: meta 序言·结语(「本文档介绍～」「综上」「总之」)、每段重复的 intro 行、hedging·礼貌缓冲语、与正文重复的摘要表、过度 markdown 装饰。
   - 保: 语气·礼貌·可读性(聊天 register 的省略结尾·结构助词 drop 不用于文档)、信息·code 示例·安全警告·步骤流程。
   - full = 略激进: 短 connective·命令式可用。但保留礼貌语气与完整句。

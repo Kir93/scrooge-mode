@@ -55,15 +55,16 @@ then changed substantively in v0.22.0 (safety-guard and pro-drop porting across 
 ten registers) and again in v0.23.0 (the `lite` dial removed), and v0.22.0/v0.22.1
 shipped with the CI re-measurement marker firing and no record at all. v0.23.0 took
 the `Disclose` disposition [`RELEASE.md`](../../RELEASE.md) §1a defines. The judge
-has now been re-run on the current register — the `-opus5` rows below — so the
-disclosure is discharged rather than carried forward.
+has now been re-run on the **v0.23.0 register** — the `-opus5` rows below — so the
+disclosure is discharged rather than carried forward. (A later drift note follows;
+it does not reopen this one.)
 
 **What the re-measure found: the drop is the model, not the register.** Every
 language fell on claim-preservation (KO 0.68→0.42, EN 0.72→0.50, JA 0.60→0.40,
 HI 0.76→0.42, ZH 0.72→0.40) while output saved rose (+4 to +15pp). That reads like
 a register regression until you check English: `rules/en/full.md` is **byte-identical
-between v0.21.0 and v0.23.0** (`git show v0.21.0:rules/en/full.md | shasum` matches
-`HEAD`), yet EN fell 0.22 on the same 11 prompts — inside the −0.20…−0.34 range of
+between v0.21.0 and v0.23.1** (`git show v0.21.0:rules/en/full.md | shasum` matches
+`git show v0.23.1:rules/en/full.md | shasum`), yet EN fell 0.22 on the same 11 prompts — inside the −0.20…−0.34 range of
 the four languages whose register *did* change. An unchanged register cannot cause
 its own regression, so the common cause is the model pin, `claude-opus-4-8` →
 `claude-opus-5`.
@@ -77,6 +78,34 @@ it. Higher savings and lower claim-preservation are the same fact seen twice.
 Fidelity is measured against whatever the baseline asserted, so these figures are
 not comparable across model pins; both sets stay published side by side rather than
 one replacing the other.
+
+**Register drift 2026-08-25 — new, disposition: dated note, judge not re-run.**
+Version: **v0.24.0 (provisional — the release commit corrects it if the bump differs).**
+`rules/{ko,en,ja,hi,zh}/full.md` all changed:
+the `## Boundaries` Docs/prose item now names outbound drafts (Slack, DM,
+announcements, email) as part of the class it already covered. That is an edit to a
+boundary clause, so [`RELEASE.md`](../../RELEASE.md) §1a counts it as substantive
+and the CI re-measurement marker fires on it.
+
+The judge was **not** re-run, and this note is the disposition §1a requires instead.
+The reason is that the change is a wording alignment to measured behavior rather
+than a behavioral change: under register-only isolation the model already wrote
+Slack announcements and DM drafts in polite prose — 0 violations in 14 — before the
+clause named them. A 355-call subscription judge run over the held-out corpus would
+be measuring a class already observed at 0/14.
+
+That 0/14 is **not** published here: it was measured before the harness existed, so
+there are no rows to copy. What is committed is the way to re-run it —
+`benchmarks/iso-single.py` over `benchmarks/prompts/{ko,en}-outbound.txt`, scored by
+`benchmarks/persistence-score.py` (see [Register persistence](../README.md#register-persistence-boundary-survival)).
+Treat the figure as the reason the judge was skipped, not as a published number.
+
+**What this means for the numbers above: every `-opus5` fidelity row is a
+measurement of the v0.23.0 register, i.e. the register BEFORE this edit.** The EN
+control-group argument above is unaffected — it rests on `rules/en/full.md` being
+byte-identical from v0.21.0 through v0.23.1, which the tag comparison it cites still
+shows — but a future re-measure should compare against the post-edit register, not
+treat these rows as current.
 
 Both `-opus5` sets ran with `ultracode` disabled in the host `settings.json`. Left
 on, it tells every `claude --print` child to author a multi-agent workflow; the child
@@ -162,7 +191,7 @@ from these rows.
 | [`results-ja-fidelity.jsonl`](./results-ja-fidelity.jsonl) | JA fidelity 0.60 median claim-preservation, safety 11/11 | `claude-opus-4-8` | 3 | 2026-06-29 |
 | [`results-hi-fidelity.jsonl`](./results-hi-fidelity.jsonl) | HI fidelity 0.76, safety 10/11 | `claude-opus-4-8` | 3 | 2026-07-01 |
 | [`results-zh-fidelity.jsonl`](./results-zh-fidelity.jsonl) | ZH fidelity 0.72, safety 11/11 | `claude-opus-4-8` | 3 | 2026-07-01 |
-| [`results-ko-fidelity-opus5.jsonl`](./results-ko-fidelity-opus5.jsonl) | KO fidelity **0.42**, safety 13/19 — current register on the current model pin | `claude-opus-5` | 3 | 2026-08-06 |
+| [`results-ko-fidelity-opus5.jsonl`](./results-ko-fidelity-opus5.jsonl) | KO fidelity **0.42**, safety 13/19 — v0.23.0 register on the current model pin | `claude-opus-5` | 3 | 2026-08-06 |
 | [`results-en-fidelity-opus5.jsonl`](./results-en-fidelity-opus5.jsonl) | EN fidelity **0.50**, safety 15/19 | `claude-opus-5` | 3 | 2026-08-06 |
 | [`results-ja-fidelity-opus5.jsonl`](./results-ja-fidelity-opus5.jsonl) | JA fidelity **0.40**, safety 10/11 | `claude-opus-5` | 3 | 2026-08-06 |
 | [`results-hi-fidelity-opus5.jsonl`](./results-hi-fidelity-opus5.jsonl) | HI fidelity **0.42**, safety 10/11 | `claude-opus-5` | 3 | 2026-08-06 |

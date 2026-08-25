@@ -7,7 +7,7 @@
     "scrooge": "bin/install.js"
   },
   "scripts": {
-    "test": "node --test tests/test_activate.js tests/test_nl_activation.js tests/test_detection.js tests/test_safety_escape.js tests/test_doc_boundaries.js tests/test_registry_parity.js tests/test_doc_parity.js tests/test_dispatch.js tests/test_session_log.js tests/test_session_turns.js tests/test_session_evidence.js tests/test_schema_contract.js tests/test_state_security.js tests/test_ledger.js tests/test_flags.js tests/test_global_default.js tests/test_honest_bill.js tests/test_fidelity.js tests/test_golden_corpus.js tests/test_scrub.js tests/test_unified_activation.js tests/test_migration.js tests/test_session_end.js tests/test_sweep.js tests/test_update_check.js tests/test_version_consistency.js tests/test_meta_invariants.js tests/test_register_parity.js tests/test_repo_root.js"
+    "test": "node --test tests/test_activate.js tests/test_nl_activation.js tests/test_detection.js tests/test_safety_escape.js tests/test_doc_boundaries.js tests/test_registry_parity.js tests/test_doc_parity.js tests/test_dispatch.js tests/test_session_log.js tests/test_session_turns.js tests/test_session_evidence.js tests/test_schema_contract.js tests/test_state_security.js tests/test_ledger.js tests/test_flags.js tests/test_global_default.js tests/test_honest_bill.js tests/test_fidelity.js tests/test_golden_corpus.js tests/test_scrub.js tests/test_unified_activation.js tests/test_migration.js tests/test_session_end.js tests/test_sweep.js tests/test_update_check.js tests/test_version_consistency.js tests/test_meta_invariants.js tests/test_register_parity.js tests/test_skill_register_parity.js tests/test_repo_root.js"
   },
   "files": [
     "bin/",

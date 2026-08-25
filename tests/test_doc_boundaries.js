@@ -3,7 +3,7 @@
 // doc-compression spec SC4 scopes this check to the existence level: rule
 // bodies are LLM instructions, not unit-testable behavior. This asserts the
 // Docs/prose ## Boundaries item AND the Docs-escape ## Auto-Clarity extension
-// are PRESENT in each of the 4 rule files. It is a per-file test, so dropping
+// are PRESENT in each rule file. It is a per-file test, so dropping
 // the item from any single file fails only that file's test (catches an
 // omission/drop). It does NOT verify the bodies carry the same MEANING across
 // ko↔en / lite↔full — that semantic parity stays a review-time concern.
@@ -40,6 +40,26 @@ const DOCS_BOUNDARY = {
 // use the literal "Docs escape" label).
 const DOCS_ESCAPE = /Docs escape/;
 
+// The Docs/prose class explicitly covers outbound drafts — text the user sends
+// onward. That clause is the whole point of the class boundary (the alternative,
+// a separate Outbound class, was measured and rejected), and it is stated in each
+// language's own words, so it needs its own per-language anchor: the shared
+// `Docs·prose` marker above matches with or without it.
+const OUTBOUND_DRAFTS = {
+  en: /Slack, DM, announcements, email/,
+  ko: /Slack·DM·공지·메일/,
+  ja: /Slack・DM・アナウンス・メール/,
+  hi: /Slack·DM·घोषणा·email/,
+  zh: /Slack·DM·公告·邮件/,
+};
+
+// The other half of the same contract: what is PERMANENTLY excluded. All five
+// registers name the item with the same English literal (the label is English
+// even in the KO/JA/HI/ZH bodies), so one pattern anchors every language.
+// `tests/test_doc_parity.js` section (I) mirrors these strings into the README
+// Surface row, so the row cannot outlive a change to the exclusion list.
+const DOCS_EXCLUSION = /\*\*Code, commit messages, PR descriptions\*\*/;
+
 // Every lang × dial rule file carries the docs-compression boundary + escape. The
 // loop is registry-derived (VALID_LANGS) so a new language is covered automatically;
 // the per-lang DOCS_BOUNDARY map is hand-maintained data, so a registry lang missing
@@ -52,6 +72,10 @@ for (const lang of VALID_LANGS) {
       const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');
       assert.match(body, /## Boundaries/, 'missing Boundaries heading');
       assert.match(body, boundary, 'missing Docs/prose boundary item');
+      assert.match(body, DOCS_EXCLUSION, 'missing the permanently-excluded item (code / commit messages / PR descriptions)');
+      const outbound = OUTBOUND_DRAFTS[lang];
+      assert.ok(outbound, `no OUTBOUND_DRAFTS entry for '${lang}' — add its outbound-draft marker`);
+      assert.match(body, outbound, 'Docs/prose item no longer names outbound drafts');
       assert.match(body, DOCS_ESCAPE, 'missing Docs escape (Auto-Clarity extension)');
     });
   }

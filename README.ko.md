@@ -144,6 +144,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 전 언어. **측정:** 잘못된 전제 질문에서 KO 19/20·EN 10/10 반박(비압축 baseline은 19/19·9/9) — 재현되는 KO 실패 1건이 있으나 표본이 가려낼 수 있는 격차는 아님([상세](./benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit)). |
+| Boundaries               | 압축 적용 범위. 코드·커밋 메시지·PR 설명은 영구 제외 — 압축이 문법을 깨뜨림. 모델이 생성하는 Docs·prose 산출물(README·명세·보고서, 그리고 외부로 보낼 초안 — Slack·DM·메일)은 압축 **적용**: 군더더기만 제거하고 정보·어조는 무손실. |
 | `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄 + `hooks/lang-meta.js` 1행. |
 | `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. |
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
@@ -189,7 +190,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | **`scrooge:en/full`** |                   **773** |         **~67%** |
 | `caveman:full`        |                       649 |             ~72% |
 
-`caveman:full`은 raw token이 더 적음(**649** vs **773**). fidelity 차이가 실제로 드러나는 쪽은 영어임: scrooge가 **11개 중 9개**에서 앞서고 paired median **+0.09(95% CI +0.04~+0.11)**. 구간은 0을 제외하나 n=11 exact sign test는 p=0.065라 "방향은 일관되나 확정은 아님"으로 읽어야 함. safety 보존은 동일(각 9/11) — [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). 현재 pin(`claude-opus-5`, 2026-08-06)에서는 **0.50 · safety 15/19**, 절감 **+71.7%**. 영어가 원인을 특정하는 통제군임 — `rules/en/full.md`는 v0.21.0 이후 바이트 단위로 안 바뀌었는데도 같은 폭으로 하락했으므로 register 회귀가 아니라 모델 pin 효과임([전체 논증](./benchmarks/published/README.md#fidelity-judge-scored-n3)). rows: [토큰](./benchmarks/published/results-en-clean-opus48.jsonl) · judge [opus-4-8](./benchmarks/published/results-en-fidelity.jsonl) · [opus-5](./benchmarks/published/results-en-fidelity-opus5.jsonl).
+`caveman:full`은 raw token이 더 적음(**649** vs **773**). fidelity 차이가 실제로 드러나는 쪽은 영어임: scrooge가 **11개 중 9개**에서 앞서고 paired median **+0.09(95% CI +0.04~+0.11)**. 구간은 0을 제외하나 n=11 exact sign test는 p=0.065라 "방향은 일관되나 확정은 아님"으로 읽어야 함. safety 보존은 동일(각 9/11) — [caveman fidelity](./benchmarks/README.md#caveman-fidelity--the-differentiation-measured). 현재 pin(`claude-opus-5`, 2026-08-06)에서는 **0.50 · safety 15/19**, 절감 **+71.7%**. 영어가 원인을 특정하는 통제군임 — `rules/en/full.md`는 v0.21.0~v0.23.1 구간에서 바이트 단위로 동일했는데도 같은 폭으로 하락했으므로 register 회귀가 아니라 모델 pin 효과임([전체 논증](./benchmarks/published/README.md#fidelity-judge-scored-n3)). rows: [토큰](./benchmarks/published/results-en-clean-opus48.jsonl) · judge [opus-4-8](./benchmarks/published/results-en-fidelity.jsonl) · [opus-5](./benchmarks/published/results-en-fidelity-opus5.jsonl).
 
 ### 일본어 · 힌디어 · 중국어
 

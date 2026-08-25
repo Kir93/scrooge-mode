@@ -8,7 +8,7 @@ Self-review baseline for Scrooge `ko/full` output quality. Source rules: [rules/
 
 ### A. 음슴체·개조식 일관
 
-Output uses compact bullets/fragments and endings such as `~함`, `~됨`, `필요`, `권장`. Full polite prose is not used unless Auto-Clarity applies.
+Output uses compact bullets/fragments and endings such as `~함`, `~됨`, `필요`, `권장`. Full polite prose is not used unless Auto-Clarity applies, or the output is a **Docs·prose 산출물** (`## Boundaries`) — generated docs and outbound drafts (Slack·DM·공지·메일) keep normal prose and 존댓말 by rule, so judge those on padding removal instead.
 
 - PASS: `원인: cache miss 반복됨. Fix: TTL 조정.`
 - FAIL: `원인은 cache miss가 반복되기 때문입니다. TTL을 조정해 보세요.`
@@ -36,7 +36,7 @@ Particles drop only when meaning stays clear. Keep particles when removal makes 
 
 ### E. 존대 제거
 
-Default `ko/full` output avoids `~합니다`, `~습니다`, `~해요`, honorific morphemes, and empty pleasantries. Auto-Clarity is the explicit exception.
+Default `ko/full` output avoids `~합니다`, `~습니다`, `~해요`, honorific morphemes, and empty pleasantries. Auto-Clarity is the explicit exception, as is the **Docs·prose 산출물** class in `## Boundaries` — a generated doc or an outbound draft keeps 존댓말 by rule and is not an E failure.
 
 - PASS: `설정 누락됨. env 확인 필요.`
 - FAIL: `설정이 누락되었습니다. 확인해 주세요.`

@@ -25,11 +25,20 @@ test('every tests/*.js file is registered in package.json scripts.test', () => {
   // Self-referential on purpose: this file only runs if it is itself registered,
   // and once it runs it fails on any sibling that is not.
   const script = readJson('package.json').scripts?.test ?? '';
-  const registered = new Set(script.match(/tests\/[\w.-]+\.js/g) ?? []);
-  const onDisk = fs
-    .readdirSync(path.join(REPO_ROOT, 'tests'))
-    .filter((f) => f.endsWith('.js'))
-    .map((f) => `tests/${f}`);
+  const registered = new Set(script.match(/tests\/[\w./-]+\.js/g) ?? []);
+  // Recursive: `tests/fixtures/` holds shared non-test modules, and a test file
+  // dropped into any subdirectory would otherwise be invisible here — the same
+  // silent-permanent failure this test exists to catch. Only `test_*.js` needs
+  // registering; a fixture module has no tests to run.
+  const walk = (dir, prefix) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory()
+        ? walk(path.join(dir, e.name), `${prefix}${e.name}/`)
+        : e.name.startsWith('test_') && e.name.endsWith('.js')
+          ? [`${prefix}${e.name}`]
+          : []
+    );
+  const onDisk = walk(path.join(REPO_ROOT, 'tests'), 'tests/');
 
   const unregistered = onDisk.filter((f) => !registered.has(f));
   assert.deepEqual(

@@ -16,6 +16,8 @@ Output uses compact bullets/fragments, article drop, subject pro-drop, and `→`
 - FAIL (verbose): `The reason this is happening is that the parent component re-renders, which in turn causes...`
 - FAIL (pidgin): `Parent re-render. Child get new prop. Child re-render too.`
 
+Exception: a **Docs / prose artifact** (`## Boundaries`) — a generated doc, or a draft the user will send onward — keeps normal full sentences by rule; judge it on padding removal, not on fragment density.
+
 ### B. Code, error, and identifier verbatim
 
 Identifiers, commands, flags, API names, error strings, and code blocks stay exact. English prose compresses around them.

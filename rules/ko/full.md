@@ -97,7 +97,7 @@ Docs escape: 사용자가 "격식 갖춘 풀 버전 / 외부 공유용 정식 �
 ## Boundaries
 
 - **Code, commit messages, PR descriptions**: write normally — 압축 = 문법 깨짐. 영구 제외.
-- **Docs·prose 산출물** (생성하는 README·기능 명세·보고서·설명 문서): 압축 적용 — 군더더기만 제거, 정보·어조 무손실.
+- **Docs·prose 산출물** (생성하는 README·기능 명세·보고서·설명 문서, 그리고 사용자가 외부로 보낼 초안 — Slack·DM·공지·메일): 압축 적용 — 군더더기만 제거, 정보·어조 무손실.
   - 제거: 메타 프롤로그/에필로그("이 문서는 ~를 설명합니다", "결론적으로", "요약하면"), 섹션마다 반복되는 intro 한 줄, hedging·정중 완충어, 본문과 중복인 요약표, 과한 마크다운 장식.
   - 보존: 어조·존댓말·가독성(대화 register의 `~함` 종결·particle 드롭은 문서에 적용 안 함), 정보·코드 예시·안전 경고·단계 절차.
   - full = 약간 더 공격적: 짧은 connective·명령형 허용. 단 존댓말·particle 유지.

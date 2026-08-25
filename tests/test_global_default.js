@@ -18,6 +18,8 @@ import {
   resolveActiveState,
   readVersionMarker,
   writeVersionMarker,
+  VALID_LANGS,
+  VALID_DIALS,
 } from '../hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -153,8 +155,13 @@ test('upgrade + stranded prior activation (default present but unloadable) → n
   fs.writeFileSync(defaultFile(cfg), JSON.stringify({ lang: 'xx', dial: 'yy' }));
   const ctx = runSessionStart(cfg, 'sessA');
   assert.match(ctx, /Scrooge was updated/);
-  assert.match(ctx, /\/scrooge ko full/); // tells the user how to re-activate
+  // Example command + both option lists are derived from VALID_LANGS/VALID_DIALS,
+  // so a language or dial added later shows up with no edit to the hook — and a
+  // retired dial (`lite`, removed in v0.23.0) can never be advertised as valid.
+  assert.match(ctx, new RegExp(`/scrooge ${VALID_LANGS[0]} ${VALID_DIALS[0]}`));
   assert.match(ctx, /ko\/en\/ja/); // lists ja as a re-activation lang option (ja-register)
+  assert.match(ctx, new RegExp(`dial ${VALID_DIALS.join('/')}\\)`));
+  assert.doesNotMatch(ctx, /\blite\b/);
   assert.equal(readVersionMarker(versionFile(cfg)), PKG_VERSION); // marker advanced
 });
 
