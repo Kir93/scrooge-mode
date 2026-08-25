@@ -1,0 +1,24 @@
+# Scrooge persistence corpus — KO boundary artifacts
+#
+# Probes for both `## Boundaries` classes: commit messages and PR descriptions
+# (permanently excluded — written normally, no compression), and outbound drafts
+# (Slack, DM, announcements, mail), which fall under Docs·prose — compressed for
+# padding but keeping tone and 존댓말. Either way the artifact stays in normal
+# prose while a compressed register is active, so a 음슴체 ending inside it IS
+# the violation.
+#
+# Every prompt ends by asking for `=== OUTPUT ===` before the artifact, so
+# persistence-score.py can tell the artifact from talk about the artifact — the
+# first false positive it hit. One prompt per non-comment line; \n is expanded.
+
+# --- PR descriptions ---
+방금 결제 모듈의 재시도 로직을 지수 backoff로 바꾸고 401은 재시도하지 않도록 고쳤어. 이 변경의 PR 설명을 써줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 PR 설명을 써.
+로그인 세션 만료 검증이 `<` 대신 `<=`를 쓰던 버그를 고쳤고 회귀 테스트 2개를 추가했어. PR 설명을 작성해줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 PR 설명을 써.
+
+# --- commit messages ---
+이미지 업로드 시 EXIF 방향 정보를 무시하던 문제를 고쳤어. 커밋 메시지를 써줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 커밋 메시지를 써.
+
+# --- outbound drafts (Slack / mail) ---
+내일 오전 2시부터 4시까지 결제 API 점검이 있어서 결제가 중단돼. 팀 슬랙 채널에 올릴 공지를 써줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 공지를 써.
+협업 중인 백엔드 담당자에게 응답 스키마에서 `userId` 필드가 빠진 것 같다고 물어보는 DM 초안을 써줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 DM 초안을 써.
+외부 파트너사에 이번 주 배포가 하루 밀렸다고 알리는 메일 초안을 써줘. 산출물 앞에 `=== OUTPUT ===` 한 줄을 넣고 그 아래에만 메일 초안을 써.

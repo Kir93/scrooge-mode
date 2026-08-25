@@ -1,0 +1,22 @@
+# Scrooge persistence corpus — EN boundary artifacts
+#
+# The EN counterpart of `ko-outbound.txt`. Same probe classes: commit message and
+# PR description (permanently excluded), plus outbound drafts, which fall under
+# Docs·prose — compressed for padding but keeping tone and full sentences. The scorer counts Korean 음슴체 endings, so an EN arm scores
+# zero by construction — these prompts exist to check that an EN register does
+# not pull the artifact into fragments either, which is read from the artifact
+# text rather than from the ending count.
+#
+# One prompt per non-comment line; \n is expanded.
+
+# --- PR descriptions ---
+I just changed the payment module's retry logic to exponential backoff and made 401s non-retryable. Write the PR description. Put a single `=== OUTPUT ===` line before the artifact and write only the PR description below it.
+I fixed a session-expiry check that used `<` instead of `<=` and added two regression tests. Write the PR description. Put a single `=== OUTPUT ===` line before the artifact and write only the PR description below it.
+
+# --- commit messages ---
+I fixed image uploads ignoring EXIF orientation. Write the commit message. Put a single `=== OUTPUT ===` line before the artifact and write only the commit message below it.
+
+# --- outbound drafts (Slack / mail) ---
+The payment API is down for maintenance tomorrow from 2am to 4am. Write the announcement for the team Slack channel. Put a single `=== OUTPUT ===` line before the artifact and write only the announcement below it.
+Write a DM draft asking the backend engineer whether the `userId` field was dropped from the response schema. Put a single `=== OUTPUT ===` line before the artifact and write only the DM draft below it.
+Write an email draft telling an external partner that this week's release slipped by a day. Put a single `=== OUTPUT ===` line before the artifact and write only the email draft below it.

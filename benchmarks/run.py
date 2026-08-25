@@ -29,6 +29,7 @@ import concurrent.futures
 import contextlib
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -44,7 +45,22 @@ RULES_DIR = REPO_ROOT / "rules"
 # CLAUDE.md leaks into context (see build_cmd docstring) and bench session
 # JSONL stays out of the repo's interactive session list.
 DEFAULT_BENCH_CWD = Path.home() / ".cache" / "scrooge-bench"
-CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
+
+
+def claude_config_dir() -> Path:
+    """Where Claude Code keeps config, state, and transcripts.
+
+    Mirrors `claudeDir()` in hooks/scrooge-config.js: CLAUDE_CONFIG_DIR wins over
+    ~/.claude. Every path in this module that reaches into the config dir must go
+    through here — a hardcoded ~/.claude means that on a host with the override
+    set, isolation moves nothing, verification finds nothing to block, and the
+    user's own register hook injects into every arm while the row still says
+    `isolation_verified: true`.
+
+    A function rather than a module constant so a test can set the env var; a
+    constant would be frozen at import time.
+    """
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or (Path.home() / ".claude"))
 
 TERSE_CONTROL_SYSTEM = (
     "Answer concisely. Respond in the language the user writes in. Keep all "
@@ -118,8 +134,8 @@ def _find_caveman_rule(level: str) -> Optional[Path]:
     layout. Returns the matched path, or None.
     """
     candidates = [
-        Path.home() / ".claude" / "skills" / "caveman" / "SKILL.md",
-        *Path(Path.home() / ".claude" / "plugins").glob(
+        claude_config_dir() / "skills" / "caveman" / "SKILL.md",
+        *Path(claude_config_dir() / "plugins").glob(
             "marketplaces/*/plugins/caveman/skills/caveman/SKILL.md"
         ),
     ]
@@ -183,6 +199,8 @@ class RunResult:
     output_tokens: Optional[int]
     cache_read_tokens: Optional[int]
     model: Optional[str]
+    # Wall clock for the whole call INCLUDING any failed attempts and their
+    # backoff, not the successful attempt alone.
     elapsed_s: float
     session_file: Optional[str]
     output_chars: Optional[int] = None
@@ -195,6 +213,10 @@ class RunResult:
     turns: Optional[int] = None
     isolation_verified: Optional[bool] = None
     contaminated: bool = False
+    # Transport-failure cause as the CLI reported it (plain stdout/stderr under
+    # the default text format, or the unwrapped `result` of a result envelope).
+    # `error` stays the human line; this is the reason on its own.
+    failure_reason: Optional[str] = None
 
 
 NORMAL_BASELINE_SYSTEM = (
@@ -274,7 +296,7 @@ def cwd_session_dir(cwd: Path) -> Path:
     (e.g. the repo root) the result is unchanged.
     """
     slug = re.sub(r"[^A-Za-z0-9]", "-", str(cwd))
-    return CLAUDE_PROJECTS_DIR / slug
+    return claude_config_dir() / "projects" / slug
 
 
 def newest_session_file(d: Path) -> Optional[Path]:
@@ -437,6 +459,127 @@ def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
     return None
 
 
+# Transport-failure retry. One measured run lost 21 of 30 calls to a 529 burst:
+# the CLI writes a well-formed JSON envelope on stdout (`is_error: true`,
+# `result: "API Error: 529 Overloaded..."`) AND exits non-zero, so reading stderr
+# first left the cause in the JSONL as a bare `exit=1`. Bounded on both axes —
+# subscription quota is the scarce resource, and a retry storm burns it. This is a
+# per-call layer, one level below `agentic-run.sh --resume`, which re-runs whole
+# missing pairs after the fact.
+RETRY_ATTEMPTS = 3  # total attempts per call, i.e. two retries
+RETRY_BASE_DELAY_S = 2.0  # 2s then 4s, plus jitter
+RETRY_JITTER = 0.25  # +-25%: --workers>1 threads fail on the same burst, and an
+                     # exact backoff would send them all back at the same instant
+
+
+def retry_delay(attempt: int) -> float:
+    """Exponential backoff with jitter. `attempt` is 1-based.
+
+    No cap: RETRY_ATTEMPTS bounds the sequence at 2s then 4s, so a ceiling would
+    guard a state this module cannot reach. Raising RETRY_ATTEMPTS is what would
+    need one.
+    """
+    base = RETRY_BASE_DELAY_S * 2 ** (attempt - 1)
+    return base * (1 + random.uniform(-RETRY_JITTER, RETRY_JITTER))
+
+
+def extract_failure_reason(stdout: Optional[str], stderr: Optional[str]) -> Optional[str]:
+    """Recover the cause of a failed call from whatever the CLI actually wrote.
+
+    `build_cmd` does not pass `--output-format`, so `claude --print` writes plain
+    text and an API failure lands on stdout or stderr as a bare line. The JSON
+    branch is still first because the CLI wraps some failures in its result
+    envelope (`is_error: true`, `result: "API Error: 529 Overloaded..."`), where
+    the cause is in `result` and everything else is noise. Returns None only when
+    both streams are empty — a crash with nothing to report.
+    """
+    for stream in (stdout, stderr):
+        if not stream or not stream.strip():
+            continue
+        try:
+            payload = json.loads(stream)
+        except ValueError:
+            return stream.strip()
+        if isinstance(payload, dict):
+            reason = payload.get("result")
+            if isinstance(reason, str) and reason.strip():
+                return reason.strip()
+        return stream.strip()
+    return None
+
+
+def is_retryable(error: Optional[str]) -> bool:
+    """Whether a failed call is worth another attempt.
+
+    Same shape as `is_session_limit` below — error string in, verdict out, no I/O
+    — so both are unit-testable. Retries transient server/transport states
+    (429 / 5xx incl. 529, timeout) and nothing else: a 401 never recovers on its
+    own, a malformed prompt is a 400 forever, and a subscription quota limit does
+    not clear inside a backoff window. Retrying any of those only burns quota.
+
+    `is_session_limit` wins on overlap: a 429 that names a session/usage/rate
+    limit is quota exhaustion wearing an HTTP code, and the run stops early for it.
+    """
+    if not error:
+        return False
+    if is_session_limit(error):
+        return False
+    lowered = error.lower()
+    if "timeout" in lowered:
+        return True
+    # Anchored on the code's own context word: `error` carries up to 400 chars of
+    # raw CLI output, where a bare 3-digit match would also hit a stack-trace line
+    # number or an id and spend two extra calls on a permanent failure.
+    return bool(re.search(r"(?:error|status|code|http)[^a-z0-9]{0,8}(?:429|5\d\d)\b", lowered))
+
+
+def call_with_retry(make_cmd, cwd: Path, timeout: int, label: str = "",
+                    retryable=None):
+    """Run the CLI under the bounded retry policy above.
+
+    Returns `(completed_process | None, error, reason)`; on success the error and
+    reason are None. `make_cmd(attempt)` builds the argv per attempt rather than
+    once, so a caller whose first attempt allocates something (a session id) can
+    retry with a fresh one instead of colliding with what it just used.
+
+    Every runner in this directory goes through here. Copying the loop instead
+    would let one copy drift: the attempt bound, the both-streams retry verdict,
+    and the backoff are the parts that decide whether a 529 burst costs a row or
+    the whole run.
+
+    `retryable` overrides the default verdict for a caller whose retry is not
+    always safe. A stateless single-shot call can retry anything transient; a call
+    that mutates a live session cannot retry a TIMEOUT, because a timeout says the
+    local process died, not that the remote turn was never applied.
+    """
+    decide = retryable or is_retryable
+    proc = error = reason = signal = None
+    for attempt in range(1, RETRY_ATTEMPTS + 1):
+        cmd = make_cmd(attempt)
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True,
+                                  timeout=timeout, cwd=cwd)
+        except subprocess.TimeoutExpired:
+            proc, error, reason, signal = None, "timeout", None, "timeout"
+        else:
+            if proc.returncode == 0:
+                return proc, None, None
+            reason = extract_failure_reason(proc.stdout, proc.stderr)
+            error = f"claude exit {proc.returncode}: {(reason or '')[:400]}"
+            # The retry verdict reads BOTH streams, not just the one the reason
+            # came from: a 529 on stderr behind an unrelated line on stdout would
+            # otherwise classify as permanent and lose the row the retry exists
+            # to save.
+            signal = f"{error}\n{proc.stdout or ''}\n{proc.stderr or ''}"
+        if attempt == RETRY_ATTEMPTS or not decide(signal):
+            break
+        delay = retry_delay(attempt)
+        print(f"  [retry {attempt}/{RETRY_ATTEMPTS - 1}] {label}: {error[:120]} "
+              f"- waiting {delay:.0f}s", file=sys.stderr)
+        time.sleep(delay)
+    return None, error, reason
+
+
 def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             cwd: Path, dry_run: bool, timeout: int, model: Optional[str] = None,
             isolation_verified: Optional[bool] = None,
@@ -470,20 +613,16 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          turns=1, isolation_verified=isolation_verified)
 
     cmd = build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode)
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
-    except subprocess.TimeoutExpired:
-        return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=None,
-                         cache_read_tokens=None, model=None,
-                         elapsed_s=time.monotonic() - start, session_file=None,
-                         error="timeout")
+    r, error, reason = call_with_retry(
+        lambda _attempt: cmd, cwd, timeout,
+        label=f"arm={arm} prompt={prompt_id} run={run}")
+
     elapsed = time.monotonic() - start
-    if r.returncode != 0:
-        detail = (r.stderr.strip() or r.stdout.strip())[:400]
+    if error:
         return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=None,
                          cache_read_tokens=None, model=None, elapsed_s=elapsed,
                          session_file=None,
-                         error=f"claude exit {r.returncode}: {detail}")
+                         error=error, failure_reason=reason[:400] if reason else None)
 
     # Find the session JSONL written by this invocation.
     session_path = None
@@ -599,6 +738,55 @@ def _neutralize_ultracode(settings: Path, pid: int) -> Optional[tuple[Path, Path
     return (settings, backup)
 
 
+def check_register_clean(cwd: Path, allow_contaminated: bool = False,
+                         per_row_backstop: bool = True) -> Optional[bool]:
+    """Preflight for a measured run: report findings, abort on a blocking one.
+
+    Returns the `isolation_verified` value to record on each row, or None when the
+    caller must abort (blocking findings without `--allow-contaminated`).
+
+    Every runner in this directory needs this, not just `run.py` — the user's own
+    scrooge hook injects its register into EVERY child `claude --print` while a
+    state file is present, which silently compresses the `normal` arm and, for a
+    persistence run, re-injects the very register whose survival is the question.
+    Call it inside a `host_isolation(...)` block, which is what moves those state
+    files aside; this then confirms the move worked.
+
+    `per_row_backstop=False` for a caller that does NOT run `detect_contamination`
+    per row (`persistence-run.py` drives its own turns). The message must not
+    promise a row-level exclusion the caller cannot perform — a user who reads it
+    and passes `--allow-contaminated` would keep every leaked row.
+    """
+    findings = verify_register_clean(cwd)
+    blocking = [m for sev, m in findings if sev == "blocking"]
+    advisory = [m for sev, m in findings if sev == "advisory"]
+    for m in advisory:
+        print(f"[verify] advisory: {m}", file=sys.stderr)
+    if blocking:
+        print("error: register not clean — clean-run precondition failed:", file=sys.stderr)
+        for m in blocking:
+            print(f"  - {m}", file=sys.stderr)
+        if not allow_contaminated:
+            tail = ("The per-session check still excludes any row that leaked."
+                    if per_row_backstop else
+                    "This caller has NO per-row contamination backstop, so every row "
+                    "would keep the leak.")
+            print("Aborting. Isolation should have moved register state files aside; "
+                  "a remaining .scrooge-active/.caveman-active means the move failed "
+                  "(check the isolation lock) or you passed --no-isolate-host. Re-run "
+                  f"with isolation, or pass --allow-contaminated. {tail}", file=sys.stderr)
+            return None
+        print("--allow-contaminated set; continuing despite blocking findings.", file=sys.stderr)
+        return False
+    msg = "[verify] register clean — 0 active hook channels (scrooge + caveman)."
+    if advisory:
+        msg += (f" ({len(advisory)} advisory install(s) noted above; "
+                + ("per-session check guards each row.)" if per_row_backstop
+                   else "this caller has no per-row backstop.)"))
+    print(msg, file=sys.stderr)
+    return True
+
+
 @contextlib.contextmanager
 def host_isolation(enabled: bool, isolate_settings: bool = False):
     """Neutralize host register hooks for the benchmark by moving their *state
@@ -649,7 +837,7 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
     except OSError:
         pass
 
-    claude = Path.home() / ".claude"
+    claude = claude_config_dir()
     targets = []
     if isolate_settings:
         targets.append((claude / "settings.json",
@@ -756,35 +944,35 @@ def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
     (every arm got "SCROOGE 활성 …") both came from a register hook leaking into
     all arms; this is the pre-measurement gate recording "0 active channels".
     """
-    home = Path.home()
+    cfg = claude_config_dir()
     findings: list[tuple[str, str]] = []
 
     scrooge_states = [
-        home / ".claude" / ".scrooge" / "global",
-        home / ".claude" / ".scrooge" / "default",
-        home / ".claude" / ".scrooge-active",
-        home / ".claude" / ".scrooge-default",
+        cfg / ".scrooge" / "global",
+        cfg / ".scrooge" / "default",
+        cfg / ".scrooge-active",
+        cfg / ".scrooge-default",
         cwd / ".scrooge" / "global",
         cwd / ".scrooge-active",
     ]
-    scrooge_states += sorted((home / ".claude" / ".scrooge").glob("sessions/*"))
-    scrooge_states += sorted((home / ".claude").glob(".scrooge-active-*"))
+    scrooge_states += sorted((cfg / ".scrooge").glob("sessions/*"))
+    scrooge_states += sorted(cfg.glob(".scrooge-active-*"))
     for st in scrooge_states:
         if st.exists():
             findings.append(("blocking", f"scrooge register state active (hook will inject): {st}"))
 
-    for settings in [home / ".claude" / "settings.json", cwd / ".claude" / "settings.json"]:
+    for settings in [cfg / "settings.json", cwd / ".claude" / "settings.json"]:
         if settings.exists() and _settings_caveman_active(settings):
             findings.append(("blocking", f"caveman actively wired in {settings}"))
 
-    for flag in [home / ".claude" / ".caveman-active", cwd / ".caveman-active"]:
+    for flag in [cfg / ".caveman-active", cwd / ".caveman-active"]:
         if flag.exists():
             findings.append(("blocking", f"caveman state flag present: {flag}"))
 
-    for hit in (home / ".claude" / "plugins").glob("marketplaces/*/plugins/caveman"):
+    for hit in (cfg / "plugins").glob("marketplaces/*/plugins/caveman"):
         findings.append(("advisory", f"caveman plugin installed (inert unless enabled): {hit}"))
 
-    for skills_dir in [home / ".claude" / "skills", home / ".claude" / ".agents"]:
+    for skills_dir in [cfg / "skills", cfg / ".agents"]:
         cav = skills_dir / "caveman"
         if cav.is_symlink() or cav.exists():
             findings.append(("advisory", f"caveman skill present (inert unless hooked): {cav}"))
@@ -906,33 +1094,9 @@ def main() -> int:
     with host_isolation(enabled=not args.no_isolate_host and not args.dry_run,
                         isolate_settings=args.isolate_settings):
         if not args.dry_run:
-            findings = verify_register_clean(cwd_base)
-            blocking = [m for sev, m in findings if sev == "blocking"]
-            advisory = [m for sev, m in findings if sev == "advisory"]
-            for m in advisory:
-                print(f"[verify] advisory: {m}", file=sys.stderr)
-            if blocking:
-                print("error: register not clean — clean-run precondition failed:",
-                      file=sys.stderr)
-                for m in blocking:
-                    print(f"  - {m}", file=sys.stderr)
-                if not args.allow_contaminated:
-                    print("Aborting. Isolation should have moved register state files aside; "
-                          "a remaining .scrooge-active/.caveman-active means the move failed "
-                          "(check the isolation lock) or you passed --no-isolate-host. Re-run "
-                          "with isolation, or pass --allow-contaminated. The per-session check "
-                          "still excludes any row that leaked.", file=sys.stderr)
-                    return 2
-                print("--allow-contaminated set; continuing despite blocking findings.",
-                      file=sys.stderr)
-                isolation_verified = False
-            else:
-                isolation_verified = True
-                msg = "[verify] register clean — 0 active hook channels (scrooge + caveman)."
-                if advisory:
-                    msg += (f" ({len(advisory)} advisory install(s) noted above; "
-                            "per-session check guards each row.)")
-                print(msg, file=sys.stderr)
+            isolation_verified = check_register_clean(cwd_base, args.allow_contaminated)
+            if isolation_verified is None:
+                return 2
         with args.output.open("a", encoding="utf-8") as out:
             if args.workers <= 1:
                 for job in jobs:

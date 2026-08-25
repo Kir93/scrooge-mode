@@ -77,6 +77,19 @@ over another.
   is removed. This is the authoritative backstop behind the pre-flight check; it
   guards against both the 34/97-session caveman pollution and the scrooge-self-hook
   pollution that compressed the baseline of an earlier opus-4-8 run.
+- **Transport-failure retry with a recorded cause** — a transient API failure
+  (429 / 5xx incl. 529, or a timeout) is retried up to twice with exponential
+  backoff (2s, 4s, ±25% jitter so parallel `--workers` do not all return at the
+  same instant), capped at two retries so a dead call cannot spend the run's quota. On the
+  timeout path the wall-clock ceiling is `--timeout` × 3 plus the backoff, not
+  the backoff alone. A permanent failure is not retried: auth (401), a client
+  error (400), and a subscription quota limit all fail again identically. On
+  final failure the row carries `failure_reason` — whatever the CLI actually
+  wrote (plain stdout/stderr under the default `--print` text format, or the
+  `result` field when the failure arrives wrapped in a result envelope) — so the
+  cause no longer reduces to `exit=1`. Existing JSONL fields are unchanged. This
+  sits one level below `agentic-run.sh --resume`, which re-runs whole missing
+  pairs after the fact rather than retrying a single call in place.
 - **Train/test separation** — `prompts/{ko,en}.txt` is the *dev* corpus the rules
   were tuned against; `prompts/{ko,en}-report.txt` is the held-out *report* corpus
   for headline numbers. Never tune `rules/{ko,en}/*.md` against the report set, or
@@ -685,6 +698,79 @@ These doc-generation numbers are **noisier than the conversational headline** �
 - **Single run, high variance.** Document length varies a lot run-to-run; per-prompt savings here ranged from 7% (a dense feature spec — mostly required content) to 92% (a verbose baseline). The stable signal is the per-prompt win-rate, not the exact percentage.
 - **Conservative.** A few `normal`/`terse` prompts were dropped from the paired set because their documents were too long to finish within the timeout — i.e. the most verbose baselines are **excluded**, not counted.
 - **Clean baseline.** Unlike the conversational headline, this run additionally neutralizes the host `CLAUDE.md` and forces inline output, so the baseline reflects a default assistant rather than one shaped by the local `CLAUDE.md` or a file-writing tool. (The per-machine `settings.json` hooks/plugins still load, but apply equally to every arm.) Full methodology in this file.
+
+## Register persistence (boundary survival)
+
+`run.py` measures one turn per session — its `--resume` resumes a results file,
+not a conversation — so "does a `## Boundaries` exclusion survive a long session,
+compaction included?" had no reproducible path. Three scripts answer it:
+
+| Script | Question |
+| ------ | -------- |
+| `persistence-run.py` | Does the boundary hold across N turns of ONE session, past forced compaction? |
+| `iso-single.py` | Does it hold when the register is the ONLY instruction in scope (no host prompt, no project `CLAUDE.md`)? |
+| `persistence-score.py` | Deterministic verdict per response — no judge model, no judge variance. |
+
+Corpora: `prompts/{ko,en}-outbound.txt` — both boundary classes: commit messages
+and PR descriptions (permanently excluded) and Slack/DM/mail drafts (Docs·prose —
+compressed for padding, tone kept). Neither may come out in 음슴체. Every prompt asks for a
+`=== OUTPUT ===` line before the artifact, which is what lets the scorer separate
+the artifact from talk about the artifact.
+
+Reproduce:
+
+```bash
+# free wiring check first — synthetic responses, no quota spent
+benchmarks/persistence-run.py --dry-run --arms "scrooge:ko/full,normal" \
+  --prompts benchmarks/prompts/ko-outbound.txt --turns 4 --output /tmp/smoke.jsonl
+
+# multi-turn: one session per arm, probes interleaved with unscored filler turns
+benchmarks/persistence-run.py \
+  --arms "scrooge:ko/full,normal" \
+  --prompts benchmarks/prompts/ko-outbound.txt \
+  --filler-prompts benchmarks/prompts/ko.txt \
+  --turns 12 --autocompact 100k \
+  --output benchmarks/results-ko-persistence.jsonl
+benchmarks/persistence-score.py --input benchmarks/results-ko-persistence.jsonl
+
+# register-only isolation, single turn (scored inline)
+benchmarks/iso-single.py \
+  --arms "scrooge:ko/full,normal" \
+  --prompts benchmarks/prompts/ko-outbound.txt \
+  --output benchmarks/results-ko-outbound-iso.jsonl
+```
+
+Caveats that decide whether a run is valid:
+
+- **Host isolation is a precondition, not an option.** Both runners take the same
+  `host_isolation` + `check_register_clean` preflight `run.py` does, and abort on a
+  blocking finding. Without it the user's own scrooge hook injects the register
+  into every child call — re-injecting each turn the very thing whose survival is
+  the question, and compressing the `normal` arm too.
+- **Only probe turns are scored.** Filler turns are ordinary conversation where a
+  compressed register is the correct behavior; the scorer reads each row's `kind`
+  and skips the rest, then reports per arm (a pooled rate mixes a register with
+  its own baseline).
+- **Check `register_in_transcript` on the first real run.** The harness assumes a
+  `--resume` turn inherits the `--system-prompt` set on turn 1. If that is wrong,
+  every arm collapses to the same thing and the run reports "boundary held" for
+  the wrong reason. The field records the answer per row; it is never used as a
+  verdict.
+- **Compaction has to be forced.** `--autocompact` takes `auto` or 100k-1M
+  tokens and the CLI rejects anything else. A session that never compacts has not
+  tested the claim; a rejected value fails loudly rather than running without it.
+- **File-mutating tools stay denied** (the default). With tools available the
+  model writes the document to a file and answers "wrote X.md", leaving no
+  artifact to score — the same reason the doc-generation corpus needs
+  `--disallow-tools`.
+- **Its own JSONL, always.** `report.py --paired` intersects the success keys of
+  every arm in a file, so mixing these rows into an existing results file
+  collapses that file's paired set. Both runners refuse a non-empty output file.
+- **The scorer is a tripwire, not a fidelity measure.** It counts Korean 음슴체
+  sentence endings inside the artifact; an EN arm scores zero by construction, so
+  EN results are read from the artifact text.
+- Scorer regressions are pinned by `test_persistence_score.py` — run it with
+  `python3 -m unittest discover -s benchmarks -p 'test_*.py'`.
 
 ## Fidelity bench (verified equivalence)
 
