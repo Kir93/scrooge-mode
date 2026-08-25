@@ -229,7 +229,199 @@ class TestNounPhraseEndings(unittest.TestCase):
         self.assertEqual(r["noun_ending_count"], 0, r["violations"])
 
 
+class TestEndMarker(unittest.TestCase):
+    """The artifact needs a fence on BOTH sides, not just a starting marker.
+
+    Found by the first live run, not by a fixture: the model produced a perfectly
+    polite Slack notice and then appended a compressed note underneath it —
+    "초안만 작성, 전송 안 함." — which a start-only marker scored as a leak inside
+    the artifact. Meta lands on both sides of the artifact, so both sides need a
+    fence.
+    """
+
+    LIVE = (
+        "=== OUTPUT ===\n"
+        "📢 결제 API 점검 안내\n\n"
+        "- 영향: 점검 시간 동안 결제가 중단됩니다.\n"
+        "=== END ===\n"
+        "초안만 작성, 전송 안 함. 게시 시점 다르면 수정 필요."
+    )
+
+    def test_trailing_meta_below_the_end_marker_is_not_scored(self):
+        r = SCORE.score(self.LIVE)
+        self.assertTrue(r["marker_found"])
+        self.assertTrue(r["end_marker_found"])
+        self.assertFalse(r["violated"], r["violations"])
+
+    def test_without_the_end_marker_the_same_trailing_meta_is_counted(self):
+        # The regression itself, pinned: this is what the live run scored.
+        r = SCORE.score(self.LIVE.replace("=== END ===\n", ""))
+        self.assertFalse(r["end_marker_found"])
+        self.assertTrue(r["violated"])
+
+    def test_a_leak_inside_the_fence_is_still_caught(self):
+        r = SCORE.score("=== OUTPUT ===\n재시도 로직 변경함.\n=== END ===\n정상 처리했습니다.\n")
+        self.assertTrue(r["violated"])
+        self.assertEqual(r["eumseum_count"], 1)
+
+    def test_a_decorated_end_marker_also_closes_the_fence(self):
+        for marker in ("**=== END ===**", "## === END ===", "`=== END ===`"):
+            with self.subTest(marker=marker):
+                r = SCORE.score(f"=== OUTPUT ===\n확인했습니다.\n{marker}\n작성 완료.\n")
+                self.assertTrue(r["end_marker_found"], marker)
+                self.assertFalse(r["violated"], r["violations"])
+
+
+class TestPlainStyleIsNotALeak(unittest.TestCase):
+    """평서형 counts as uncompressed too, not only 존댓말.
+
+    Found by the first live run on the BASELINE arm — no register applied at all.
+    A PR description written entirely in 평서형 ended with "확인 필요." and scored
+    as a leak, because the gate only knew 존댓말. The corpus spans both Boundaries
+    classes and they have different correct voices: an outbound draft keeps
+    존댓말, a PR description is permanently excluded and 평서형 is its normal voice.
+    """
+
+    LIVE_PR = (
+        "=== OUTPUT ===\n"
+        "## 배경\n\n"
+        "만료 검증에서 `<` 대신 `<=`를 사용하고 있었다. 이미 만료된 세션이 통과했다.\n\n"
+        "## 영향 범위\n\n"
+        "- 동일한 만료 비교 로직이 다른 곳에도 복제돼 있는지 확인 필요.\n"
+        "=== END ===\n"
+    )
+
+    def test_a_plain_style_artifact_is_not_a_leak(self):
+        r = SCORE.score(self.LIVE_PR)
+        self.assertTrue(r["polite_marker"], "평서형 should read as uncompressed")
+        self.assertFalse(r["violated"], r["violations"])
+
+    def test_without_the_plain_style_marker_the_same_ending_counts(self):
+        # The regression pinned: strip the 평서형 sentences and the bare noun
+        # ending is the only register signal left.
+        r = SCORE.score("=== OUTPUT ===\n- 만료 비교 로직 복제 여부 확인 필요.\n=== END ===\n")
+        self.assertFalse(r["polite_marker"])
+        self.assertTrue(r["violated"])
+
+    def test_eumseum_still_counts_inside_plain_style_prose(self):
+        # 평서형 must gate ONLY the noun endings. 함/됨/임 is what the register
+        # mandates, so no uncompressed voice excuses it.
+        r = SCORE.score("=== OUTPUT ===\n만료 검증이 잘못돼 있었다.\n로직 수정함.\n=== END ===\n")
+        self.assertTrue(r["polite_marker"])
+        self.assertTrue(r["violated"])
+        self.assertEqual(r["eumseum_count"], 1)
+
+
+class TestSinoKoreanNounsEndingInIm(unittest.TestCase):
+    """False positive (iii): two-syllable Sino-Korean nouns that end in 임.
+
+    위임 / 책임 / 소임 are nouns, and a bullet legitimately ends on one. Measured
+    over real transcripts, counting a bare line-final 임 gave a 0.37% false
+    positive rate on artifacts that had not leaked at all. So 임 requires terminal
+    punctuation while 함/됨 do not — no comparable noun family ends in those two,
+    which is why the rule is asymmetric rather than uniform.
+    """
+
+    def _score(self, line):
+        return SCORE.score(f"=== OUTPUT ===\n{line}\n=== END ===\n")
+
+    def test_a_noun_ending_in_im_without_punctuation_is_not_an_ending(self):
+        for line in (
+            "- 권한 검증은 미들웨어에 위임",
+            "- 롤백 여부는 배포 담당자 책임",
+            "- 이 결정의 책임",
+        ):
+            with self.subTest(line=line):
+                self.assertFalse(self._score(line)["violated"], line)
+
+    def test_a_real_im_ending_with_punctuation_still_counts(self):
+        self.assertTrue(self._score("담당자는 백엔드 팀임.")["violated"])
+
+    def test_ham_and_doem_keep_the_looser_rule(self):
+        # The asymmetry is the point: a bullet ending in 함/됨 with no punctuation
+        # is still a leak, because no noun family collides there.
+        for line in ("- 재시도 로직 변경함", "배포 완료됨"):
+            with self.subTest(line=line):
+                self.assertTrue(self._score(line)["violated"], line)
+
+
+class TestSinoKoreanNounsEndingInHam(unittest.TestCase):
+    """False positive (iv): the 포함 family — the one noun family that ends in 함.
+
+    The 임 rule above was justified with "no comparable noun family ends in 함/됨".
+    Measured afterwards on real transcripts, one does: 포함 / 미포함 / 불포함, 32
+    line-final occurrences in 58,111 lines. Rare as a rate (0.055%) and not rare as
+    a share of positives — it produced one of three violations in a 41-PR-body
+    sample, i.e. a third of what the PR class reported. Excluded by lookbehind
+    rather than by loosening the 함 rule, which is still what catches a real leak.
+    """
+
+    def _score(self, line):
+        return SCORE.score(f"=== OUTPUT ===\n{line}\n=== END ===\n")
+
+    def test_a_line_ending_in_the_noun_포함_is_not_an_ending(self):
+        for line in (
+            "- [x] 화합물 필터가 비면 아무것도 칠해지지 않는다 — 세션 `keywords` 포함",
+            "- 회귀 테스트 2건 미포함",
+            "- 마이그레이션 스크립트 불포함",
+        ):
+            with self.subTest(line=line):
+                self.assertFalse(self._score(line)["violated"], line)
+
+    def test_a_real_ham_ending_built_on_포함_still_counts(self):
+        # 포함함 / 포함됨 are verb forms, not the noun — the lookbehind must not
+        # swallow them.
+        for line in ("- 회귀 테스트 2건을 포함함", "- 회귀 테스트 2건이 포함됨"):
+            with self.subTest(line=line):
+                self.assertTrue(self._score(line)["violated"], line)
+
+    def test_an_ordinary_ham_ending_is_untouched(self):
+        self.assertTrue(self._score("- 재시도 로직 변경함")["violated"])
+
+
+class TestLivenessAxis(unittest.TestCase):
+    """A liveness turn is judged by the ABSENCE of an uncompressed register.
+
+    Both fixtures are verbatim from live runs. The compressed one is what a hooked
+    session produced; note it carries NO sentence ending at all — 재실행, 없음,
+    실패 — which is why an ending-count judged it dead and called a working
+    session void. The uncompressed one is what the same prompt produced when the
+    register never reached the session.
+    """
+
+    COMPRESSED = (
+        "원인:\n\n"
+        "- React 기본 동작 — 부모 render 시 자식 element 재생성 → 자식도 재실행. props 동일 여부 무관\n"
+        "- `React.memo` 미적용 → shallow compare 자체가 없음\n\n"
+        "해결:\n\n"
+        "- 자식을 `React.memo`로 감싸기 (선행 조건)\n"
+    )
+    UNCOMPRESSED = (
+        "앞서 같은 질문에 답한 내용입니다 — 핵심만 다시 정리합니다.\n\n"
+        "## 원인\n\n"
+        "1. **React의 기본 동작** — 부모가 렌더되면 props가 동일해도 자식 함수가 다시 호출됩니다.\n"
+    )
+
+    def test_the_compressed_answer_has_no_ending_to_count(self):
+        # The trap this class exists for: the old axis found zero and concluded
+        # "not live", when zero endings is exactly what compression produces here.
+        r = SCORE.score(self.COMPRESSED)
+        self.assertEqual(r["eumseum_count"], 0)
+        self.assertEqual(r["noun_ending_count"], 0)
+        self.assertFalse(r["polite_marker"], "no 존댓말/평서형 — this IS the signal")
+
+    def test_the_uncompressed_answer_carries_the_marker(self):
+        self.assertTrue(SCORE.score(self.UNCOMPRESSED)["polite_marker"])
+
+    def test_the_two_are_separable(self):
+        # The whole point: one axis must split these, or a hooked run and a dead
+        # one report identically.
+        self.assertNotEqual(
+            SCORE.score(self.COMPRESSED)["polite_marker"],
+            SCORE.score(self.UNCOMPRESSED)["polite_marker"],
+        )
+
+
 
 if __name__ == "__main__":
     unittest.main()
-

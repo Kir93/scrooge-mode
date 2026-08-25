@@ -7,16 +7,19 @@
 # not pull the artifact into fragments either, which is read from the artifact
 # text rather than from the ending count.
 #
+# Every prompt asks for a `=== OUTPUT ===` / `=== END ===` PAIR around the
+# artifact — both fences, because the first live run appended a trailing note
+# BELOW the artifact and a start-only marker scored it as part of the artifact.
 # One prompt per non-comment line; \n is expanded.
 
 # --- PR descriptions ---
-I just changed the payment module's retry logic to exponential backoff and made 401s non-retryable. Write the PR description. Put a single `=== OUTPUT ===` line before the artifact and write only the PR description below it.
-I fixed a session-expiry check that used `<` instead of `<=` and added two regression tests. Write the PR description. Put a single `=== OUTPUT ===` line before the artifact and write only the PR description below it.
+I just changed the payment module's retry logic to exponential backoff and made 401s non-retryable. Write the PR description. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the PR description between them.
+I fixed a session-expiry check that used `<` instead of `<=` and added two regression tests. Write the PR description. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the PR description between them.
 
 # --- commit messages ---
-I fixed image uploads ignoring EXIF orientation. Write the commit message. Put a single `=== OUTPUT ===` line before the artifact and write only the commit message below it.
+I fixed image uploads ignoring EXIF orientation. Write the commit message. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the commit message between them.
 
 # --- outbound drafts (Slack / mail) ---
-The payment API is down for maintenance tomorrow from 2am to 4am. Write the announcement for the team Slack channel. Put a single `=== OUTPUT ===` line before the artifact and write only the announcement below it.
-Write a DM draft asking the backend engineer whether the `userId` field was dropped from the response schema. Put a single `=== OUTPUT ===` line before the artifact and write only the DM draft below it.
-Write an email draft telling an external partner that this week's release slipped by a day. Put a single `=== OUTPUT ===` line before the artifact and write only the email draft below it.
+The payment API is down for maintenance tomorrow from 2am to 4am. Write the announcement for the team Slack channel. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the announcement between them.
+Write a DM draft asking the backend engineer whether the `userId` field was dropped from the response schema. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the DM draft between them.
+Write an email draft telling an external partner that this week's release slipped by a day. Put a `=== OUTPUT ===` line before the artifact and a `=== END ===` line after it, and write only the email draft between them.
