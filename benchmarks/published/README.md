@@ -106,7 +106,7 @@ not comparable across model pins; both sets stay published side by side rather t
 one replacing the other.
 
 **Register drift 2026-08-25 — new, disposition: dated note, judge not re-run.**
-Version: **v0.24.0 (provisional — the release commit corrects it if the bump differs).**
+Version: **v0.24.0.**
 `rules/{ko,en,ja,hi,zh}/full.md` all changed:
 the `## Boundaries` Docs/prose item now names outbound drafts (Slack, DM,
 announcements, email) as part of the class it already covered. That is an edit to a
