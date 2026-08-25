@@ -11,6 +11,7 @@ Scrooge는 docs-and-rules product. 변경은 작게, user-facing 문서는 이�
 - Node.js 18 이상.
 - Git.
 - markdownlint 실행용 `npx` 접근.
+- 벤치마크 테스트 실행용 Python 3 (표준 라이브러리만, 패키지 없음).
 
 Setup:
 
@@ -29,6 +30,7 @@ PR 전 실행:
 ```bash
 npm test
 npx markdownlint-cli2 "**/*.md"
+python3 -m unittest discover -s benchmarks -p 'test_*.py'
 ```
 
 JSON 파일 검증:
@@ -75,7 +77,7 @@ registry parity check가 registry 누락·unreachable rule file·`LANG_META` 행
 ## PR Conventions
 
 - PR 하나에 behavioral 또는 documentation concern 하나.
-- bilingual/dial parity 유지 여부 명시.
+- bilingual parity 유지 여부 명시.
 - verification command와 결과 포함.
 - `.claude/`, `.agents/`, `skills-lock.json`, `node_modules/` 같은 local agent/generated file 커밋 금지.
 - required `CI / verify` branch protection check 통과 전 merge 금지.

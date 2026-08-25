@@ -6,15 +6,15 @@ KO-first pentalingual (KO/EN/JA/HI/ZH) **LLM output-compression skill**. npm `sc
 
 ## What this repo is
 
-- **Product = the register rule docs.** The shipped behavioral contract is the register rule files `rules/{lang}/{lite,full}.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
+- **Product = the register rule docs.** The shipped behavioral contract is the register rule files `rules/{lang}/full.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
 - **Runtime tooling ships too — all implemented, not stubs.** The installer (`bin/install.js`), activation + stats hooks (`hooks/`), the session-log/ledger libs (`lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
-- **Test harness:** `npm test` runs `node --test` over an explicit file list in `package.json` (zero-dep, Node built-in) — not a `tests/` glob, so a new test file must be added to that list or it is silently skipped. No other build scripts — don't invent new ones; verify per §4.
+- **Test harness:** `npm test` runs `node --test` over an explicit file list in `package.json` (zero-dep, Node built-in) — not a `tests/` glob, so a new test file must be added to that list or it is silently skipped. No other build scripts — don't invent new ones; verify per §4. The Python side (`benchmarks/`) is a separate suite, not reachable from `npm test`: run `python3 -m unittest discover -s benchmarks -p 'test_*.py'`.
 
 ## Conventions
 
 - **Language**: code, comments, and identifiers in English; user-facing docs are KO/EN canonical + JA/ZH landings (`README.ja.md` and `README.zh.md` are lightweight landings, not full mirrors; `hi` ships as a register with no README landing) — keep them in sync.
 - **Registry contract**: renaming/moving any `rules/**` file requires the matching `registry.json` path edit in the *same* change. Dynamic loader reads rules via `registry.json[lang][dial]`.
-- **Bilingual + dial parity**: a substantive change to one rule (or `README.md`) mirrors to its counterpart — `ko` ↔ `en` ↔ `ja` ↔ `hi` ↔ `zh`, `lite` ↔ `full`, `README.md` ↔ `README.ko.md` — or flag explicitly why not. (`README.ja.md` and `README.zh.md` are the lightweight landing exceptions, not held to full mirror.)
+- **Bilingual parity**: a substantive change to one rule (or `README.md`) mirrors to its counterpart — `ko` ↔ `en` ↔ `ja` ↔ `hi` ↔ `zh`, `README.md` ↔ `README.ko.md` — or flag explicitly why not. (`README.ja.md` and `README.zh.md` are the lightweight landing exceptions, not held to full mirror.)
 - **markdownlint**: respect `.markdownlint.jsonc`. It tunes (not blocks) the linter — don't delete it. Don't pre-disable a rule speculatively; disable only when one actually surfaces noise.
 - **Dogfood**: this is a compression tool — keep docs and prose tight, no filler/hedging. Clarity wins where it conflicts with compression.
 - **Safety register**: rule files must keep security warnings, destructive-action confirmations, and ambiguous multi-step sequences in normal prose (auto-clarity), every dial.
@@ -39,9 +39,10 @@ Verify with `npm test` (the `node:test` harness — covers hook parsing, state s
 
 - **markdownlint clean**: `npx markdownlint-cli2 "**/*.md"` (honors `.markdownlint.jsonc`).
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
-- **Bilingual + dial parity**: `ko`/`en` and `lite`/`full` counterparts stay aligned.
+- **Bilingual parity**: `ko`/`en` counterparts stay aligned.
 - **JSON valid**: `registry.json` parses.
 - **Lockfile with `npm ci`**: any CI, release, or doc change that introduces `npm ci` must include/update `package-lock.json` in the same change. `npm ci` fails without a lockfile.
+- **New guard = red first**: break what a new test pins, watch it fail, restore — report that red line with the verify. A green fixture is not evidence the guard bites.
 
 For multi-step tasks, state a brief plan with a per-step verify.
 

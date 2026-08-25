@@ -11,6 +11,7 @@ Requirements:
 - Node.js 18 or newer.
 - Git.
 - `npx` access for markdownlint.
+- Python 3 for the benchmark tests (stdlib only, no packages).
 
 Setup:
 
@@ -29,6 +30,7 @@ Run before opening a PR:
 ```bash
 npm test
 npx markdownlint-cli2 "**/*.md"
+python3 -m unittest discover -s benchmarks -p 'test_*.py'
 ```
 
 Validate JSON files:
@@ -75,7 +77,7 @@ The registry parity check catches a forgotten registry entry, an unreachable rul
 ## PR Conventions
 
 - Keep one behavioral or documentation concern per PR.
-- State whether bilingual/dial parity is preserved.
+- State whether bilingual parity is preserved.
 - Include verification commands and results.
 - Do not commit generated local agent files such as `.claude/`, `.agents/`, `skills-lock.json`, or `node_modules/`.
 - Do not merge unless the required `CI / verify` branch protection check passes.
