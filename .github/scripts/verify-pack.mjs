@@ -13,7 +13,15 @@ import { execFileSync } from 'node:child_process';
 // One entry per shipped root. A prefix match, so `hooks/` passes when any file
 // under it is packed — the point is "this root is not missing", not a full
 // inventory that would churn on every added file.
+//
+// `LICENSE` is the exception to "root selected by files[]": npm force-includes it
+// (measured — it ships despite being absent from files[]), so no manifest edit can
+// drop it. It is listed for the other way it can vanish — the file itself deleted
+// or renamed — which would publish a tarball whose only license statement is the
+// `"license"` string in package.json, not the notice LICENSE requires to travel
+// with every copy.
 const REQUIRED = [
+  'LICENSE',
   'registry.json',
   'hooks/',
   'rules/',
@@ -50,7 +58,9 @@ const missing = REQUIRED.filter((req) =>
 );
 
 if (missing.length > 0) {
-  console.error(`verify-pack: package.json "files" no longer ships:\n  ${missing.join('\n  ')}`);
+  // Not "files[] no longer ships" — LICENSE is npm-forced, so that message would
+  // send you to edit a manifest field that cannot be the cause.
+  console.error(`verify-pack: the published tarball no longer contains:\n  ${missing.join('\n  ')}`);
   console.error(`\npacked ${paths.length} files; first 10:\n  ${paths.slice(0, 10).join('\n  ')}`);
   process.exit(1);
 }

@@ -6,6 +6,7 @@
     "name": "Kir93",
     "url": "https://github.com/Kir93"
   },
+  "license": "MIT",
   "hooks": {
     "UserPromptSubmit": [
       {

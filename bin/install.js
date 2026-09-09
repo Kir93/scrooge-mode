@@ -641,6 +641,10 @@ function installCodexPayload(root, dest, opts) {
   fs.mkdirSync(dest, { recursive: true });
   fs.writeFileSync(path.join(dest, 'package.json'), JSON.stringify({ type: 'module' }, null, 2) + '\n');
   fs.copyFileSync(path.join(root, 'registry.json'), path.join(dest, 'registry.json'));
+  // MIT requires the notice to travel with every copy, and this payload is a copy:
+  // it carries `rules/`, the part of the product most likely to be lifted verbatim.
+  // Best-effort — a missing LICENSE must not fail an otherwise working install.
+  try { fs.copyFileSync(path.join(root, 'LICENSE'), path.join(dest, 'LICENSE')); } catch (_) { /* best-effort */ }
   copyDirRecursive(path.join(root, 'hooks'), path.join(dest, 'hooks'));
   copyDirRecursive(path.join(root, 'rules'), path.join(dest, 'rules'));
   copyDirRecursive(path.join(root, 'lib'), path.join(dest, 'lib'));
