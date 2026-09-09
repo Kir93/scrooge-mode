@@ -82,6 +82,12 @@ registry parity check가 registry 누락·unreachable rule file·`LANG_META` 행
 - `.claude/`, `.agents/`, `skills-lock.json`, `node_modules/` 같은 local agent/generated file 커밋 금지.
 - required branch protection check `verify (18)`·`verify (22)`·`markdown-lint` 셋 다 통과 전 merge 금지.
 
+## License
+
+기여는 프로젝트와 동일한 MIT로 들어옴([LICENSE](LICENSE)) — inbound = outbound. CLA도 저작권 양도도 없음: 저작권은 기여자에게 남고, 프로젝트에는 모두에게 부여하는 것과 같은 MIT 조건을 부여.
+
+이 결과는 의도된 것. 외부 기여가 한 번 머지되면 relicense에 기여자 전원 동의가 필요해지므로 그 시점부터 라이선스는 사실상 고정됨. MIT는 임시값이 아니라 결정임.
+
 ## Code of Conduct
 
 직접적이고 기술적으로, 존중 있게 소통. 비판은 변경과 결과에 집중. security-sensitive issue는 public issue 대신 maintainer에게 private report.

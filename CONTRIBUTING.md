@@ -82,6 +82,12 @@ The registry parity check catches a forgotten registry entry, an unreachable rul
 - Do not commit generated local agent files such as `.claude/`, `.agents/`, `skills-lock.json`, or `node_modules/`.
 - Do not merge unless all three required branch protection checks pass: `verify (18)`, `verify (22)`, and `markdown-lint`.
 
+## License
+
+Contributions are licensed under the project's MIT license ([LICENSE](LICENSE)) — inbound equals outbound. There is no CLA and no copyright assignment: you keep your copyright and grant the project the same MIT terms it grants everyone else.
+
+The consequence is deliberate. Once an external contribution lands, relicensing this project would need every contributor's consent, so the license is effectively fixed from that point. MIT is the decision, not a placeholder.
+
 ## Code of Conduct
 
 Be direct, technical, and respectful. Focus critique on the change and its consequences. Report security-sensitive issues privately to the maintainer instead of opening a public issue.
