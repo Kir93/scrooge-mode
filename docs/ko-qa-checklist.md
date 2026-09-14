@@ -155,7 +155,7 @@ Output:
 
 ```text
 1. `rules/{lang}/full.md` 작성.
-2. `registry.json[lang]`에 두 path 추가.
+2. `registry.json[lang].full`·`registry.json.fragments[lang].lean` 추가.
 3. sample 5건 출력 후 QA checklist self-check.
 4. README/INSTALL/CONTRIBUTING 영향 있으면 mirror 갱신.
 5. `npm test` + `npx markdownlint-cli2 "**/*.md"` 실행.

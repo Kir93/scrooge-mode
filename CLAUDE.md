@@ -1,6 +1,6 @@
 # Scrooge — contributor guide
 
-KO-first pentalingual (KO/EN/JA/HI/ZH) **LLM output-compression skill**. npm `scrooge-mode` (ESM). "Tokens are money; spend them like a miser." This file guides anyone — human or agent — working on the repo. Bias toward caution over speed; trivial edits use judgment.
+KO-first pentalingual (KO/EN/JA/HI/ZH) **LLM output-compression skill**. `scrooge-mode` (ESM), distributed via `github:` — not published to npm (RELEASE.md §6). "Tokens are money; spend them like a miser." This file guides anyone — human or agent — working on the repo. Bias toward caution over speed; trivial edits use judgment.
 
 > Personal/machine-local overrides live in `CLAUDE.local.md` (gitignored). Don't put shared guidance there.
 

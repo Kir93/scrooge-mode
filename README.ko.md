@@ -108,14 +108,14 @@ npx -y github:Kir93/scrooge-mode
 재현 가능한 설치를 위해 release 버전 핀(원하는 release tag로 교체):
 
 ```bash
-npx -y github:Kir93/scrooge-mode#v0.21.0
+npx -y github:Kir93/scrooge-mode#v0.24.1
 ```
 
-**업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨. Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용. Scrooge는 하루 1회 GitHub를 확인해 새 릴리스가 있으면 세션 시작 시 한 줄로 알림(Claude는 `↑vX` statusline 마커도) — 끄기는 `SCROOGE_NO_UPDATE_CHECK=1`, 수동 확인은 `scrooge --version`.
+**업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨. Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용. Scrooge는 하루 1회 GitHub를 확인해 새 릴리스가 있으면 세션 시작 시 한 줄로 알림(Claude는 `↑vX` statusline 마커도) — 끄기는 `SCROOGE_NO_UPDATE_CHECK=1`. 수동 확인·업데이트는 위 quick-start 재실행(멱등).
 
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](INSTALL.ko.md). English install guide는 [INSTALL.md](INSTALL.md).
 
-**활성화.** `/scrooge ko full` (또는 `/scrooge en`, `/scrooge ja` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `scrooge --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
+**활성화.** `/scrooge ko full` (또는 `/scrooge en`, `/scrooge ja` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `npx -y github:Kir93/scrooge-mode -- --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
 
 ### 호스트 지원
 
@@ -145,7 +145,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 전 언어. **측정:** 잘못된 전제 질문에서 KO 19/20·EN 10/10 반박(비압축 baseline은 19/19·9/9) — 재현되는 KO 실패 1건이 있으나 표본이 가려낼 수 있는 격차는 아님([상세](./benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit)). |
 | Boundaries               | 압축 적용 범위. 코드·커밋 메시지·PR 설명은 영구 제외 — 압축이 문법을 깨뜨림. 모델이 생성하는 Docs·prose 산출물(README·명세·보고서, 그리고 외부로 보낼 초안 — Slack·DM·메일)은 압축 **적용**: 군더더기만 제거하고 정보·어조는 무손실. **측정:** 20턴 hook 세션에서 compaction을 한 번 지난 뒤에도 제외 클래스가 유지됨 — 산출물 7건 중 압축된 것 0건, liveness 대조 턴 전부에서 register 활성 확인 ([상세](./benchmarks/README.md#register-persistence-boundary-survival), 행: [`results-ko-persistence.jsonl`](./benchmarks/published/results-ko-persistence.jsonl)). |
-| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 1개 + 레지스트리 항목 1줄 + `hooks/lang-meta.js` 1행. |
+| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 2개(`full` + `lean` fragment) + 레지스트리 항목 2줄 + `hooks/lang-meta.js` 1행. |
 | `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. |
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](./benchmarks/) 참조.           |
@@ -183,7 +183,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 
 ### 영어
 
-| Mode                  | 대표 output tokens (N=25) | normal 대비 절감 |
+| Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
 | `normal`              |                      2344 |       (baseline) |
 | `terse`               |                      1796 |             ~23% |
@@ -246,12 +246,13 @@ Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨.
 
 **언어 추가** (registry-driven dispatch — 분기 추가 아닌 데이터 추가):
 
-1. `rules/{lang}/full.md` 규칙 파일 작성.
-2. [`registry.json`](registry.json)에 항목 1개 추가 — `VALID_LANGS`가 이 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식:
+1. `rules/{lang}/full.md` 규칙 파일 + `lean` fragment(`rules/{lang}/fragments/lean.md`) 작성 — `lean`은 기본 on이라 언어마다 필수.
+2. [`registry.json`](registry.json)에 항목 2개 추가 — rule path와 `fragments` path. `VALID_LANGS`는 `fragments`를 뺀 최상위 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식:
 
    ```json
    {
-     "ja": { "full": "rules/ja/full.md" }
+     "ja": { "full": "rules/ja/full.md" },
+     "fragments": { "ja": { "lean": "rules/ja/fragments/lean.md" } }
    }
    ```
 

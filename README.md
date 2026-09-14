@@ -110,14 +110,14 @@ npx -y github:Kir93/scrooge-mode
 Pin a released version for reproducible installs (swap the tag for the release you want):
 
 ```bash
-npx -y github:Kir93/scrooge-mode#v0.21.0
+npx -y github:Kir93/scrooge-mode#v0.24.1
 ```
 
-**Update.** Re-running the quick-start updates every detected host in place. Scrooge is safe to re-run. On Claude Code the installer now refreshes the marketplace and runs `claude plugin update` (restart Claude to apply) instead of skipping; Codex and skill-only hosts overwrite their payload on re-run. To pin a specific version instead of latest, use the same `--tag`/`#ref` as above. Scrooge also checks GitHub once a day and, when a newer release exists, hints at session start (plus an `↑vX` statusline marker on Claude) — opt out with `SCROOGE_NO_UPDATE_CHECK=1`, or check on demand with `scrooge --version`.
+**Update.** Re-running the quick-start updates every detected host in place. Scrooge is safe to re-run. On Claude Code the installer now refreshes the marketplace and runs `claude plugin update` (restart Claude to apply) instead of skipping; Codex and skill-only hosts overwrite their payload on re-run. To pin a specific version instead of latest, use the same `--tag`/`#ref` as above. Scrooge also checks GitHub once a day and, when a newer release exists, hints at session start (plus an `↑vX` statusline marker on Claude) — opt out with `SCROOGE_NO_UPDATE_CHECK=1`. To check or update on demand, re-run the quick-start above — it is idempotent.
 
 Detailed setup, Claude Code plugin install, Codex `skills` install, troubleshooting, and uninstall steps live in [INSTALL.md](INSTALL.md). 한국어 설치 문서는 [INSTALL.ko.md](INSTALL.ko.md).
 
-**Activate.** `/scrooge ko full` (or `/scrooge en`, `/scrooge ja`, etc.) turns the register on. `/scrooge off` clears state. `scrooge --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
+**Activate.** `/scrooge ko full` (or `/scrooge en`, `/scrooge ja`, etc.) turns the register on. `/scrooge off` clears state. `npx -y github:Kir93/scrooge-mode -- --help` lists every flag. On the Claude Code hook, plain language works too — "talk like scrooge" / "스크루지처럼 답해줘" / "スクルージみたいに答えて" activates, "stop scrooge" / "스크루지 꺼" clears. A negation ("don't talk like scrooge" / "스크루지처럼 말하지 마") is ignored.
 
 ### Host support
 
@@ -147,7 +147,7 @@ For a host not in the table, the standard's convergent location is `~/.agents/sk
 | `UserPromptSubmit` hook  | Reinjects the register every turn so the dial does not drift.                                                                                    |
 | Safety auto-clarity      | Rules drop compression for security warnings, irreversible-action confirmations, and ambiguous multi-step sequences. Every language. **Measured:** on false-premise questions KO debunks 19/20 and EN 10/10, against an uncompressed baseline of 19/19 and 9/9 — one reproducible KO failure, no deficit the sample can resolve ([detail](./benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit)). |
 | Boundaries               | Compression scope. Code, commit messages, and PR descriptions are permanently excluded — compression breaks syntax. Docs / prose artifacts the model generates (READMEs, specs, reports, and drafts you will send onward — Slack, DM, email) **are** compressed: padding stripped, information and tone lossless. **Measured:** the exclusion held across a 20-turn hooked session past a compaction — 0/7 excluded artifacts came out compressed, with the register verified live on every liveness control turn ([detail](./benchmarks/README.md#register-persistence-boundary-survival), rows: [`results-ko-persistence.jsonl`](./benchmarks/published/results-ko-persistence.jsonl)). |
-| `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = one rule file + one registry entry + one `hooks/lang-meta.js` row.    |
+| `registry.json`          | Maps `language × dial → rule file path` 1:1, and the key list is the source `VALID_LANGS` derives from. Adding a language = two rule files (`full` + the `lean` fragment) + two registry entries + one `hooks/lang-meta.js` row.    |
 | `scrooge-stats` skill    | Discoverable stats surface for Claude/Codex. Reports measured input + output tokens from the session JSONL; never asks the model to estimate.    |
 | Token-savings statusline | Actual session output tokens from the Claude Code session JSONL — not tokenizer estimates.                                                       |
 | CLI benchmark harness    | Reproducible runner (`benchmarks/run.py`) — see [`benchmarks/`](./benchmarks/).                                                                  |
@@ -248,12 +248,13 @@ In short: Scrooge should not read like caveman with Korean bolted on. The point 
 
 **Adding a language** (registry-driven dispatch — data, not new branches):
 
-1. Author `rules/{lang}/full.md`.
-2. Add one entry to [`registry.json`](registry.json) — `VALID_LANGS` derives from these keys, so the slash parser and rule loader pick up the language with no code edit:
+1. Author `rules/{lang}/full.md` and its `lean` fragment at `rules/{lang}/fragments/lean.md` — `lean` is on by default, so every language needs one.
+2. Add two entries to [`registry.json`](registry.json) — the rule path and the `fragments` path. `VALID_LANGS` derives from the top-level keys other than `fragments`, so the slash parser and rule loader pick up the language with no code edit:
 
    ```json
    {
-     "ja": { "full": "rules/ja/full.md" }
+     "ja": { "full": "rules/ja/full.md" },
+     "fragments": { "ja": { "lean": "rules/ja/fragments/lean.md" } }
    }
    ```
 

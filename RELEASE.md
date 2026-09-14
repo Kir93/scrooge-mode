@@ -114,11 +114,10 @@ git push origin vX.Y.Z
 
 The workflow triggers on `push:` for tags matching `v*.*.*`. It checks out the
 **tagged commit** (not `main` HEAD), verifies that all six version sources in
-that commit — `package.json` `version`, `.claude-plugin/marketplace.json`
-`metadata.version` and `plugins[0].version`, and `.claude-plugin/plugin.json`
-`version` — equal the tag without its leading `v`, then creates the GitHub release
-for that tag with `GITHUB_TOKEN` (`permissions: contents: write`; no Kir93 PAT
-needed). The release body combines the committed
+that commit — the table in § "Version sources (must match)" — equal the tag
+without its leading `v`, then creates the GitHub release for that tag with
+`GITHUB_TOKEN` (`permissions: contents: write`; no Kir93 PAT needed). The
+release body combines the committed
 `.github/release-notes-template.md` callout header with the version's generated
 changelog. The workflow does not run `npm publish` (§6).
 

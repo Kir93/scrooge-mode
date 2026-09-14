@@ -21,7 +21,7 @@ cd scrooge-mode
 npm ci
 ```
 
-The repo intentionally has no build step. The shipped product is `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `bin/**`, and `.claude-plugin/**`.
+The repo intentionally has no build step. The shipped product is `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `lib/**`, `bin/**`, and `.claude-plugin/**`.
 
 ## Test & Lint
 
@@ -31,6 +31,7 @@ Run before opening a PR:
 npm test
 npx markdownlint-cli2 "**/*.md"
 python3 -m unittest discover -s benchmarks -p 'test_*.py'
+node .github/scripts/verify-pack.mjs
 ```
 
 Validate JSON files:
@@ -47,7 +48,7 @@ node --test tests/test_registry_parity.js
 
 `npm test` already runs it. `tests/test_registry_parity.js` is the single source for this check — it also guards `registry ↔ LANG_META ↔ VALID_DIALS` completeness, so keep new checks there instead of adding another copy to a doc or workflow.
 
-GitHub branch protection should require three checks before merging to `main`: `verify (18)`, `verify (22)`, and `markdown-lint`. Name them exactly — `verify` runs as a node-version matrix, so GitHub publishes one check per entry and there is no check called `verify` to select. `markdown-lint` is a separate job (it needs node>=20, and keeping it out of the matrix means neither a lower matrix entry breaks it nor a matrix edit silently drops it), so requiring the `verify` pair alone would let a markdownlint failure merge. Together they make test (registry reachability included), markdownlint, and JSON failures block merges. Adding a matrix entry adds a check name — require it too, or that version's failures stop blocking.
+GitHub branch protection should require three checks before merging to `main`: `verify (18)`, `verify (22)`, and `markdown-lint`. Name them exactly — `verify` runs as a node-version matrix, so GitHub publishes one check per entry and there is no check called `verify` to select. `markdown-lint` is a separate job (it needs node>=20, and keeping it out of the matrix means neither a lower matrix entry breaks it nor a matrix edit silently drops it), so requiring the `verify` pair alone would let a markdownlint failure merge. Together they make test (registry reachability included), benchmark statistics, package file list, markdownlint, and JSON failures block merges; the `rules/` re-measurement marker in the same job is `continue-on-error` and never blocks. Adding a matrix entry adds a check name — require it too, or that version's failures stop blocking.
 
 ## Bilingual + Dial Parity
 
@@ -65,14 +66,14 @@ Use [CLAUDE.md Conventions](CLAUDE.md#conventions) as the source of truth. In sh
 
 Activation is registry-driven dispatch, so a new language is data, not new branches:
 
-1. Add a new rule file at `rules/{lang}/full.md`.
-2. Add `registry.json[lang]` with its `full` path. `VALID_LANGS` derives from these keys, so the slash parser and rule loader recognize the language with no code edit.
+1. Add a new rule file at `rules/{lang}/full.md`, plus its `lean` fragment at `rules/{lang}/fragments/lean.md`.
+2. Add `registry.json[lang]` with its `full` path, and `registry.json.fragments[lang]` with its `lean` path. `VALID_LANGS` derives from the top-level language keys, so the slash parser and rule loader recognize the language with no code edit. `lean` is on by default, so a language registered without its fragment ships with that default flag silently dead; `test_registry_parity.js` fails if a registry language has no `fragments[lang].lean` or the path points at no file.
 3. Add one `LANG_META[lang]` row in `hooks/lang-meta.js` — `reminder` (full body), `countermand`, `flagHint`, and `nlCue` (activate/off/negate/meta/strong). This drives the per-turn reminder, the off countermand, and natural-language activation; without it the language loads its rule but has no reminder or NL cues. `test_registry_parity.js` fails if a registry language is missing its row.
 4. Generate 5 sample outputs and self-check them against a QA checklist shaped like [docs/ko-qa-checklist.md](docs/ko-qa-checklist.md) when available: register consistency, verbatim code/error/technical terms, safety prose, particle/drop clarity, and honorific policy.
 5. Review README, INSTALL, and CONTRIBUTING mirrors. Update user-facing docs if the new language changes installation, activation, or contribution behavior.
 6. Open a PR with the sample self-check summary and the commands from [Test & Lint](#test--lint).
 
-The registry parity check catches a forgotten registry entry, an unreachable rule file, or a registry language missing its `LANG_META` row automatically.
+The registry parity check catches a forgotten registry entry, a missing `fragments` lean entry, an unreachable rule file, or a registry language missing its `LANG_META` row automatically.
 
 ## PR Conventions
 

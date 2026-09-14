@@ -110,10 +110,10 @@ Pin a released version (reproducible installs — swap the tag for the release y
 
 ```bash
 # curl|bash / npx — pins directly via the npm git-ref (guaranteed)
-npx -y github:Kir93/scrooge-mode#v0.21.0
+npx -y github:Kir93/scrooge-mode#v0.24.1
 
 # forward the tag to the marketplace / skills channels the installer drives
-npx -y github:Kir93/scrooge-mode#v0.21.0 -- --tag v0.21.0
+npx -y github:Kir93/scrooge-mode#v0.24.1 -- --tag v0.24.1
 ```
 
 | Channel | Tag pinning |
@@ -209,7 +209,7 @@ After updating, the first new session shows a one-time reminder of how to re-act
 
 For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
 
-> **Codex tier limit.** The Codex integration wires only the `UserPromptSubmit` hook, not `SessionStart` — so the in-session update notice and the `↑vX` statusline marker never surface on Codex. Check for a newer release manually with `scrooge --version`, and because the Codex payload is a copy (no in-place `plugin update`), **upgrading means re-running the installer**.
+> **Codex tier limit.** The Codex integration wires only the `UserPromptSubmit` hook, not `SessionStart` — so the in-session update notice and the `↑vX` statusline marker never surface on Codex. Because the Codex payload is a copy (no in-place `plugin update`) and carries no version marker, **upgrading means re-running the installer** — it is idempotent, so re-running it is also the manual update check.
 
 To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
 
@@ -218,7 +218,7 @@ To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as i
 Scrooge checks GitHub for a newer release at most once a day, then surfaces it when you're behind. The check runs in a detached background process — it never blocks or slows a session, and the hooks themselves never touch the network (they only read a cached result).
 
 - **Where it shows:** a one-line hint at the next session start (relayed in your language), plus an `↑vX` marker on the Claude statusline. Updating is the same re-run as above.
-- **Check on demand:** `scrooge --version` (or `npx -y github:Kir93/scrooge-mode -- --version`) prints the installed version and whether a newer release exists.
+- **Check on demand:** re-run `npx -y github:Kir93/scrooge-mode` — it is idempotent and updates every detected host in place. (`npx … -- --version` reports the version of the copy it fetches, not your installed payload.)
 - **Opt out:** set `SCROOGE_NO_UPDATE_CHECK=1` to disable the background check and the notice entirely. It is also skipped automatically in CI.
 - **Privacy:** the probe is a single unauthenticated GitHub API call (`releases/latest`) — it sends nothing beyond the request itself.
 
