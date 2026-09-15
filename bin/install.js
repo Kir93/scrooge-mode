@@ -71,7 +71,7 @@ function parseArgs(argv) {
       }
       case '--tag': case '--ref': {
         const v = argv[++i];
-        if (!v || v.startsWith('--')) die('error: --tag requires a git ref (e.g. v0.24.1)');
+        if (!v || v.startsWith('--')) die('error: --tag requires a git ref (e.g. vX.Y.Z)');
         o.tag = v;
         break;
       }
@@ -282,7 +282,7 @@ function quoteCmd(s) {
 
 // ── Claude install ──────────────────────────────────────────────────────────
 // The repo spec passed to the marketplace / skills CLIs. With --tag it pins to a
-// git ref (`Kir93/scrooge-mode#v0.24.1`); npm-resolved channels honor the ref, and
+// git ref (`Kir93/scrooge-mode#vX.Y.Z`); npm-resolved channels honor the ref, and
 // the curl|bash path pins directly via `npx -y github:<repo>#<ref>`. A CLI that
 // does not parse a ref will reject it — --tag is opt-in, so an unpinned install is
 // unaffected. See INSTALL.md for the per-channel pinning matrix.
@@ -849,6 +849,11 @@ function main() {
   if (results.skipped.length) process.stdout.write(`, skipped ${results.skipped.length}`);
   if (results.failed.length) process.stdout.write(`, failed [${results.failed.map((f) => f[0]).join(', ')}]`);
   process.stdout.write('\n');
+  // A failed host has to reach the caller. install.sh execs this under curl|bash,
+  // where a silent 0 books a broken install as a good one. die() already uses 2
+  // for argument errors, so 1 is the distinct "ran, some host failed" signal.
+  // Unreached on --uninstall: that path returns above, and never fills `failed`.
+  if (results.failed.length) process.exitCode = 1;
 }
 
 function printHelp() {
@@ -858,7 +863,7 @@ Usage: node bin/install.js [flags]
 
 Flags:
   --only <id>      install only the named agent (repeatable; allows soft agents)
-  --tag,--ref <r>  pin the install to a git ref (e.g. v0.24.1); npx git-ref is the
+  --tag,--ref <r>  pin the install to a git ref (e.g. vX.Y.Z); npx git-ref is the
                    guaranteed pin, marketplace/skills channels best-effort
   --list           list supported agents
   --uninstall,-u   remove scrooge from detected agents

@@ -110,6 +110,40 @@ test('main() fires when invoked through a bin symlink (CLI-guard regression)', {
   assert.match(r.stdout, /Supported agents/); // proves main() ran via the symlink
 });
 
+// ── Installer exit status ─────────────────────────────────────────────────────
+// A run that failed a host still printed `Done. … failed [cursor]` and exited 0,
+// so `install.sh`'s `exec node bin/install.js` under a curl|bash `set -euo
+// pipefail`, and any CI wrapper, read a broken install as a good one. Both sides
+// are pinned here: a recorded failure exits non-zero, a skip stays zero.
+
+test('a failed host install exits non-zero', {
+  // Windows spells the variable `Path`, so the spread below leaves the real one
+  // in place beside our `PATH` and which wins is a libuv detail, not a contract.
+  skip: process.platform === 'win32' ? 'PATH override is case-ambiguous on Windows' : false,
+}, () => {
+  // `--only cursor` with an empty PATH makes hasCmd('npx') false, so
+  // installViaSkills records the failure and returns before touching anything.
+  const emptyPath = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-nopath-'));
+  const r = spawnSync(process.execPath, [INSTALL_JS, '--only', 'cursor'], {
+    encoding: 'utf8',
+    env: { ...process.env, PATH: emptyPath },
+  });
+  fs.rmSync(emptyPath, { recursive: true, force: true });
+  assert.match(r.stdout, /failed \[cursor\]/); // the run really did fail a host
+  assert.notEqual(r.status, 0, `installer reported a failure but exited 0:\n${r.stdout}`);
+});
+
+test('a skipped host install exits zero', () => {
+  // Skipped is not failed. Inside our own clone the self-install guard skips the
+  // skills CLI, and that run must stay a success.
+  const r = spawnSync(process.execPath, [INSTALL_JS, '--only', 'cursor', '--dry-run'], {
+    encoding: 'utf8',
+    cwd: path.dirname(path.dirname(INSTALL_JS)),
+  });
+  assert.match(r.stdout, /skipped 1/);
+  assert.equal(r.status, 0, r.stderr);
+});
+
 // ── Self-install guard (integrity-sweep Task 12) ──────────────────────────────
 // findOwnRepoRoot decides whether the installer is running inside its own clone.
 // A wrong answer is not cosmetic: it drives whether we install into the user's
