@@ -110,10 +110,10 @@ Pin a released version (reproducible installs — swap the tag for the release y
 
 ```bash
 # curl|bash / npx — pins directly via the npm git-ref (guaranteed)
-npx -y github:Kir93/scrooge-mode#v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # forward the tag to the marketplace / skills channels the installer drives
-npx -y github:Kir93/scrooge-mode#v0.24.1 -- --tag v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z -- --tag vX.Y.Z
 ```
 
 | Channel | Tag pinning |
@@ -304,7 +304,7 @@ If this fails, install Claude Code first or use the `skills` ecosystem path for 
 
 Scrooge always installs skills at user (global) scope, so `.agents/`, `skills/<name>`, or `skills-lock.json` should never appear in **a project**.
 
-Note the two scopes are not the same thing. **User scope — `~/.agents/skills/` — is the standard's convergent location, not leakage**: it is where `npx skills add … -g` writes, and Codex loads it, Windsurf discovers it, and Gemini CLI aliases it. That directory is supposed to exist. Only a **project-local** `.agents/` is leftover to clean up. If you find leftovers from an older version, clean up by running the skills CLI removal for each installed agent (e.g. `npx -y skills remove Kir93/scrooge-mode -a codex`) and deleting any remaining `.agents/` or `skills-lock.json` from the project root.
+Note the two scopes are not the same thing. **User scope — `~/.agents/skills/` — is the standard's convergent location, not leakage**: it is where `npx skills add … -g` writes, and Codex loads it. The other skills-CLI profiles target that same location per the standard — we have not verified each one reads it. That directory is supposed to exist. Only a **project-local** `.agents/` is leftover to clean up. If you find leftovers from an older version, clean up by running the skills CLI removal for each installed agent (e.g. `npx -y skills remove Kir93/scrooge-mode -a codex`) and deleting any remaining `.agents/` or `skills-lock.json` from the project root.
 
 ### Permission Errors
 

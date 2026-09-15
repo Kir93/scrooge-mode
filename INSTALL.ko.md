@@ -109,10 +109,10 @@ release 버전 핀(재현 가능한 설치 — 원하는 release tag로 교체):
 
 ```bash
 # curl|bash / npx — npm git-ref로 직접 핀(보장)
-npx -y github:Kir93/scrooge-mode#v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # installer가 구동하는 marketplace / skills 채널에도 tag 전달
-npx -y github:Kir93/scrooge-mode#v0.24.1 -- --tag v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z -- --tag vX.Y.Z
 ```
 
 | 채널 | tag 핀 |
@@ -300,7 +300,7 @@ command -v claude
 
 scrooge는 항상 user(global) scope로 설치하므로 **프로젝트에** `.agents/`, `skills/<name>`, `skills-lock.json` 생기지 않음.
 
-두 scope는 다릅니다. **user scope인 `~/.agents/skills/`는 누출이 아니라 표준의 수렴 위치**입니다 — `npx skills add … -g`가 쓰는 경로이며 Codex가 로드하고 Windsurf가 탐지하며 Gemini CLI가 alias합니다. 그 디렉토리는 있는 게 정상입니다. 청소 대상은 **프로젝트 로컬** `.agents/`뿐입니다. 구버전 잔재 발견되면 설치된 agent별로 skills CLI 제거 (`npx -y skills remove Kir93/scrooge-mode -a codex` 등) 후 프로젝트 루트에 남은 `.agents/`·`skills-lock.json` 수동 삭제.
+두 scope는 다릅니다. **user scope인 `~/.agents/skills/`는 누출이 아니라 표준의 수렴 위치**입니다 — `npx skills add … -g`가 쓰는 경로이며 Codex가 로드합니다. 나머지 skills CLI 프로파일도 표준상 같은 위치를 대상으로 하지만, 각 호스트가 실제로 읽는지는 확인하지 않았습니다. 그 디렉토리는 있는 게 정상입니다. 청소 대상은 **프로젝트 로컬** `.agents/`뿐입니다. 구버전 잔재 발견되면 설치된 agent별로 skills CLI 제거 (`npx -y skills remove Kir93/scrooge-mode -a codex` 등) 후 프로젝트 루트에 남은 `.agents/`·`skills-lock.json` 수동 삭제.
 
 ### Permission Errors
 

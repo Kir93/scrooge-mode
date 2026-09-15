@@ -108,7 +108,7 @@ npx -y github:Kir93/scrooge-mode
 재현 가능한 설치를 위해 release 버전 핀(원하는 release tag로 교체):
 
 ```bash
-npx -y github:Kir93/scrooge-mode#v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z
 ```
 
 **업데이트.** quick-start를 다시 실행하면 감지된 전 호스트가 그 자리에서 최신화됨. Scrooge는 재실행 안전. Claude Code는 이제 skip 대신 marketplace를 새로고침하고 `claude plugin update` 실행(적용은 Claude 재시작); Codex·skill-only 호스트는 재실행 시 payload overwrite. latest 대신 특정 버전 핀은 위와 동일한 `--tag`/`#ref` 사용. Scrooge는 하루 1회 GitHub를 확인해 새 릴리스가 있으면 세션 시작 시 한 줄로 알림(Claude는 `↑vX` statusline 마커도) — 끄기는 `SCROOGE_NO_UPDATE_CHECK=1`. 수동 확인·업데이트는 위 quick-start 재실행(멱등).
@@ -128,11 +128,11 @@ installer가 감지된 호스트를 각 기능 tier로 설치함:
 | Cursor · Windsurf · Cline · Continue | skills (skill-only) | — | — | — |
 | Gemini CLI (**opt-in**, `--only gemini`) | skills (skill-only) | — | — | — |
 
-**`SKILL.md` 하나, 런타임 7개.** Agent Skills는 Agentic AI Foundation(Linux Foundation) 산하 공개 표준으로 `name`·`description`만 필수이고, 인식 못 하는 frontmatter 키는 무시하도록 규정한다 — [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md)이 정확히 그 두 필드만 갖고 있다. 따라서 register는 파일 하나로 Claude Code·Codex·Cursor·Windsurf·Cline·Continue·Gemini CLI에 닿으며, 위 표는 포팅 개수가 아니라 호스트별로 얼마나 *자동화*가 감싸는지를 나타낸다.
+**`SKILL.md` 하나, 런타임 7개.** Agent Skills는 Agentic AI Foundation(Linux Foundation) 산하 공개 표준으로 `name`·`description`만 필수이고, 인식 못 하는 frontmatter 키는 무시하도록 규정한다 — [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md)이 정확히 그 두 필드만 갖고 있다. 그래서 파일 하나로 Claude Code·Codex·Cursor·Windsurf·Cline·Continue·Gemini CLI 일곱 곳에 닿을 수 있고, 위 표는 포팅 개수가 아니라 호스트별로 얼마나 *자동화*가 감싸는지를 나타낸다. 도달 가능성은 표준에서 오는 것이지 우리가 측정한 것이 아니다 — [`benchmarks/published/`](./benchmarks/published/)의 모든 행이 Claude이고, Codex 행은 pre-opus48에 harness·tokenizer가 달라 stale하며(그 harness는 [v0.23.0에서 제거됨](./benchmarks/README.md#codex-secondary-benchmark--removed-in-v0230)) published에 하나도 없고, skill-only 호스트 다섯은 행 자체가 없다. 그 다섯은 위 표준 근거에만 기댄다.
 
 tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. Codex는 `UserPromptSubmit`만 배선(`SessionStart` 없음)하므로 업데이트 알림·`↑vX` 마커는 Claude 전용이고 업그레이드는 재설치([Update](INSTALL.ko.md#update)). statusline `✓`는 보이는 것보다 좁다 — one-line installer가 배선하며 **`/plugin install` 경로는 배선하지 않음**. 수동 `settings.json` 항목은 [INSTALL.ko.md](INSTALL.ko.md#statusline).
 
-표에 없는 호스트는 표준의 수렴 위치인 `~/.agents/skills/`를 쓰면 된다 — `npx skills add … -g`가 이미 쓰는 경로다.
+표에 없는 호스트는 표준의 수렴 위치인 `~/.agents/skills/`를 쓰면 된다 — `npx skills add … -g`가 이미 쓰는 경로이고, 근거는 위 다섯과 같은 표준 논거다.
 
 ## 표면
 

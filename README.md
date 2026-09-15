@@ -110,7 +110,7 @@ npx -y github:Kir93/scrooge-mode
 Pin a released version for reproducible installs (swap the tag for the release you want):
 
 ```bash
-npx -y github:Kir93/scrooge-mode#v0.24.1
+npx -y github:Kir93/scrooge-mode#vX.Y.Z
 ```
 
 **Update.** Re-running the quick-start updates every detected host in place. Scrooge is safe to re-run. On Claude Code the installer now refreshes the marketplace and runs `claude plugin update` (restart Claude to apply) instead of skipping; Codex and skill-only hosts overwrite their payload on re-run. To pin a specific version instead of latest, use the same `--tag`/`#ref` as above. Scrooge also checks GitHub once a day and, when a newer release exists, hints at session start (plus an `↑vX` statusline marker on Claude) — opt out with `SCROOGE_NO_UPDATE_CHECK=1`. To check or update on demand, re-run the quick-start above — it is idempotent.
@@ -130,11 +130,11 @@ The installer sets up each detected host at its capability tier:
 | Cursor · Windsurf · Cline · Continue | skills (skill-only) | — | — | — |
 | Gemini CLI (**opt-in**, `--only gemini`) | skills (skill-only) | — | — | — |
 
-**One `SKILL.md`, seven runtimes.** Agent Skills is an open standard under the Agentic AI Foundation (Linux Foundation) requiring only `name` and `description`, with runtimes mandated to ignore frontmatter keys they do not recognize — and [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md) carries exactly those two fields. The register therefore reaches Claude Code, Codex, Cursor, Windsurf, Cline, Continue, and Gemini CLI from one file; the table above is about how much _automation_ wraps it per host, not about how many ports exist.
+**One `SKILL.md`, seven runtimes.** Agent Skills is an open standard under the Agentic AI Foundation (Linux Foundation) requiring only `name` and `description`, with runtimes mandated to ignore frontmatter keys they do not recognize — and [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md) carries exactly those two fields. That makes all seven — Claude Code, Codex, Cursor, Windsurf, Cline, Continue, Gemini CLI — reachable from one file; the table above is about how much _automation_ wraps it per host, not about how many ports exist. Reach is what the standard buys, not what we measured: every row under [`benchmarks/published/`](./benchmarks/published/) is Claude, the Codex rows are stale — pre-opus48, a different harness and tokenizer, and that harness was [removed in v0.23.0](./benchmarks/README.md#codex-secondary-benchmark--removed-in-v0230) — so none of them is published, and the five skill-only hosts have no row at all. They rest on the spec argument above.
 
 What the tiers mean: skill-only hosts load the register but activation is manual — no per-turn reinject hook, no token stats. Codex wires only `UserPromptSubmit` (no `SessionStart`), so its update notice and `↑vX` marker are Claude-only and upgrades are a reinstall (see [Update](INSTALL.md#update)). The statusline `✓` is narrower than it looks: it is wired by the one-line installer, and **the `/plugin install` path does not wire it** — see [INSTALL.md](INSTALL.md#statusline) for the manual `settings.json` entry.
 
-For a host not in the table, the standard's convergent location is `~/.agents/skills/` — which is where `npx skills add … -g` already writes.
+For a host not in the table, the standard's convergent location is `~/.agents/skills/` — which is where `npx skills add … -g` already writes, on the same spec argument as the five above.
 
 ## Surface
 
