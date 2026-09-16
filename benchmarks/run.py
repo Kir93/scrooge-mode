@@ -34,6 +34,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -694,10 +695,23 @@ def iter_jobs(arms: list[tuple[str, str]], prompts: list[str], runs: int,
                 yield arm_label, rule_text, prompt, pid, run
 
 
-ISOLATION_LOCK_DIR = Path("/tmp/scrooge-bench-isolation.lock.d")
+def isolation_lock_dir() -> Path:
+    """The cross-process isolation lock, inside the user's own config dir.
+
+    The lock must stay a FIXED path — mutual exclusion is its whole point, and a
+    per-run temp name would never collide. But a fixed name under a world-writable
+    /tmp is one any local user can pre-create, wedging every future run at exit 2.
+    The config dir is already the thing isolation reaches into and is 0700 on a
+    normal install, so it gives fixedness without the shared-namespace exposure.
+
+    A function rather than a module constant for the same reason as
+    claude_config_dir(): a constant freezes at import time and would miss the
+    CLAUDE_CONFIG_DIR override.
+    """
+    return claude_config_dir() / ".scrooge-bench-isolation.lock.d"
 
 
-def _neutralize_ultracode(settings: Path, pid: int) -> Optional[tuple[Path, Path]]:
+def _neutralize_ultracode(settings: Path, backup_dir: Path) -> Optional[tuple[Path, Path]]:
     """Turn `ultracode` off in the host settings.json for the duration of a run.
 
     This is isolation, not a preference. `ultracode: true` tells EVERY session —
@@ -723,7 +737,7 @@ def _neutralize_ultracode(settings: Path, pid: int) -> Optional[tuple[Path, Path
         return None
     if not data.get("ultracode"):
         return None
-    backup = Path(f"/tmp/scrooge-bench-settings-ultracode.{pid}.bak")
+    backup = backup_dir / "settings-ultracode.json.bak"
     if backup.exists():
         raise RuntimeError(
             f"refusing to clobber existing backup {backup}; resolve manually "
@@ -809,10 +823,12 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
     `settings.json` for the rare case where a register hook is wired directly in
     `settings.json` rather than gated by a state file. Off by default.
 
-    Concurrency safety: an atomic mkdir-based lock (`ISOLATION_LOCK_DIR`)
+    Concurrency safety: an atomic mkdir-based lock (`isolation_lock_dir()`)
     serializes host isolation across processes — a second invocation fails fast
-    with exit code 2 instead of clobbering the first process's backups. Backup
-    paths carry the holder's PID so a stale lock dir can be diagnosed manually.
+    with exit code 2 instead of clobbering the first process's backups. Backups go
+    into a per-run 0700 `mkdtemp()` directory whose path is recorded in the lock
+    dir as `backup.dir`, next to the holder's `holder.pid`, so a stale lock dir can
+    be diagnosed and a hard-killed run's backups can still be found.
 
     Restoration is best-effort: if a parent-session hook re-creates a moved file
     mid-benchmark, we discard our stale backup instead of clobbering.
@@ -821,11 +837,16 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
         yield
         return
 
+    lock_dir = isolation_lock_dir()
+    # A fresh host may not have the config dir yet, and the lock's atomicity
+    # depends on mkdir(parents=False) — so the parent has to exist first. 0700
+    # because the docstring below rests on it; an existing dir keeps its own mode.
+    lock_dir.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     try:
-        ISOLATION_LOCK_DIR.mkdir(parents=False, exist_ok=False)
+        lock_dir.mkdir(parents=False, exist_ok=False)
     except FileExistsError:
         print(f"error: another benchmark run is isolating the host "
-              f"(lock dir {ISOLATION_LOCK_DIR} exists). Wait for it to "
+              f"(lock dir {lock_dir} exists). Wait for it to "
               f"finish, or — if no run is active — remove the lock dir "
               f"manually after checking its `holder.pid` file.",
               file=sys.stderr)
@@ -833,15 +854,36 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
 
     pid = os.getpid()
     try:
-        (ISOLATION_LOCK_DIR / "holder.pid").write_text(f"{pid}\n", encoding="utf-8")
+        (lock_dir / "holder.pid").write_text(f"{pid}\n", encoding="utf-8")
     except OSError:
         pass
+
+    backup_dir = Path(tempfile.mkdtemp(prefix="scrooge-bench-isolation-"))
+    pointer = lock_dir / "backup.dir"
+    try:
+        pointer.write_text(f"{backup_dir}\n", encoding="utf-8")
+    except OSError as e:
+        # Unlike holder.pid — a diagnostic — this file is the ONLY pointer back to
+        # a mkdtemp() name nobody can guess. Lose it and a hard kill after the
+        # first move strands the user's settings.json unfindably. Fail here, while
+        # there is still nothing moved to strand. The rollback is suppressed in two
+        # independent steps so a partially-written pointer (ENOSPC) can't leave the
+        # fixed lock behind, and so a failing rollback can't mask the RuntimeError.
+        with contextlib.suppress(OSError):
+            pointer.unlink(missing_ok=True)
+            (lock_dir / "holder.pid").unlink(missing_ok=True)
+            lock_dir.rmdir()
+        with contextlib.suppress(OSError):
+            backup_dir.rmdir()
+        raise RuntimeError(
+            f"refusing to isolate without a recovery pointer: could not write "
+            f"{pointer} ({e})"
+        ) from e
 
     claude = claude_config_dir()
     targets = []
     if isolate_settings:
-        targets.append((claude / "settings.json",
-                        Path(f"/tmp/scrooge-bench-settings.json.{pid}.bak")))
+        targets.append((claude / "settings.json", backup_dir / "settings.json.bak"))
     # Register activation-state files. Moving these silences register hooks
     # (scrooge injects nothing without .scrooge-active / .scrooge-default; caveman
     # consults its flag) without disturbing settings.json or plugin enablement.
@@ -861,11 +903,11 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
     state_files += sorted(claude.glob(".scrooge-active-*"))
     for sf in state_files:
         safe = re.sub(r"[^A-Za-z0-9.]+", "-", str(sf.relative_to(claude)))
-        targets.append((sf, Path(f"/tmp/scrooge-bench-{safe}.{pid}.bak")))
+        targets.append((sf, backup_dir / f"{safe}.bak"))
     moved = []
     settings_edit = None
     try:
-        settings_edit = _neutralize_ultracode(claude / "settings.json", pid)
+        settings_edit = _neutralize_ultracode(claude / "settings.json", backup_dir)
         for live, backup in targets:
             if live.exists():
                 if backup.exists():
@@ -889,12 +931,28 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
             live, backup = settings_edit
             shutil.move(str(backup), str(live))
             print(f"[isolation] restored {live} (ultracode)", file=sys.stderr)
+        # Non-recursive on purpose. Restoration above is best-effort, so a backup
+        # can outlive it — and that backup may be the only copy of the user's
+        # settings.json. rmdir refuses a non-empty dir; rmtree would delete it.
         try:
-            (ISOLATION_LOCK_DIR / "holder.pid").unlink(missing_ok=True)
-            ISOLATION_LOCK_DIR.rmdir()
+            backup_dir.rmdir()
+        except OSError as e:
+            # Listing must not throw here: an escaping exception would skip the
+            # lock release below and leave the fixed lock wedged.
+            leftovers = "?"
+            with contextlib.suppress(OSError):
+                leftovers = ", ".join(sorted(p.name for p in backup_dir.glob("*"))) or "?"
+            print(f"[isolation] warning: unrestored backups left in {backup_dir} "
+                  f"({leftovers}) — restore them by hand: {e}. If this path scrolls "
+                  f"away, the dir is findable as scrooge-bench-isolation-* under "
+                  f"{tempfile.gettempdir()}.", file=sys.stderr)
+        try:
+            (lock_dir / "holder.pid").unlink(missing_ok=True)
+            (lock_dir / "backup.dir").unlink(missing_ok=True)
+            lock_dir.rmdir()
         except OSError as e:
             print(f"[isolation] warning: failed to release lock dir "
-                  f"{ISOLATION_LOCK_DIR}: {e}", file=sys.stderr)
+                  f"{lock_dir}: {e}", file=sys.stderr)
 
 
 def _settings_caveman_active(path: Path) -> bool:

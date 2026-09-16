@@ -153,17 +153,16 @@ class TestUltracodeNeutralization(unittest.TestCase):
         self.settings = self.tmp / "settings.json"
 
     def tearDown(self):
+        # The backup now lands inside the directory passed in, so this rmtree
+        # already covers it — no /tmp sweep to do.
         shutil.rmtree(self.tmp, ignore_errors=True)
-        for b in pathlib.Path("/tmp").glob("scrooge-bench-settings-ultracode.*.bak"):
-            if b.stem.endswith(f".{os.getpid()}"):
-                b.unlink()
 
     def _write(self, data):
         self.settings.write_text(json.dumps(data), encoding="utf-8")
 
     def test_disables_the_flag_and_keeps_every_other_key(self):
         self._write({"ultracode": True, "enabledPlugins": {"a": True}, "model": "opus"})
-        edit = self.run._neutralize_ultracode(self.settings, os.getpid())
+        edit = self.run._neutralize_ultracode(self.settings, self.tmp)
         self.assertIsNotNone(edit)
         after = json.loads(self.settings.read_text(encoding="utf-8"))
         self.assertFalse(after["ultracode"])
@@ -179,13 +178,13 @@ class TestUltracodeNeutralization(unittest.TestCase):
         for data in ({"model": "opus"}, {"ultracode": False}):
             self._write(data)
             before = self.settings.read_text(encoding="utf-8")
-            self.assertIsNone(self.run._neutralize_ultracode(self.settings, os.getpid()))
+            self.assertIsNone(self.run._neutralize_ultracode(self.settings, self.tmp))
             self.assertEqual(self.settings.read_text(encoding="utf-8"), before)
 
     def test_missing_or_unparseable_settings_is_not_fatal(self):
-        self.assertIsNone(self.run._neutralize_ultracode(self.tmp / "absent.json", os.getpid()))
+        self.assertIsNone(self.run._neutralize_ultracode(self.tmp / "absent.json", self.tmp))
         self.settings.write_text("{not json", encoding="utf-8")
-        self.assertIsNone(self.run._neutralize_ultracode(self.settings, os.getpid()))
+        self.assertIsNone(self.run._neutralize_ultracode(self.settings, self.tmp))
 
 
 class TestTransportRetry(unittest.TestCase):
@@ -437,15 +436,67 @@ class TestConfigDirResolution(unittest.TestCase):
         state.mkdir(parents=True)
         marker = state / "global"
         marker.write_text('{"lang":"ko","dial":"full"}', encoding="utf-8")
-        # Redirect the cross-process lock into the temp dir. It is a fixed /tmp
-        # path, so against the real one this test fails whenever a benchmark run
-        # holds it — and, worse, takes the lock away from that run when it wins.
-        lock = self.tmp / "isolation.lock.d"
-        with unittest.mock.patch.object(self.run, "ISOLATION_LOCK_DIR", lock), \
-                unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp)}):
+        # The override redirects the lock too — it resolves through
+        # claude_config_dir() — so this test never contends with a real run's lock.
+        with unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp)}):
             with self.run.host_isolation(enabled=True):
                 self.assertFalse(marker.exists(), "state file was not moved aside")
             self.assertTrue(marker.exists(), "state file was not restored")
+
+    def test_lock_dir_is_under_the_config_dir(self):
+        # The lock must stay a fixed path — mutual exclusion is its whole point —
+        # but not a world-writable one: any local user can pre-create a /tmp name
+        # and wedge every future run at exit 2.
+        lock = self.tmp / ".scrooge-bench-isolation.lock.d"
+        with unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp)}):
+            with self.run.host_isolation(enabled=True):
+                self.assertTrue((lock / "holder.pid").exists(),
+                                "lock dir is not under the config dir")
+                self.assertEqual(
+                    (lock / "holder.pid").read_text(encoding="utf-8").strip(),
+                    str(os.getpid()))
+            self.assertFalse(lock.exists(), "lock dir was not released")
+
+    def test_backup_dir_is_private_and_survives_an_unrestored_file(self):
+        # mkdtemp gives a name no other user can guess and 0700 keeps it unreadable.
+        # Cleanup must be a non-recursive rmdir: a backup that failed to restore can
+        # be the only copy of the user's settings.json, and rmtree would take it.
+        lock = self.tmp / ".scrooge-bench-isolation.lock.d"
+        with unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp)}):
+            with self.run.host_isolation(enabled=True):
+                backup_dir = pathlib.Path(
+                    (lock / "backup.dir").read_text(encoding="utf-8").strip())
+                self.addCleanup(shutil.rmtree, backup_dir, True)
+                # Windows has no POSIX mode bits; mkdtemp protects by ACL there.
+                if os.name != "nt":
+                    self.assertEqual(backup_dir.stat().st_mode & 0o777, 0o700)
+                stray = backup_dir / "unrestored.bak"
+                stray.write_text("host state", encoding="utf-8")
+        self.assertTrue(stray.exists(), "an unrestored backup was destroyed")
+
+    def test_a_lost_recovery_pointer_aborts_before_anything_moves(self):
+        # The pointer is the only handle on an unguessable mkdtemp name, so a
+        # failed write must stop the run while there is still nothing stranded —
+        # and must not leave the fixed lock behind for every later run to hit.
+        state = self.tmp / ".scrooge"
+        state.mkdir(parents=True)
+        marker = state / "global"
+        marker.write_text('{"lang":"ko","dial":"full"}', encoding="utf-8")
+        lock = self.tmp / ".scrooge-bench-isolation.lock.d"
+        real_write_text = pathlib.Path.write_text
+
+        def refuse_the_pointer(path, *args, **kwargs):
+            if path.name == "backup.dir":
+                raise OSError(28, "No space left on device")
+            return real_write_text(path, *args, **kwargs)
+
+        with unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp)}), \
+                unittest.mock.patch.object(pathlib.Path, "write_text", refuse_the_pointer):
+            with self.assertRaises(RuntimeError):
+                with self.run.host_isolation(enabled=True):
+                    self.fail("isolation ran its body without a recovery pointer")
+        self.assertTrue(marker.exists(), "a state file was moved before the abort")
+        self.assertFalse(lock.exists(), "the lock dir was left behind")
 
 
 class TestRetryablePredicateOverride(unittest.TestCase):
