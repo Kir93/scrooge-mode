@@ -1135,13 +1135,24 @@ is excluded regardless of the pre-flight tier.
   through a unique sub-cwd (`<cwd>/call-NNNN/`) so concurrent writes land in
   distinct project subdirs and the newest-jsonl probe stays unambiguous.
 - **Host-isolation lock**: only one `run.py` may isolate the host at a
-  time. An atomic mkdir lock at `/tmp/scrooge-bench-isolation.lock.d/`
-  serializes invocations across processes; a second concurrent run exits
-  immediately with code 2 instead of clobbering the first's backups. Backups
-  carry the holder PID (e.g. `/tmp/scrooge-bench-.scrooge-active.<pid>.bak`). If
-  a run is hard-killed it may leave a state file in `/tmp` and the lock dir
-  behind: restore the `.bak` to `~/.claude/` and, after checking `holder.pid` is
-  no longer running, remove the lock dir manually.
+  time. An atomic mkdir lock at `~/.claude/.scrooge-bench-isolation.lock.d/`
+  (following `CLAUDE_CONFIG_DIR` when set) serializes invocations across
+  processes; a second concurrent run exits immediately with code 2 instead of
+  clobbering the first's backups. The lock sits in your own config dir rather
+  than `/tmp` so no other local user can pre-create the path and wedge every
+  run. Backups go into a per-run private directory (`tempfile.mkdtemp()`, mode
+  `0700`, under the platform temp dir) whose random name is unguessable — so
+  there is no PID-suffixed naming to predict, and the lock dir records the path
+  in a `backup.dir` file next to `holder.pid`. If a run is hard-killed it may
+  leave both behind: read `backup.dir` and move the `.bak` files it points at
+  back to `~/.claude/`. A backup's name is its path relative to `~/.claude/`
+  with every run of non-alphanumeric characters folded to `-`, so
+  `.scrooge-global.bak` goes back as `.scrooge/global`; `settings.json.bak` and
+  `settings-ultracode.json.bak` are fixed names for `settings.json`. Then —
+  after checking the process in `holder.pid` is no longer running — remove the
+  lock dir manually.
+  If the lock dir is gone but backups remain, they are findable as
+  `scrooge-bench-isolation-*` under the platform temp dir.
 - **Hook-based activation is bypassed** by design — the rule text is injected
   via `claude --print --system-prompt …` rather than via the production
   UserPromptSubmit hook. Functionally equivalent (same model context, same
