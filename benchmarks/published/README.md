@@ -143,8 +143,7 @@ treat these rows as current.
 **Register drift 2026-09-16 — disposition: judge RE-RUN.** This one is discharged by
 measurement, not disclosed. It also discharges the 2026-08-25 disclosure above: the
 re-measure below ran on the current register, which contains that edit too.
-Version: **v0.25.0** (provisional — the bump has not happened; `/my-release` picks
-the level and corrects this line in the release commit).
+Version: **v0.25.0.**
 
 **All five** `rules/*/full.md` registers changed, plus one surface outside the CI
 marker's `rules/**` scope: `skills/scrooge/SKILL.md`, the abridged register that is the
