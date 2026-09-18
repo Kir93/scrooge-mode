@@ -87,6 +87,8 @@ Drop compression — write normal, full-sentence prose — only for:
 - multi-step sequences where fragment order risks a misread
 - when the user asks you to clarify or repeats a question
 
+A repeat counts even when the user shows no confusion: asking something you already answered means the compressed answer did not land, so answer again in full sentences instead of re-compressing.
+
 Do not invoke Auto-Clarity as a general escape to lengthen everyday answers. Resume compression once the safety-critical part is clear.
 
 Docs escape: when the user explicitly asks for a "formal full version" or "polished doc for external sharing", drop Docs compression — write normal prose. (Separate from chat-answer compression; applies to doc artifacts only.)

@@ -9,9 +9,10 @@
 //
 // It lives under `tests/fixtures/` rather than beside the tests because
 // `node --test` re-registers the top-level `test()` calls of any test file that is
-// imported (v24.19.0): importing `test_register_parity.js` would run its 11 tests
-// twice in one `npm test`. A fixture module has no tests to re-register, and
-// `test_meta_invariants.js` reads only the top level of `tests/`, so it is not
+// imported (v24.19.0): importing `test_register_parity.js` would run its tests
+// twice in one `npm test` (the count tracks `RULES`, so it is not pinned here).
+// A fixture module has no tests to re-register, and `test_meta_invariants.js`
+// reads only the top level of `tests/`, so it is not
 // mistaken for an unregistered test file.
 //
 // token: a string every language shares, or { lang: string } when each language
@@ -46,6 +47,40 @@ export const RULES = [
     what: 'Auto-Clarity must not become a general escape to lengthen answers',
     dials: ['full'],
     token: { en: 'general escape', ko: '남용', ja: '濫用', zh: '滥用', hi: 'दुरुपयोग' },
+    langs: 'all',
+    skill: true,
+  },
+  {
+    id: 'auto-clarity-repeat-trigger',
+    what: 'the Auto-Clarity trigger for a user who repeats a question',
+    dials: ['full'],
+    token: {
+      en: 'repeats a question',
+      ko: '재질문',
+      ja: '再質問',
+      hi: 'प्रश्न दोहराए',
+      zh: '重复提问',
+    },
+    langs: 'all',
+    skill: true,
+  },
+  {
+    id: 'auto-clarity-repeat-no-confusion',
+    what: 'the no-confusion qualifier on the Auto-Clarity repeat trigger',
+    dials: ['full'],
+    // Guards the sentence, not the trigger bullet `auto-clarity-repeat-trigger`
+    // already pins. Measured 2026-09-16: the bullet alone did not fire — EN escaped
+    // on 0 of 6 verbatim repeats and KO on 3 of 6 — and only this qualifier moved it
+    // to 24 of 24. Deleting it as a redundant restatement would restore the inert
+    // register on all six surfaces with the other item still green, so it needs its
+    // own anchor.
+    token: {
+      en: 'shows no confusion',
+      ko: '혼란을 표시하지 않아도',
+      ja: '混乱を示さなくても',
+      hi: 'भ्रम न दिखाए',
+      zh: '未表示困惑也算',
+    },
     langs: 'all',
     skill: true,
   },
@@ -102,6 +137,46 @@ export const RULES = [
         'let the mention satisfy the check; stating the KO-only rule in an English summary ' +
         'aimed at all five languages would misread as a global one.',
     },
+  },
+  {
+    id: 'hedge-replacement',
+    what: 'the obligation to replace a hedge — assert, or label the claim unverified',
+    dials: ['full'],
+    // The marker word the rule tells the model to emit, not the word "hedging":
+    // every register already LISTS the hedge expressions as drop targets, so a
+    // looser token would match the drop half and never see the replace half.
+    token: {
+      en: 'unverified',
+      ko: '미검증',
+      ja: '未検証',
+      hi: 'असत्यापित',
+      zh: '未验证',
+    },
+    langs: 'all',
+    // SKILL.md states it in the all-dials paragraph, so `token.en` anchors there
+    // directly. It was `{ exempt }` only while that paragraph was silent on the rule.
+    skill: true,
+  },
+  {
+    id: 'bullet-clause-scope',
+    what: 'the one-short-clause-per-bullet rule applying to any list, not just cause lists',
+    dials: ['full'],
+    // ko states its Scope discipline block in English, so it shares the EN token;
+    // ja/hi/zh carry the scope word in their own language. The token is the SCOPE
+    // phrase alone, never the "1 bullet" half — every register already had the bullet
+    // rule and only the cause-list restriction is what this item pins, so a reworded
+    // bullet half must not break the check.
+    token: {
+      en: 'in any list',
+      ko: 'in any list',
+      ja: 'どのリストでも',
+      hi: 'किसी भी सूची में',
+      zh: '任何列表中',
+    },
+    langs: 'all',
+    // The all-dials paragraph is the language-neutral home for it, so the shared
+    // en/ko token anchors there — a table row per language would not have.
+    skill: true,
   },
   {
     id: 'em-dash-sub-clause',
