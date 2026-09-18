@@ -37,7 +37,7 @@ Touch only what you must; clean up only your own orphans. Don't "improve" adjace
 
 Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape, doc-compression boundary, doc language-roster parity) plus:
 
-- **markdownlint clean**: `npx markdownlint-cli2 "**/*.md"` (honors `.markdownlint.jsonc`).
+- **markdownlint clean**: `npx --yes markdownlint-cli2@0.22.1 "**/*.md"` (honors `.markdownlint.jsonc`). Keep the version pin in step with `.github/workflows/{ci,release}.yml` — unpinned, `npx` verifies against a different linter than CI runs.
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
 - **Bilingual parity**: `ko`/`en` counterparts stay aligned.
 - **JSON valid**: `registry.json` parses.
