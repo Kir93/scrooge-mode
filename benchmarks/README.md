@@ -70,8 +70,11 @@ over another.
   because the user's own scrooge plugin hook will otherwise inject a compression
   directive into every arm — including the neutral baseline.
 - **Per-session contamination exclusion** — every session transcript is scanned
-  (injection surface only — attachment/hook/message text, not the cwd/gitBranch
-  metadata) for a register-hook injection: scrooge's reminder (`SCROOGE 활성 …`) in
+  (injection surface only — attachment/hook/message text, minus two deliberate
+  exclusions: the cwd/gitBranch metadata, and the arm's own injected `--system-prompt`,
+  which the transcript records verbatim at `attachment.systemPrompt`. Both are
+  self-trigger guards — a register file may legitimately NAME a competing register, and
+  `rules/zh/full.md` does) for a register-hook injection: scrooge's reminder (`SCROOGE 활성 …`) in
   ANY arm, or a caveman fingerprint in a non-caveman arm. A hit marks the row
   `contaminated`, drops it from scoring, and lets `--resume` retry once the channel
   is removed. This is the authoritative backstop behind the pre-flight check; it

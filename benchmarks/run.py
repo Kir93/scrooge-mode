@@ -407,9 +407,52 @@ SCROOGE_HOOK_FINGERPRINT = re.compile(r"SCROOGE\s+(활성|active|MODE ACTIVE|OFF
 _NOISE_KEYS = ("cwd", "gitBranch")
 
 
-def _injection_scan_text(session_path: Path) -> Optional[str]:
+def _strip_own_system(obj: dict, own_system: Optional[str]) -> None:
+    """Subtract the harness's OWN injected system prompt from a transcript line.
+
+    The transcript records what `--system-prompt` passed, verbatim, at
+    `attachment.systemPrompt[*]` (measured: the zh register lands there at 4104
+    chars, the file minus its trailing newline). A register file may legitimately
+    NAME a competing register to contrast with it — `rules/zh/full.md` says
+    "caveman 走文言方向,scrooge zh 不走" — so scanning that field makes the arm's
+    own rule text trip `CAVEMAN_FINGERPRINT` and excludes every row of that arm.
+    Measured 2026-09-16: 11/11 `scrooge:zh/full` rows excluded, leaving zero pairs.
+    Do NOT read that as "broken since the detector landed" — the detector (e6e217b,
+    2026-06-17), the zh rule's caveman sentence (c005b42, 2026-07-01) and the
+    `--system-prompt` channel (be5163a, 2026-05-28) all predate the 2026-08-06 zh run,
+    and `benchmarks/published/results-zh-report-opus5.jsonl` records that run as 22 rows
+    with `contaminated` false throughout. What changed is the transcript format: the
+    injected prompt is now recorded verbatim at `attachment.systemPrompt`. The window
+    opens after 2026-08-06; its start is not established.
+
+    This is the same self-trigger `_NOISE_KEYS` already guards against, one channel
+    over: there it was cwd/gitBranch carrying a register name, here it is the rule
+    body we injected ourselves. Only the injected text is removed, not the whole
+    field — anything else that reached `systemPrompt` is still scanned, so an
+    `--append-system-prompt` arm keeps its host-prompt surface under the net.
+    """
+    if not own_system:
+        return
+    needle = own_system.strip()
+    if not needle:
+        return
+    att = obj.get("attachment")
+    if not isinstance(att, dict):
+        return
+    sp = att.get("systemPrompt")
+    if isinstance(sp, str):
+        att["systemPrompt"] = sp.replace(needle, "")
+    elif isinstance(sp, list):
+        att["systemPrompt"] = [
+            s.replace(needle, "") if isinstance(s, str) else s for s in sp
+        ]
+
+
+def _injection_scan_text(session_path: Path,
+                         own_system: Optional[str] = None) -> Optional[str]:
     """Concatenate a session JSONL's register-injection surface (attachment/hook/
-    message content), with the noisy top-level `cwd`/`gitBranch` metadata removed.
+    message content), with the noisy top-level `cwd`/`gitBranch` metadata removed
+    and the harness's own injected system prompt subtracted (`_strip_own_system`).
     Claude stamps cwd+gitBranch on most lines, so scanning the raw text would let a
     benchmark run from a path or branch containing a register name self-trigger
     contamination. Returns None if unreadable."""
@@ -428,11 +471,13 @@ def _injection_scan_text(session_path: Path) -> Optional[str]:
         if isinstance(obj, dict):
             for k in _NOISE_KEYS:
                 obj.pop(k, None)
+            _strip_own_system(obj, own_system)
         chunks.append(json.dumps(obj, ensure_ascii=False))
     return "\n".join(chunks)
 
 
-def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
+def detect_contamination(session_path: Path, arm: str,
+                         own_system: Optional[str] = None) -> Optional[str]:
     """Return a contamination marker if a register hook leaked into this arm's
     session, else None. The authoritative per-row backstop behind host_isolation.
 
@@ -448,9 +493,11 @@ def detect_contamination(session_path: Path, arm: str) -> Optional[str]:
       - caveman — the historical 34/97 leak; flagged in any NON-caveman arm (a
         caveman arm legitimately carries the word).
     A flagged row is excluded (output_tokens=None) and retried under --resume.
-    The scan ignores cwd/gitBranch metadata (see `_injection_scan_text`).
+    The scan ignores cwd/gitBranch metadata and the harness's own injected system
+    prompt (see `_injection_scan_text` / `_strip_own_system`); pass `own_system` so a
+    register that names a competing register cannot self-trigger.
     """
-    text = _injection_scan_text(session_path)
+    text = _injection_scan_text(session_path, own_system)
     if text is None:
         return None
     if SCROOGE_HOOK_FINGERPRINT.search(text):
@@ -642,7 +689,10 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
 
     summary = parse_assistant_tokens(session_path)
     output_text = r.stdout.strip()
-    contamination = detect_contamination(session_path, arm)
+    # The baseline arm sends NORMAL_BASELINE_SYSTEM, not an empty prompt — mirror
+    # `build_cmd`'s fallback so every arm subtracts what it actually injected.
+    contamination = detect_contamination(session_path, arm,
+                                         rule_text or NORMAL_BASELINE_SYSTEM)
     if contamination:
         # Exclude (output_tokens=None) so the row is not scored and `--resume`
         # retries it once the activation channel is removed.
