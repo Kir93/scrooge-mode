@@ -243,9 +243,12 @@ Repository-side release verification:
 
 ```bash
 npm test
-npx markdownlint-cli2 "**/*.md"
+python3 -m unittest discover -s benchmarks -p 'test_*.py'
+npx markdownlint-cli2@0.23.2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
+
+The markdownlint line needs Node.js 22 or newer — `markdownlint-cli2@0.23.2` declares `engines.node: >=22`, above the Prerequisites floor.
 
 ## Statusline
 

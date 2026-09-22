@@ -240,9 +240,12 @@ Repo-side release 검증:
 
 ```bash
 npm test
-npx markdownlint-cli2 "**/*.md"
+python3 -m unittest discover -s benchmarks -p 'test_*.py'
+npx markdownlint-cli2@0.23.2 "**/*.md"
 node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
 ```
+
+markdownlint 줄은 Node.js 22 이상 필요 — `markdownlint-cli2@0.23.2`의 `engines.node`가 `>=22`로 위 Prerequisites floor보다 높음.
 
 ## Statusline
 

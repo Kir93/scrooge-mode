@@ -119,9 +119,9 @@ jobs:
             echo "rules/ 무변경 — 재측정 마커 미노출"
           fi
 
-  # markdownlint-cli2 requires node>=20, and its result does not depend on the
-  # runtime version. Kept out of the `verify` matrix so that neither a matrix
-  # entry below 20 breaks it, nor a matrix edit silently drops it.
+  # The pinned markdownlint-cli2 requires node>=22, and its result does not depend
+  # on the runtime version. Kept out of the `verify` matrix so that neither a matrix
+  # entry below 22 breaks it, nor a matrix edit silently drops it.
   markdown-lint:
     runs-on: ubuntu-latest
 
@@ -135,4 +135,4 @@ jobs:
           node-version: 22
 
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
+        run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"

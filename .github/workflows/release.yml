@@ -74,8 +74,13 @@ jobs:
       - name: Test
         run: npm test
 
+      # Same guard the PR gate runs; the rationale lives on ci.yml's own
+      # `Test benchmark statistics` step — don't restate it here.
+      - name: Test benchmark statistics
+        run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
+
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.22.1 "**/*.md"
+        run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"
 
       - name: Verify package file list
         run: node .github/scripts/verify-pack.mjs

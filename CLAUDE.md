@@ -37,12 +37,12 @@ Touch only what you must; clean up only your own orphans. Don't "improve" adjace
 
 Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape, doc-compression boundary, doc language-roster parity) plus:
 
-- **markdownlint clean**: `npx --yes markdownlint-cli2@0.22.1 "**/*.md"` (honors `.markdownlint.jsonc`). Keep the version pin in step with `.github/workflows/{ci,release}.yml` — unpinned, `npx` verifies against a different linter than CI runs.
+- **markdownlint clean**: `npx --yes markdownlint-cli2@0.23.2 "**/*.md"` (honors `.markdownlint.jsonc`). Keep the version pin in step with `.github/workflows/{ci,release}.yml` — unpinned, `npx` verifies against a different linter than CI runs.
 - **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
 - **Bilingual parity**: `ko`/`en` counterparts stay aligned.
 - **JSON valid**: `registry.json` parses.
 - **Lockfile with `npm ci`**: any CI, release, or doc change that introduces `npm ci` must include/update `package-lock.json` in the same change. `npm ci` fails without a lockfile.
-- **New guard = red first**: break what a new test pins, watch it fail, restore — report that red line with the verify. A green fixture is not evidence the guard bites.
+- **New guard = red first**: break what a new test pins, watch it fail, restore — report that red line with the verify. A green fixture is not evidence the guard bites. Break the guard's own inputs too — the scope it resolves and any baseline it extracts — not just the invariant it asserts; a scan that silently empties passes for a reason no fixture shows.
 
 For multi-step tasks, state a brief plan with a per-step verify.
 

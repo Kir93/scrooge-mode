@@ -11,6 +11,7 @@ Scrooge는 docs-and-rules product. 변경은 작게, user-facing 문서는 이�
 - Node.js 18 이상.
 - Git.
 - markdownlint 실행용 `npx` 접근.
+- markdownlint step 전용 Node.js 22 이상 — `markdownlint-cli2@0.23.2`의 `engines.node`가 `>=22`로 제품 floor보다 높음.
 - 벤치마크 테스트 실행용 Python 3 (표준 라이브러리만, 패키지 없음).
 
 Setup:
@@ -29,7 +30,7 @@ PR 전 실행:
 
 ```bash
 npm test
-npx markdownlint-cli2 "**/*.md"
+npx markdownlint-cli2@0.23.2 "**/*.md"
 python3 -m unittest discover -s benchmarks -p 'test_*.py'
 node .github/scripts/verify-pack.mjs
 ```

@@ -11,6 +11,7 @@ Requirements:
 - Node.js 18 or newer.
 - Git.
 - `npx` access for markdownlint.
+- Node.js 22 or newer for the markdownlint step only — `markdownlint-cli2@0.23.2` declares `engines.node: >=22`, above the product floor.
 - Python 3 for the benchmark tests (stdlib only, no packages).
 
 Setup:
@@ -29,7 +30,7 @@ Run before opening a PR:
 
 ```bash
 npm test
-npx markdownlint-cli2 "**/*.md"
+npx markdownlint-cli2@0.23.2 "**/*.md"
 python3 -m unittest discover -s benchmarks -p 'test_*.py'
 node .github/scripts/verify-pack.mjs
 ```
