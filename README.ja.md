@@ -24,7 +24,7 @@ AI コーディングエージェント向けの出力圧縮 skill。同じ答�
 npx -y github:Kir93/scrooge-mode
 ```
 
-詳細な setup・Claude Code plugin・Codex `skills`・トラブルシューティングは [INSTALL.md](INSTALL.md)。
+詳細な setup・Claude Code plugin・Codex `skills`・トラブルシューティングは [INSTALL.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.md)。
 
 ## 有効化
 
@@ -59,7 +59,7 @@ Trade-off: hot な selective read に index 追加; write 多テーブルへの�
 
 ## さらに
 
-機能表面・ベンチマーク・メカニズム・貢献ガイドは [英語 README](README.md) と [CONTRIBUTING.md](CONTRIBUTING.md) を参照。
+機能表面・ベンチマーク・メカニズム・貢献ガイドは [英語 README](README.md) と [CONTRIBUTING.md](https://github.com/Kir93/scrooge-mode/blob/main/CONTRIBUTING.md) を参照。
 
 ## ライセンス
 

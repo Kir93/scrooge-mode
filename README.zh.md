@@ -26,7 +26,7 @@
 npx -y github:Kir93/scrooge-mode
 ```
 
-详细 setup、Claude Code plugin、Codex `skills`、故障排查见 [INSTALL.md](INSTALL.md)。
+详细 setup、Claude Code plugin、Codex `skills`、故障排查见 [INSTALL.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.md)。
 
 ## 启用
 
@@ -59,7 +59,7 @@ Trade-off: hot 的 selective read 加 index; write 多的表避免冗余 index�
 
 ## 更多
 
-功能表面、benchmark、机制、贡献指南见[英文 README](README.md)与 [CONTRIBUTING.md](CONTRIBUTING.md)。
+功能表面、benchmark、机制、贡献指南见[英文 README](README.md)与 [CONTRIBUTING.md](https://github.com/Kir93/scrooge-mode/blob/main/CONTRIBUTING.md)。
 
 ## 许可
 

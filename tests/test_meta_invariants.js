@@ -16,8 +16,15 @@
 //   (d) The tag-push gate duplicates the PR gate's commands by hand. Either copy
 //       can be edited alone, and the release job's divergence only shows on a tag
 //       push — after the release object would already have been made.
+//   (e) The tarball link guard only catches a notation its extractor recognizes.
+//       A reference-style definition or a single-quoted attribute renders the same
+//       link, resolves the same on GitHub, and dies the same inside the package —
+//       so a syntax the regex misses is a hole that stays green forever. Its
+//       absolute-URL arm has the mirror failure: a `/blob/` where the target is a
+//       directory, or a path that does not exist, is the dead reference the
+//       rewrite was supposed to remove.
 //
-// All four are string-level facts about the repo, so they are asserted directly
+// All five are string-level facts about the repo, so they are asserted directly
 // rather than inferred from behavior.
 
 import { test } from 'node:test';
@@ -26,6 +33,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+
+import { checkRepoUrl, extractLinks, repoBases, resolves } from '../.github/scripts/pack-links.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
@@ -220,5 +229,76 @@ test('both workflow gates run the same lint and benchmark commands', () => {
       ciLine,
       `release.yml ${what} step differs from ci.yml — both gates must run the same command`
     );
+  }
+});
+
+test('the tarball link guard recognizes every link notation that renders', () => {
+  // One fixture per notation. A regex that drops an arm keeps the other counts
+  // intact, so each target is asserted by value rather than by total.
+  const body = [
+    '[inline](./benchmarks/a.md)',
+    "<img src='assets/b.svg'>",
+    '<a href="INSTALL.md">x</a>',
+    '[refdef]: ./benchmarks/c.jsonl',
+    '[rooted](/rules/en/full.md)',
+    '[anchor](#section) [mail](mailto:x@y.z)',
+    '[abs](https://github.com/Kir93/scrooge-mode/blob/main/README.md)',
+    // Not links: a data attribute and a mismatched quote pair. A blocking gate
+    // that matches these fails an innocent PR.
+    '<div data-src="not-a-link.md" xlink:href="nope.md"></div>',
+    '<img src="mismatched.md\'>',
+  ].join('\n');
+
+  const { relative, repoUrls, seen } = extractLinks(body);
+  assert.deepEqual(
+    relative.map((r) => r.target),
+    ['./benchmarks/a.md', 'assets/b.svg', 'INSTALL.md', './benchmarks/c.jsonl', '/rules/en/full.md'],
+    'a link notation stopped being extracted — the guard would pass a dead reference written that way'
+  );
+  assert.deepEqual(repoUrls, ['https://github.com/Kir93/scrooge-mode/blob/main/README.md']);
+  assert.equal(seen, 8);
+
+  // Root-relative renders against the repo root on GitHub and is a filesystem
+  // absolute path inside the tarball, so it never resolves there.
+  const packed = new Set(['rules/en/full.md', 'README.md']);
+  assert.equal(resolves(packed, 'README.md', '/rules/en/full.md'), false);
+  assert.equal(resolves(packed, 'README.md', 'rules/en/full.md'), true);
+});
+
+test('the tarball link guard rejects absolute repo URLs that point at nothing', () => {
+  const bases = repoBases(readJson('package.json').repository?.url);
+  assert.ok(bases, 'package.json repository.url no longer yields a github.com base');
+  const check = (url) => checkRepoUrl(url, bases, REPO_ROOT);
+
+  for (const good of [
+    `${bases.blob}/blob/main/README.md`,
+    `${bases.blob}/tree/main/benchmarks`,
+    `${bases.raw}/main/assets/benchmark.svg`,
+  ]) {
+    const { target, fault } = check(good);
+    assert.ok(target, `${good} should be recognized as repo content`);
+    assert.equal(fault, null, `${good} should check out`);
+  }
+
+  // Not this guard's business: a badge, an issue link, another host. `target`
+  // stays null so the caller does not count them as checked.
+  for (const url of [`${bases.blob}/stargazers`, 'https://example.com/whatever']) {
+    assert.equal(check(url).target, null);
+  }
+
+  for (const bad of [
+    `${bases.blob}/blob/main/no/such/file.md`,
+    `${bases.blob}/blob/main/benchmarks`,
+    `${bases.blob}/tree/main/README.md`,
+    `${bases.raw}/main/assets/no-such.svg`,
+    `${bases.blob}/blob/main/a%zz.md`,
+    // The failure mode the scope assertion alone cannot catch: an owner rename
+    // leaves every existing URL pointing at the old repository, and treating
+    // those as "not repo content" would turn the whole check off silently.
+    'https://github.com/someone-else/scrooge-mode/blob/main/README.md',
+  ]) {
+    const { target, fault } = check(bad);
+    assert.ok(target, `${bad} should still be recognized as repo content`);
+    assert.ok(fault, `expected a fault for ${bad} — it would ship a dead reference silently`);
   }
 });
