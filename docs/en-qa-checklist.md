@@ -155,6 +155,29 @@ Add an `AbortError` branch to handle the timeout case.
 | D | PASS | No hedging. |
 | E | PASS | English output. |
 
+## Sample 5 — multi-step procedure
+
+Prompt: `How do I add a new language rule?`
+
+Output:
+
+```text
+1. Write `rules/{lang}/full.md` + `rules/{lang}/fragments/lean.md`.
+2. Add `registry.json[lang].full` and `registry.json.fragments[lang].lean`.
+3. Add one `LANG_META[lang]` row in `hooks/lang-meta.js`.
+4. Generate 5 samples, self-check against QA checklist.
+5. Review README/INSTALL/CONTRIBUTING mirrors, update if affected.
+6. Run Test & Lint (`npm test`, `npx markdownlint-cli2@0.23.2 "**/*.md"`, `python3 -m unittest discover -s benchmarks -p 'test_*.py'`, `node .github/scripts/verify-pack.mjs`), open a PR with the self-check summary.
+```
+
+| Category | Result | Notes |
+| -------- | ------ | ----- |
+| A | PASS | Numbered imperative fragments, no padding. |
+| B | PASS | Paths, JSON keys, commands verbatim. |
+| C | PASS | Auto-clarity not triggered — numbering fixes step order, no irreversible command. |
+| D | PASS | Direct steps, no hedging. |
+| E | PASS | English output. |
+
 ## Summary
 
 | Sample | A | B | C | D | E |
@@ -163,3 +186,4 @@ Add an `AbortError` branch to handle the timeout case.
 | 2 | PASS | PASS | PASS | PASS | PASS |
 | 3 | PASS | PASS | PASS | PASS | PASS |
 | 4 | PASS | PASS | PASS | PASS | PASS |
+| 5 | PASS | PASS | PASS | PASS | PASS |
