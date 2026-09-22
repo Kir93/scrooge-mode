@@ -75,6 +75,13 @@ to re-measuring — the conservative direction.
 `benchmarks/fidelity/run.py`). Pin `--model` for a reproducible headline; update a
 cited savings/fidelity number only if it actually moves.
 
+Both steps fan out. `benchmarks/fidelity/fanout.py` judges every language inside one
+host-isolation window (the lock is machine-global, so separately started runners
+collide), and `--workers` parallelises the pairs within each — the rows come out the
+same as a serial run. That matters for this gate specifically: the judge step was
+roughly three quarters of the gate's wall clock (~161 of ~208 minutes across five
+languages, measured 2026-09-16), which is how "expensive" became a reason to skip it.
+
 **Third disposition — Disclose.** Re-measure and exempt were the only two options, and
 that is how this gate went decorative: v0.22.0 shipped a substantive `rules/**` change
 (safety-guard and pro-drop porting across all ten registers) with the marker firing, no

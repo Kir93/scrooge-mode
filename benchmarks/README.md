@@ -945,12 +945,28 @@ python3 benchmarks/run.py \
 
 # 2. judge fidelity (subscription usage; foreground, --resume after any limit).
 #    --judge-runs 3 = majority verdict over 3 judge calls per pair (3x usage).
+#    --workers N judges N pairs at once; rows are identical to serial.
 python3 benchmarks/fidelity/run.py \
   --results benchmarks/results-ko-report.jsonl \
   --candidate-arm scrooge:ko/full \
-  --model claude-opus-4-8 --judge-runs 3 --resume \
+  --model claude-opus-4-8 --judge-runs 3 --resume --workers 4 \
   --output benchmarks/fidelity/results-ko-fidelity.jsonl
+
+# 2-all. every language in ONE isolation window. host_isolation takes a
+#        machine-global lock, so five hand-started run.py processes collide
+#        (the second exits 2); this driver holds it once and runs the children
+#        with --no-isolate-host, doing their skipped register pre-flight itself.
+#        Output path is derived from each results filename (results-X-report*.jsonl
+#        -> fidelity/results-X-fidelity*.jsonl next to it); the candidate arm is
+#        read from the file — exactly one arm besides --baseline-arm, else it refuses.
+python3 benchmarks/fidelity/fanout.py \
+  benchmarks/results-{ko,en,ja,hi,zh}-report.jsonl \
+  -- --model claude-opus-5 --judge-runs 3 --resume --workers 2
 ```
+
+Concurrency budget: the driver multiplies. Five jobs at `--workers 2` is ten
+concurrent judge calls, and the 2–4 advice below is about that **product**, not
+about either factor. The driver prints the product before it starts anything.
 
 Publish convention: the **headline is the claim-equivalence rate + median savings**
 ("X% equivalent at Y% saved") with the **judged/total ratio** (HOLD/errored pairs
@@ -1034,12 +1050,38 @@ generic "answer concisely" instruction.
 
 ### About `--workers`
 
+Both `run.py` (generation) and `fidelity/run.py` (judging) take `--workers`, and
+they parallelise different things — the notes below are not interchangeable.
+
+`run.py --workers N`:
+
 - `--workers 1` (default): serial. Race-free, safe under any rate limit.
 - `--workers N` (N > 1): `N` concurrent `claude --print` processes. Each call
   runs under a unique sub-cwd (`<cwd>/call-NNNN/`) so session JSONL discovery
   never races. Wall clock ≈ serial / N.
+- A session/rate limit stops the serial run early (`--keep-going-on-limit`
+  overrides); re-run with `--resume` after the window resets.
+
+`fidelity/run.py --workers N`:
+
+- Judges `N` pairs at once. No sub-cwd: the judge reads its verdict from stdout,
+  never from a session JSONL, so it has nothing to race over. Rows are written by
+  the main thread as each pair completes, so the output file is identical to a
+  serial run (`npm test`'s Python suite pins both the equality and the
+  concurrency).
+- There is **no** early stop on a session limit here, and no retry layer: once
+  quota runs out, the remaining pairs error out fast. A pair whose judge calls
+  ALL failed is recorded as an error and `--resume` retries it; a pair that lost
+  only some of its `--judge-runs` calls keeps its majority verdict (row field
+  `judge_partial_error`, summary tally `partial-run`) and is retried by `--resume`
+  too, until it has the runs asked for — otherwise it would sit below
+  `fidelity/report.py --min-judge-runs` and vanish from the published table while
+  looking finished. A high `N` just burns through the exhausted window quicker.
+- Raising `--judge-runs` multiplies usage per pair, not per worker.
+
 - Subscription rate limit advice: use `--workers 1 --resume` while iterating.
   Use 2–4 only when quota is ample; higher may trip limits during peak hours.
+  With `fidelity/fanout.py` the ceiling applies to jobs × workers.
 
 ## Reading the report
 
