@@ -37,7 +37,9 @@ CHECKS_JS = Path(__file__).resolve().parent / "checks.js"
 # session JSONL per call into ~/.claude/projects/<cwd-slug>/, so inheriting the repo
 # cwd buries the repo's interactive session list under hundreds of judge transcripts.
 # It also keeps the repo's own CLAUDE.md and project settings out of the impartial
-# judge's context.
+# judge's context. One directory is shared by every concurrent call (fidelity/run.py
+# --workers): unlike benchmarks/run.py this module never reads a session JSONL back
+# — call_judge consumes stdout only — so there is no newest-file discovery to race.
 JUDGE_CWD = Path.home() / ".cache" / "scrooge-bench" / "judge"
 
 # The judge's system prompt. Replaces the default system prompt so the judge is a
@@ -216,6 +218,7 @@ def judge_pair(baseline: str, candidate: str, model: Optional[str],
     if dry_run:
         result = deterministic_and_score(baseline, candidate, None)
         result["judge_error"] = None
+        result["judge_partial_error"] = None
         result["judge_runs"] = 0
         result["dry_run"] = True
         return result
@@ -233,6 +236,7 @@ def judge_pair(baseline: str, candidate: str, model: Optional[str],
         # All judge calls failed — fall back to the deterministic half only.
         result = deterministic_and_score(baseline, candidate, None)
         result["judge_error"] = errors[0] if errors else "no judge result"
+        result["judge_partial_error"] = None
         result["judge_runs"] = 0
         result["dry_run"] = False
         return result
@@ -286,6 +290,14 @@ def judge_pair(baseline: str, candidate: str, model: Optional[str],
     # no prose, so the published scrub gate stays satisfied.
     agg["run_scores"] = [(v.get("verdict") or {}).get("score") for v in verdicts]
     agg["run_equivalents"] = [v.get("equivalent") for v in verdicts]
-    agg["judge_error"] = errors[0] if errors else None
+    # A failure among N runs is NOT a failure of the pair: the surviving runs
+    # already produced the majority verdict above. Reporting it as `judge_error`
+    # made the consumers discard the whole pair (fidelity/run.py aggregate() sends
+    # the key to error_keys, fidelity/report.py:66 skips the row), so raising
+    # --judge-runs — the only knob against judge noise — lowered the published N
+    # instead of tightening it. Partial failures ride their own field; judge_error
+    # stays for the no-verdict case above.
+    agg["judge_error"] = None
+    agg["judge_partial_error"] = errors[0] if errors else None
     agg["dry_run"] = False
     return agg

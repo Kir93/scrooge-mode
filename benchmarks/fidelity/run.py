@@ -39,6 +39,7 @@ Step 2 (judge fidelity — uses subscription usage):
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import importlib.util
 import json
 import statistics
@@ -126,13 +127,21 @@ def pair_rows(rows: list[dict], baseline_arm: str, candidate_arm: str) -> list[d
     return pairs
 
 
-def load_done_keys(path: Path) -> set[tuple[int, int]]:
+def load_done_keys(path: Path, min_runs: int = 0) -> set[tuple[int, int]]:
+    """Keys --resume may skip: a non-error row with at least `min_runs` judge runs.
+
+    A pair that kept its majority verdict through a partial failure is scored,
+    but it is not finished — with fewer runs than asked for it would sit below
+    fidelity/report.py's `--min-judge-runs` and drop out of the published table
+    while looking done here. Re-judging it appends a fresh row, which aggregate()
+    then prefers (latest success per key)."""
     if not path.exists():
         return set()
     done = set()
     for r in load_rows(path):
         pid, run = r.get("prompt_id"), r.get("run")
-        if isinstance(pid, int) and isinstance(run, int) and not r.get("error"):
+        if (isinstance(pid, int) and isinstance(run, int) and not r.get("error")
+                and (r.get("judge_runs") or 0) >= min_runs):
             done.add((pid, run))
     return done
 
@@ -143,7 +152,12 @@ def saved_pct(baseline_tokens: int, candidate_tokens: int) -> Optional[float]:
     return (baseline_tokens - candidate_tokens) / baseline_tokens * 100.0
 
 
-def aggregate(records: list[dict], model: Optional[str], candidate_arm: str) -> str:
+def aggregate(records: list[dict], model: Optional[str], candidate_arm: str,
+              min_runs: int = 0) -> str:
+    """`min_runs` = the --judge-runs asked for. A row with fewer runs kept its
+    majority verdict but is a partial verdict, and the published convention
+    (benchmarks/README.md "Filter to judge_runs == 3 first") keeps it out of the
+    headline — so it counts as HOLD here, where the coverage warning can see it."""
     # Dedup to the latest non-error record per (prompt_id, run): a --resume re-judge
     # appends a fresh line, and an errored attempt must not inflate the denominator
     # or double-count its saved_pct in the median. File order = append order, so a
@@ -162,13 +176,16 @@ def aggregate(records: list[dict], model: Optional[str], candidate_arm: str) -> 
     errors = len([k for k in error_keys if k not in latest])
 
     n = len(clean)
-    judged = [r for r in clean if r.get("equivalent") is not None]
-    holds = [r for r in clean if r.get("equivalent") is None]  # HOLD / unjudged
+    judged = [r for r in clean if r.get("equivalent") is not None
+              and (r.get("judge_runs") or 0) >= min_runs]
+    holds = [r for r in clean if r not in judged]  # HOLD / unjudged / partial
     equivalent = [r for r in judged if r["equivalent"]]
     byte_ok = [r for r in clean if r.get("byte_exact_pass")]
     safety_ok = [r for r in clean if r.get("safety_pass")]
     strict_ok = [r for r in clean if r.get("strict_pass")]
     saved = [r["saved_pct"] for r in clean if r.get("saved_pct") is not None]
+    partial = [r for r in clean if (r.get("judge_runs") or 0) < min_runs
+               and r.get("equivalent") is not None]
 
     def pct(num, den):
         return f"{(100.0 * num / den):.1f}%" if den else "—"
@@ -184,7 +201,8 @@ def aggregate(records: list[dict], model: Optional[str], candidate_arm: str) -> 
         "=" * 60,
         f"FIDELITY — {candidate_arm} vs baseline" + (f" (model={model})" if model else ""),
         "=" * 60,
-        f"Pairs scored:          {n}  (judged {judged_ratio}, {len(holds)} hold, {errors} error)",
+        f"Pairs scored:          {n}  (judged {judged_ratio}, {len(holds)} hold, {errors} error"
+        + (f", {len(partial)} of them partial-run" if partial else "") + ")",
         f"Claim-preservation:    {med_score} median score  (fraction of baseline claims kept)",
         f"Claim-equivalent:      {eq_rate}  ({len(equivalent)}/{len(judged)} all-claims-kept)",
         f"Median output saved:   {med_saved}",
@@ -224,6 +242,10 @@ def main() -> int:
     ap.add_argument("--max-pairs", type=int, default=0, help="Only judge the first N pairs. 0 = all.")
     ap.add_argument("--resume", action="store_true",
                     help="Skip (prompt_id, run) pairs already in --output.")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="Concurrent judge calls. Default 1 (serial). >1 spawns a thread "
+                         "pool; the main thread writes every row as it completes, so no "
+                         "worker touches the output file. Mind subscription rate limits.")
     ap.add_argument("--judge-runs", type=int, default=1,
                     help="Judge each pair N times and take the majority verdict / median "
                          "score (manages judge noise). Default 1. N>1 multiplies usage.")
@@ -248,7 +270,7 @@ def main() -> int:
         return 2
 
     if args.resume:
-        done = load_done_keys(args.output)
+        done = load_done_keys(args.output, 0 if args.dry_run else args.judge_runs)
         before = len(pairs)
         pairs = [p for p in pairs if (p["prompt_id"], p["run"]) not in done]
         print(f"resume: {len(done)} done; skipping {before - len(pairs)}; remaining {len(pairs)}",
@@ -262,53 +284,85 @@ def main() -> int:
               f"re-run with --resume after a rate-limit pause.", file=sys.stderr)
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    records: list[dict] = []
+
+    def judge_one(item):
+        """Score one pair. Pure work — no file handle, no shared state — so a worker
+        thread can run it. Returns (display_index, record)."""
+        i, p = item
+        b, c = p["baseline"], p["candidate"]
+        try:
+            scored = judge_mod.judge_pair(
+                b["output_text"], c["output_text"], args.model,
+                timeout=args.timeout, dry_run=args.dry_run, runs=args.judge_runs,
+            )
+            err = scored.get("judge_error")
+        except Exception as e:  # node/checks.js failure — record, don't crash
+            scored, err = None, f"score error: {e}"
+
+        rec = {
+            "prompt_id": p["prompt_id"],
+            "run": p["run"],
+            "baseline_arm": args.baseline_arm,
+            "candidate_arm": args.candidate_arm,
+            "baseline_tokens": b.get("output_tokens"),
+            "candidate_tokens": c.get("output_tokens"),
+            "saved_pct": saved_pct(b.get("output_tokens", 0), c.get("output_tokens", 0)),
+            "model": args.model,
+            "error": err,
+        }
+        if scored is not None:
+            rec["equivalent"] = scored.get("equivalent")
+            rec["score"] = (scored.get("verdict") or {}).get("score")
+            rec["byte_exact_pass"] = scored.get("byteExact", {}).get("pass")
+            rec["safety_pass"] = scored.get("safety", {}).get("pass")
+            rec["strict_pass"] = scored.get("strictPass")
+            rec["judge_runs"] = scored.get("judge_runs")
+            # Per-run verdicts, so judge self-agreement stays recomputable
+            # from the file rather than being lost with the majority vote.
+            rec["run_scores"] = scored.get("run_scores", [])
+            rec["run_equivalents"] = scored.get("run_equivalents", [])
+            # Distinct from `error`: some judge runs failed but the rest
+            # still decided the pair, so the row is scored, not discarded.
+            rec["judge_partial_error"] = scored.get("judge_partial_error")
+            rec["missing_claims"] = (scored.get("verdict") or {}).get("missingClaims", [])
+        return i, rec
 
     def run_loop():
+        # Writes happen on ONE thread. `benchmarks/run.py:1193-1223` uses the same
+        # split — workers compute, the main thread drains as_completed and writes —
+        # which removes torn JSONL lines as a category instead of guarding against
+        # them with a lock. load_rows() drops an unparseable line silently, so a
+        # torn write would be invisible.
         with args.output.open("a", encoding="utf-8") as out:
-            for i, p in enumerate(pairs, 1):
-                b, c = p["baseline"], p["candidate"]
-                try:
-                    scored = judge_mod.judge_pair(
-                        b["output_text"], c["output_text"], args.model,
-                        timeout=args.timeout, dry_run=args.dry_run, runs=args.judge_runs,
-                    )
-                    err = scored.get("judge_error")
-                except Exception as e:  # node/checks.js failure — record, don't crash
-                    scored, err = None, f"score error: {e}"
+            written = 0
 
-                rec = {
-                    "prompt_id": p["prompt_id"],
-                    "run": p["run"],
-                    "baseline_arm": args.baseline_arm,
-                    "candidate_arm": args.candidate_arm,
-                    "baseline_tokens": b.get("output_tokens"),
-                    "candidate_tokens": c.get("output_tokens"),
-                    "saved_pct": saved_pct(b.get("output_tokens", 0), c.get("output_tokens", 0)),
-                    "model": args.model,
-                    "error": err,
-                }
-                if scored is not None:
-                    rec["equivalent"] = scored.get("equivalent")
-                    rec["score"] = (scored.get("verdict") or {}).get("score")
-                    rec["byte_exact_pass"] = scored.get("byteExact", {}).get("pass")
-                    rec["safety_pass"] = scored.get("safety", {}).get("pass")
-                    rec["strict_pass"] = scored.get("strictPass")
-                    rec["judge_runs"] = scored.get("judge_runs")
-                    # Per-run verdicts, so judge self-agreement stays recomputable
-                    # from the file rather than being lost with the majority vote.
-                    rec["run_scores"] = scored.get("run_scores", [])
-                    rec["run_equivalents"] = scored.get("run_equivalents", [])
-                    rec["missing_claims"] = (scored.get("verdict") or {}).get("missingClaims", [])
+            def write_rec(i, rec):
+                nonlocal written
+                written += 1
                 out.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 out.flush()
-                records.append(rec)
                 tok = f"{rec['saved_pct']:+.0f}%" if rec["saved_pct"] is not None else "—"
                 verd = rec.get("equivalent")
                 vtag = "EQ" if verd else ("DIV" if verd is False else "—")
-                e = f"  ERR: {err}" if err else ""
-                print(f"  [{i}/{len(pairs)}] p={rec['prompt_id']} run={rec['run']} "
+                err = rec.get("error")
+                partial = rec.get("judge_partial_error")
+                e = f"  ERR: {err}" if err else (
+                    f"  PARTIAL({rec.get('judge_runs')}/{args.judge_runs}): {partial}"
+                    if partial else "")
+                print(f"  [{written}/{len(pairs)}] {rec['candidate_arm']} "
+                      f"p={rec['prompt_id']} run={rec['run']} "
                       f"saved={tok} {vtag}{e}", file=sys.stderr)
+
+            items = list(enumerate(pairs, 1))
+            if args.workers <= 1:
+                for item in items:
+                    write_rec(*judge_one(item))
+            else:
+                print(f"  [workers={args.workers}] parallel judging", file=sys.stderr)
+                with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as ex:
+                    futures = [ex.submit(judge_one, item) for item in items]
+                    for fut in concurrent.futures.as_completed(futures):
+                        write_rec(*fut.result())
 
     if args.dry_run or args.no_isolate_host:
         run_loop()
@@ -333,7 +387,8 @@ def main() -> int:
     # Re-read full output so the aggregate covers resumed prior records too.
     all_records = [r for r in load_rows(args.output)
                    if r.get("candidate_arm") == args.candidate_arm]
-    print(aggregate(all_records, args.model, args.candidate_arm))
+    print(aggregate(all_records, args.model, args.candidate_arm,
+                    0 if args.dry_run else args.judge_runs))
     return 0
 
 
