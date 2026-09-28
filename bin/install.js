@@ -217,11 +217,11 @@ export function detectMatch(spec, probes = DEFAULT_PROBES) {
 }
 
 // ── Run helpers ─────────────────────────────────────────────────────────────
-function run(cmd, args, dry) {
+function run(cmd, args, dry, cwd) {
   if (dry) { process.stdout.write(`  would run: ${cmd} ${args.join(' ')}\n`); return { status: 0 }; }
   process.stdout.write(`  $ ${cmd} ${args.join(' ')}\n`);
-  if (IS_WIN) return child_process.spawnSync(`${cmd} ${args.join(' ')}`, [], { shell: true, stdio: 'inherit' });
-  return child_process.spawnSync(cmd, args, { stdio: 'inherit' });
+  if (IS_WIN) return child_process.spawnSync(`${cmd} ${args.join(' ')}`, [], { shell: true, stdio: 'inherit', cwd });
+  return child_process.spawnSync(cmd, args, { stdio: 'inherit', cwd });
 }
 
 function capture(cmd, args) {
@@ -476,20 +476,18 @@ function installViaSkills(prov, opts, results) {
   // Self-install guard: when invoked from inside the scrooge clone itself,
   // `npx skills add` would rewrite our tracked source layout (regular
   // `skills/<name>/SKILL.md` files become symlinks to a new `.agents/skills/`
-  // tree). Skip the skills CLI call here — the source already IS the canonical
-  // layout, and the Claude install path above doesn't need this step.
+  // tree). Run it from a throwaway dir instead of skipping: `-g` installs at user
+  // level, so the launch dir does not change what gets installed, and every
+  // detected host updates wherever the installer is started.
   const ownRoot = findOwnRepoRoot(process.cwd());
-  if (ownRoot) {
-    process.stdout.write(`  skipped: running inside the scrooge clone (${ownRoot}).\n`);
-    process.stdout.write('    To install into a separate target dir, cd elsewhere first.\n\n');
-    results.skipped.push([prov.id, 'inside own repo']);
-    return;
-  }
+  const outside = ownRoot && !opts.dryRun ? fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-skills-')) : undefined;
+  if (ownRoot) process.stdout.write(`  inside the scrooge clone — running the skills CLI from a temp dir so ${ownRoot} stays untouched\n`);
   // --yes --all: no-TTY curl|bash can't drive the skills selection UI.
   // -g (global): always install under the agent's user-level dir; the
   // skills ecosystem default of project scope drops `.agents/` + a lock file
   // into cwd, which we never want for scrooge.
-  const r = run('npx', ['-y', 'skills', 'add', repoSpec(opts), '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun);
+  const r = run('npx', ['-y', 'skills', 'add', repoSpec(opts), '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun, outside);
+  if (outside) fs.rmSync(outside, { recursive: true, force: true });
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);
   process.stdout.write('\n');
@@ -688,8 +686,9 @@ function wireCodexHook(opts, results) {
       process.stdout.write('  Codex user-level hook configured.\n');
       results.installed.push('codex-hook');
     } else {
-      process.stdout.write('  Codex user-level hook already configured.\n');
-      results.skipped.push(['codex-hook', 'already configured']);
+      // The payload (hooks/rules/lib) was re-copied above either way.
+      process.stdout.write('  Codex hook payload updated (config.toml entry already present).\n');
+      results.updated.push('codex-hook');
     }
   } catch (e) {
     process.stdout.write(`  Codex hook wiring failed: ${e.message}\n`);
@@ -820,7 +819,7 @@ function main() {
     return;
   }
 
-  const results = { detected: 0, installed: [], updated: [], skipped: [], failed: [], removed: [] };
+  const results = { detected: 0, installed: [], updated: [], failed: [], removed: [] };
 
   if (opts.uninstall) { uninstall(opts, results); return; }
 
@@ -846,13 +845,11 @@ function main() {
   // is the one /scrooge surface left, and removing it would strand Claude entirely.
   const claudePluginPresent =
     results.installed.includes('claude') ||
-    results.updated.includes('claude') ||
-    results.skipped.some(([id]) => id === 'claude');
+    results.updated.includes('claude');
   if (claudePluginPresent) pruneClaudeSkillLeak(opts, results);
 
   process.stdout.write(`\nDone. detected ${results.detected}, installed [${results.installed.join(', ')}]`);
   if (results.updated.length) process.stdout.write(`, updated [${results.updated.join(', ')}]`);
-  if (results.skipped.length) process.stdout.write(`, skipped ${results.skipped.length}`);
   if (results.failed.length) process.stdout.write(`, failed [${results.failed.map((f) => f[0]).join(', ')}]`);
   process.stdout.write('\n');
   // A failed host has to reach the caller. install.sh execs this under curl|bash,

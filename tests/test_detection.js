@@ -133,14 +133,18 @@ test('a failed host install exits non-zero', {
   assert.notEqual(r.status, 0, `installer reported a failure but exited 0:\n${r.stdout}`);
 });
 
-test('a skipped host install exits zero', () => {
-  // Skipped is not failed. Inside our own clone the self-install guard skips the
-  // skills CLI, and that run must stay a success.
+test('inside our own clone the skills CLI still runs, from outside the clone', () => {
+  // Launching the installer from the scrooge clone used to skip every skills-CLI
+  // host, leaving Codex/Cursor SKILL.md on the old release. The guard now moves
+  // the call out of the clone instead: `-g` installs at user level, so where it
+  // runs from does not change what gets installed.
   const r = spawnSync(process.execPath, [INSTALL_JS, '--only', 'cursor', '--dry-run'], {
     encoding: 'utf8',
     cwd: path.dirname(path.dirname(INSTALL_JS)),
   });
-  assert.match(r.stdout, /skipped 1/);
+  assert.match(r.stdout, /running the skills CLI from a temp dir/);
+  assert.match(r.stdout, /would run: npx -y skills add \S+ -a cursor -g/);
+  assert.doesNotMatch(r.stdout, /skipped/);
   assert.equal(r.status, 0, r.stderr);
 });
 
