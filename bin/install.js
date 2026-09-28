@@ -372,9 +372,15 @@ function scroogePluginInstalled() {
 // costs nothing and turns a confusing outcome into a known one.
 const COMPETING_REGISTERS = ['caveman', 'grill-me', 'grillme'];
 
+// A disabled install injects nothing, so only an entry not marked disabled counts.
+// `claude plugin list` prints one `❯ name@market` entry per install with indented
+// detail lines (`Status: ✘ disabled`); an entry starts at a `❯` line or any
+// unindented line, so flat one-line output splits per line too. No status word →
+// still warned (conservative).
 export function detectCompetingRegisters(pluginListStdout) {
-  const text = String(pluginListStdout || '').toLowerCase();
-  return COMPETING_REGISTERS.filter((name) => text.includes(name));
+  const entries = String(pluginListStdout || '').toLowerCase().split(/\n(?=\s*❯|\S)/);
+  const active = entries.filter((e) => !/\bdisabled\b/.test(e));
+  return COMPETING_REGISTERS.filter((name) => active.some((e) => e.includes(name)));
 }
 
 function warnCompetingRegisters() {

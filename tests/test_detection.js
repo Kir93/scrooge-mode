@@ -519,6 +519,25 @@ test('detectCompetingRegisters finds other compression registers in a plugin lis
   assert.deepEqual(detectCompetingRegisters('grillme@x'), ['grillme']);
 });
 
+test('detectCompetingRegisters skips a competing register that is installed but disabled', () => {
+  // Real `claude plugin list` shape (2026-09-28): one `❯ name@market` entry per
+  // install with an indented `Status:` line. A disabled plugin injects nothing, so
+  // warning on it is a false positive — the benchmark keeps caveman installed but
+  // disabled so the `caveman:full` arm can read its SKILL.md.
+  const entry = (name, status) =>
+    `  ❯ ${name}\n    Version: 655b7d9c5431\n    Scope: user\n    Status: ${status}\n`;
+  const list = (cavemanStatus) =>
+    'Installed plugins:\n\n' +
+    entry('caveman@caveman', cavemanStatus) + '\n' +
+    entry('scrooge@scrooge', '✔ enabled');
+  assert.deepEqual(detectCompetingRegisters(list('✘ disabled')), []);
+  assert.deepEqual(detectCompetingRegisters(list('✔ enabled')), ['caveman']);
+  // Flat one-line entries: each line is its own entry, so a disabled neighbour
+  // does not hide an enabled one and vice versa.
+  assert.deepEqual(detectCompetingRegisters('caveman@caveman disabled\nscrooge@scrooge enabled'), []);
+  assert.deepEqual(detectCompetingRegisters('grill-me@x disabled\ncaveman@caveman enabled'), ['caveman']);
+});
+
 test('detectCompetingRegisters is total on junk input', () => {
   // It runs off `claude plugin list` stdout, which is absent when the CLI is
   // missing or errored — it must degrade to "no conflict", never throw mid-install.
