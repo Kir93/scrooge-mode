@@ -148,6 +148,18 @@ test('inside our own clone the skills CLI still runs, from outside the clone', (
   assert.equal(r.status, 0, r.stderr);
 });
 
+test('the skills CLI installs to the detected agent only, not every agent', () => {
+  // `--all` is shorthand for `--skill '*' --agent '*' -y`: it overrides `-a` and
+  // sprays the skill into every agent the CLI knows (79 dirs, measured 2026-09-28,
+  // `.claude` among them). `--skill '*'` keeps both skills and honours `-a`.
+  const r = spawnSync(process.execPath, [INSTALL_JS, '--only', 'cursor', '--dry-run'], {
+    encoding: 'utf8',
+    cwd: os.tmpdir(),
+  });
+  assert.match(r.stdout, /would run: npx -y skills add \S+ -a cursor -g -y --skill \*/);
+  assert.doesNotMatch(r.stdout, /--all\b/);
+});
+
 // ── Self-install guard (integrity-sweep Task 12) ──────────────────────────────
 // findOwnRepoRoot decides whether the installer is running inside its own clone.
 // A wrong answer is not cosmetic: it drives whether we install into the user's

@@ -482,11 +482,13 @@ function installViaSkills(prov, opts, results) {
   const ownRoot = findOwnRepoRoot(process.cwd());
   const outside = ownRoot && !opts.dryRun ? fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-skills-')) : undefined;
   if (ownRoot) process.stdout.write(`  inside the scrooge clone — running the skills CLI from a temp dir so ${ownRoot} stays untouched\n`);
-  // --yes --all: no-TTY curl|bash can't drive the skills selection UI.
+  // -y --skill '*': no-TTY curl|bash can't drive the skills selection UI. Not
+  // `--all` — that is `--skill '*' --agent '*' -y` and overrides `-a`, spraying
+  // the skill into every agent the CLI knows instead of this one.
   // -g (global): always install under the agent's user-level dir; the
   // skills ecosystem default of project scope drops `.agents/` + a lock file
   // into cwd, which we never want for scrooge.
-  const r = run('npx', ['-y', 'skills', 'add', repoSpec(opts), '-a', prov.profile, '-g', '--yes', '--all'], opts.dryRun, outside);
+  const r = run('npx', ['-y', 'skills', 'add', repoSpec(opts), '-a', prov.profile, '-g', '-y', '--skill', '*'], opts.dryRun, outside);
   if (outside) fs.rmSync(outside, { recursive: true, force: true });
   if ((r.status || 0) === 0) results.installed.push(prov.id);
   else results.failed.push([prov.id, `npx skills add (${prov.profile}) failed`]);

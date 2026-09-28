@@ -60,7 +60,7 @@ npx skills add Kir93/scrooge-mode --list
 Install for Codex:
 
 ```bash
-npx skills add Kir93/scrooge-mode -a codex --yes --all
+npx skills add Kir93/scrooge-mode -a codex -g -y --skill '*'
 ```
 
 Install for another supported profile by replacing `codex` with the target profile, such as `cursor`, `windsurf`, `cline`, `continue`, or `gemini-cli`.

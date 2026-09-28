@@ -59,7 +59,7 @@ npx skills add Kir93/scrooge-mode --list
 Codex 설치:
 
 ```bash
-npx skills add Kir93/scrooge-mode -a codex --yes --all
+npx skills add Kir93/scrooge-mode -a codex -g -y --skill '*'
 ```
 
 다른 profile은 `codex`를 `cursor`, `windsurf`, `cline`, `continue`, `gemini-cli` 등으로 교체.
