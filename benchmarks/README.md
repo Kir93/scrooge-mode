@@ -108,10 +108,12 @@ over another.
   `claude-opus-4-8` months after Claude Code moved to Opus 5, with only a caveat to
   show for it. A prose rule did not stop that; a default does.
 
-  Current pin: **`claude-opus-5`** (Claude Code's default since 2026-07-24,
-  v2.1.219). When a newer Opus ships, change that one constant. Override `--model`
-  only to reproduce an older published number — every row records the model the API
-  actually served, parsed from the session transcript, not the flag.
+  Current pin: **`opus`** — the CLI alias for the newest Opus, not a versioned id.
+  The versioned pin `claude-opus-5` stayed the default after Opus 5.5 shipped
+  because the constant was never bumped; the alias cannot go stale that way, and
+  `test_report_stats.py` rejects a versioned pin. The row's `model` field is the
+  record of which Opus answered — parsed from the session transcript, not the flag.
+  Override `--model` only to reproduce an older published number.
 
   Do **not** pin a headline to a non-default tier such as `claude-fable-5`: it is
   not what Claude Code runs and it sits at a different price tier, so the number
@@ -159,7 +161,7 @@ python3 benchmarks/run.py \
   --arms normal,terse,scrooge:ko/full,caveman:full \
   --runs 1 \
   --workers 1 \
-  --model claude-opus-5 \
+  --model opus \
   --resume \
   --output benchmarks/results-ko.jsonl
 
@@ -961,7 +963,7 @@ python3 benchmarks/fidelity/run.py \
 #        read from the file — exactly one arm besides --baseline-arm, else it refuses.
 python3 benchmarks/fidelity/fanout.py \
   benchmarks/results-{ko,en,ja,hi,zh}-report.jsonl \
-  -- --model claude-opus-5 --judge-runs 3 --resume --workers 2
+  -- --model opus --judge-runs 3 --resume --workers 2
 ```
 
 Concurrency budget: the driver multiplies. Five jobs at `--workers 2` is ten
@@ -1174,11 +1176,13 @@ is excluded regardless of the pre-flight tier.
 - **No cross-agent numbers.** The Codex harness was removed in v0.23.0 (above);
   every figure here is Claude Code subscription only. A Codex or other-host claim
   would need its own measurement, not a re-label of these rows.
-- **Session-file discovery race**: the harness picks the *newest* `.jsonl`
-  in the cwd's project dir after each call. Serial mode (`--workers 1`, the
-  default) is race-free. Parallel mode (`--workers N`) routes each call
-  through a unique sub-cwd (`<cwd>/call-NNNN/`) so concurrent writes land in
-  distinct project subdirs and the newest-jsonl probe stays unambiguous.
+- **Session-file discovery**: each call attempt passes a fresh
+  `--session-id` and the harness reads exactly `<id>.jsonl`. Without it, a
+  child launched from inside a Claude Code session can inherit the parent's
+  session id and append every call to one transcript — tokens accumulate
+  across calls and the recorded model is the first call's. Parallel mode
+  (`--workers N`) also routes each call through a unique sub-cwd
+  (`<cwd>/call-NNNN/`) so its project subdir is cleaned after the run.
 - **Host-isolation lock**: only one `run.py` may isolate the host at a
   time. An atomic mkdir lock at `~/.claude/.scrooge-bench-isolation.lock.d/`
   (following `CLAUDE_CONFIG_DIR` when set) serializes invocations across

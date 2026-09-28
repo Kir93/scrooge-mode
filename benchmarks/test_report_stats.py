@@ -136,6 +136,13 @@ class TestModelPin(unittest.TestCase):
         for other in ("fable", "mythos", "sonnet", "haiku"):
             self.assertNotIn(other, run.LATEST_OPUS)
 
+    def test_pin_is_the_alias_not_a_versioned_id(self):
+        # A versioned id goes stale the day a newer Opus ships (claude-opus-5 sat
+        # as the default after Opus 5.5 was out). The CLI alias always resolves to
+        # the newest Opus; each row still records the model actually served.
+        run = _load("_pin_run4", "run.py")
+        self.assertNotRegex(run.LATEST_OPUS, r"\d")
+
     def test_readme_documents_the_pin_the_code_uses(self):
         run = _load("_pin_run3", "run.py")
         readme = (pathlib.Path(__file__).resolve().parent / "README.md").read_text(encoding="utf-8")
@@ -369,7 +376,8 @@ class TestRetryLoop(unittest.TestCase):
             self.calls.append(cmd)
             stdout, code = outcomes[min(len(self.calls), len(outcomes)) - 1]
             if code == 0:
-                (sessions / "s.jsonl").write_text("", encoding="utf-8")
+                sid = cmd[cmd.index("--session-id") + 1]
+                (sessions / f"{sid}.jsonl").write_text("", encoding="utf-8")
             return types.SimpleNamespace(returncode=code, stdout=stdout, stderr="")
         self._patch(self.run.subprocess, "run", fake)
         result = self._run_one()
@@ -537,6 +545,47 @@ class TestRetryablePredicateOverride(unittest.TestCase):
                                                retryable=never)
         self.assertEqual(error, "timeout")
         self.assertEqual(len(self.calls), 1, "override was ignored — the turn retried")
+
+
+class TestFreshSessionPerCall(unittest.TestCase):
+    """Each `run_one` call must land in its own transcript.
+
+    A `claude --print` child launched from inside a Claude Code session can inherit
+    the parent's session id, so without an explicit `--session-id` every call in one
+    cwd appends to the same JSONL. The harness then sums tokens across calls and
+    records the first call's model. The fake CLI below reproduces that inheritance.
+    """
+
+    def setUp(self):
+        self.run = _load("_sess_run", "run.py")
+        self.tmp = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        env = unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.tmp / "cfg")})
+        env.start()
+        self.addCleanup(env.stop)
+        self.cwd = self.tmp / "bench"
+        self.cwd.mkdir()
+        self.replies = iter([(100, "m-first"), (7, "m-second")])
+
+    def _fake_cli(self, cmd, **kw):
+        sid = cmd[cmd.index("--session-id") + 1] if "--session-id" in cmd else "inherited-parent"
+        tokens, model = next(self.replies)
+        d = self.run.cwd_session_dir(kw["cwd"])
+        d.mkdir(parents=True, exist_ok=True)
+        line = {"type": "assistant", "message": {
+            "id": f"msg-{model}", "model": model, "usage": {"output_tokens": tokens},
+            "content": [{"type": "text", "text": "ok"}]}}
+        with (d / f"{sid}.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps(line) + "\n")
+        return self.run.subprocess.CompletedProcess(cmd, 0, stdout="ok", stderr="")
+
+    def test_second_call_counts_only_its_own_tokens_and_model(self):
+        with unittest.mock.patch.object(self.run.subprocess, "run", self._fake_cli):
+            self.run.run_one("normal", "", "p", 0, 0, cwd=self.cwd, dry_run=False, timeout=5)
+            second = self.run.run_one("normal", "", "p", 1, 0, cwd=self.cwd, dry_run=False, timeout=5)
+        self.assertIsNone(second.error)
+        self.assertEqual(second.output_tokens, 7)
+        self.assertEqual(second.model, "m-second")
 
 
 

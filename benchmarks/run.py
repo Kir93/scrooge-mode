@@ -36,6 +36,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterator, Optional
@@ -82,9 +83,11 @@ TERSE_CONTROL_SYSTEM = (
 # Pin to the newest Opus, which is also Claude Code's default — that is the model
 # users actually run the register on. Do NOT point this at a non-default tier
 # (claude-fable-5): different tier, different price, not what the product runs on.
-# When a newer Opus ships, change this one line; benchmarks/README.md documents the
-# re-measurement policy and tests/test_report_stats.py asserts the two agree.
-LATEST_OPUS = "claude-opus-5"
+# The CLI alias, not a versioned id: `claude-opus-5` stayed the default after Opus
+# 5.5 shipped because nobody bumped it. The alias resolves to the newest Opus the
+# CLI knows; every row records the model actually served. benchmarks/README.md
+# documents the re-measurement policy and test_report_stats.py asserts they agree.
+LATEST_OPUS = "opus"
 
 
 def resolve_arm(spec: str) -> tuple[str, str]:
@@ -228,7 +231,8 @@ NORMAL_BASELINE_SYSTEM = (
 
 def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
               disallow_tools: bool = False,
-              system_prompt_mode: str = "replace") -> list[str]:
+              system_prompt_mode: str = "replace",
+              session_id: Optional[str] = None) -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -279,6 +283,8 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
         cmd += ["--model", model]
     if disallow_tools:
         cmd += ["--disallowedTools", "Write", "Edit", "NotebookEdit", "Bash"]
+    if session_id:
+        cmd += ["--session-id", session_id]
     cmd += ["--", prompt]
     return cmd
 
@@ -298,13 +304,6 @@ def cwd_session_dir(cwd: Path) -> Path:
     """
     slug = re.sub(r"[^A-Za-z0-9]", "-", str(cwd))
     return claude_config_dir() / "projects" / slug
-
-
-def newest_session_file(d: Path) -> Optional[Path]:
-    if not d.exists():
-        return None
-    files = sorted(d.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[0] if files else None
 
 
 @dataclass
@@ -634,8 +633,6 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             disallow_tools: bool = False,
             system_prompt_mode: str = "replace") -> RunResult:
     session_dir = cwd_session_dir(cwd)
-    before = newest_session_file(session_dir)
-    before_mtime = before.stat().st_mtime if before else 0
     start = time.monotonic()
 
     if dry_run:
@@ -660,9 +657,19 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          total_output_tokens=fake_tokens, raw_output_tokens=fake_tokens,
                          turns=1, isolation_verified=isolation_verified)
 
-    cmd = build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode)
+    # A fresh session id per attempt. A child launched from inside a Claude Code
+    # session can otherwise inherit the parent's id and append every call in this
+    # cwd to one transcript — tokens then accumulate across calls and the recorded
+    # model is the first call's.
+    session_ids: list[str] = []
+
+    def make_cmd(_attempt):
+        session_ids.append(str(uuid.uuid4()))
+        return build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode,
+                         session_id=session_ids[-1])
+
     r, error, reason = call_with_retry(
-        lambda _attempt: cmd, cwd, timeout,
+        make_cmd, cwd, timeout,
         label=f"arm={arm} prompt={prompt_id} run={run}")
 
     elapsed = time.monotonic() - start
@@ -674,10 +681,10 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
 
     # Find the session JSONL written by this invocation.
     session_path = None
+    expected = session_dir / f"{session_ids[-1]}.jsonl"
     for _ in range(20):  # short retry — disk flush
-        latest = newest_session_file(session_dir)
-        if latest and latest.stat().st_mtime > before_mtime:
-            session_path = latest
+        if expected.exists():
+            session_path = expected
             break
         time.sleep(0.1)
 
@@ -1178,9 +1185,9 @@ def main() -> int:
     def execute(job_idx_and_spec):
         idx, (arm_label, rule_text, prompt, pid, run) = job_idx_and_spec
         # Per-call cwd so concurrent calls write to distinct
-        # ~/.claude/projects/<slug>/ subdirs and newest-jsonl discovery
-        # does not race. Serial workers=1 also tolerates this (mkdir is
-        # idempotent, no extra cost).
+        # ~/.claude/projects/<slug>/ subdirs. Transcript discovery is by the
+        # call's own --session-id, so serial workers=1 shares one cwd safely
+        # (mkdir is idempotent, no extra cost).
         call_cwd = cwd_base if args.workers <= 1 else cwd_base / f"call-{idx:04d}"
         call_cwd.mkdir(parents=True, exist_ok=True)
         return idx, run_one(arm_label, rule_text, prompt, pid, run,
