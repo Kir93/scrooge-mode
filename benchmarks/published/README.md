@@ -48,6 +48,13 @@ reproduce them exactly.
 | [`results-ja-report-v025.jsonl`](./results-ja-report-v025.jsonl) | JA held-out **+51.1%** ratio-of-medians (per-prompt median 60.1%, 95% CI +40.8–+67.5%, N=11) | `claude-opus-5` | v0.25.0 | 2026-09-16 | `prompts/ja-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
 | [`results-hi-report-v025.jsonl`](./results-hi-report-v025.jsonl) | HI held-out **+52.6%** ratio-of-medians (per-prompt median 52.6%, 95% CI +47.9–+60.7%, N=11) | `claude-opus-5` | v0.25.0 | 2026-09-16 | `prompts/hi-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
 | [`results-zh-report-v025.jsonl`](./results-zh-report-v025.jsonl) | ZH held-out **+51.3%** ratio-of-medians (per-prompt median 52.6%, 95% CI +37.0–+62.2%, N=11) — least-resolved of the five: lowest CI floor, the only non-unanimous sign test (10/11), and by far the largest MDE (46.5pp vs 8.2–11.9pp) | `claude-opus-5` | v0.25.0 | 2026-09-16 | `prompts/zh-report.txt` | `--cwd` empty + global CLAUDE.md aside + `ultracode` off |
+| [`results-ko-report-v027.jsonl`](./results-ko-report-v027.jsonl) | KO held-out **+59.8%** ratio-of-medians (per-prompt median 63.7%, 95% CI +56.1–+66.6%, N=19); same-run v0.26.0 arm +59.4% | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/ko-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-en-report-v027.jsonl`](./results-en-report-v027.jsonl) | EN held-out **+54.9%** ratio-of-medians (per-prompt median 59.8%, 95% CI +50.2–+63.0%, N=19); same-run v0.26.0 arm +52.5% | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/en-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-ja-report-v027.jsonl`](./results-ja-report-v027.jsonl) | JA held-out **+61.6%** ratio-of-medians (per-prompt median 60.0%, 95% CI +57.0–+73.1%, N=11); same-run v0.26.0 arm +58.5% | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/ja-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-hi-report-v027.jsonl`](./results-hi-report-v027.jsonl) | HI held-out **+62.7%** ratio-of-medians (per-prompt median 61.8%, 95% CI +52.9–+64.4%, N=11); same-run v0.26.0 arm +57.6% | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/hi-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-zh-report-v027.jsonl`](./results-zh-report-v027.jsonl) | ZH held-out **+62.5%** ratio-of-medians (per-prompt median 62.7%, 95% CI +52.4–+72.2%, N=11); same-run v0.26.0 arm +59.9% | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/zh-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-ko-decision-report-v027.jsonl`](./results-ko-decision-report-v027.jsonl) | KO decision corpus **+75.8%** ratio-of-medians (per-prompt median 71.9%, N=18) vs +57.5% for the v0.26.0 arm — [Decision-shape rule](../README.md#decision-shape-rule--measured-2026-09-28) | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/ko-decision-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
+| [`results-en-decision-report-v027.jsonl`](./results-en-decision-report-v027.jsonl) | EN decision corpus **+72.0%** ratio-of-medians (per-prompt median 65.4%, N=18) vs +48.9% for the v0.26.0 arm | `claude-opus-5-5` | v0.27.0 (+ `@v0.26.0` arm) | 2026-09-28 | `prompts/en-decision-report.txt` | `--cwd` empty + no global CLAUDE.md on host + `ultracode` off |
 
 `results-ko-persistence.jsonl` is the one file here that **cannot** be re-scored by
 its own scorer: `persistence-score.py` reads `output_text`, and D2 removes it. The
@@ -240,6 +247,50 @@ escape to the clause. Re-run it with `benchmarks/run.py --arms
 "scrooge:en/full,scrooge:ko/full,skillonly=skills/scrooge/SKILL.md,normal"` over a prompt
 that repeats an already-answered question verbatim.
 
+**Register drift 2026-09-28 — disposition: judge RE-RUN.**
+Version: **v0.27.0.**
+
+All five `rules/*/full.md` registers and `skills/scrooge/SKILL.md` gained one
+Scope-discipline item: a decision question (yes/no, A vs B, rating) answers on the
+first line with the one deciding reason — extra bullets only for a condition that
+would flip it, no cause/fix sections or code unless asked; security or irreversible
+stakes still follow Auto-Clarity. That adds an instruction, so
+[`RELEASE.md`](../../RELEASE.md) §1a counts it as substantive.
+
+**The model moved too, so this re-measure carries its own control.** These rows are
+`claude-opus-5-5`: the harness pin is now the `opus` alias, after the versioned
+`claude-opus-5` pin kept new runs on the older model. Every `-v027` generation file
+therefore holds the pre-edit register on the same model, in the same run, as
+`scrooge:{lang}/full@v0.26.0`; the post-edit register is `scrooge:{lang}/full`. Compare
+within a file, not against the `-v025` rows. The arm labels were renamed at publish
+time from the harness's `decision` / `scrooge:{lang}/full`; nothing else changed
+beyond the scrub. Fidelity rows record the judge's `--model` flag (`opus`); the served
+model is in the generation rows. Rows produced before the harness's per-call
+`--session-id` fix were discarded, not published.
+
+Held-out report corpus (no decision prompts), v0.27.0 paired against the same-run
+v0.26.0 arm:
+
+| Lang | Savings v0.27.0 | v0.26.0 | Paired tokens (95% CI) | Paired fidelity (95% CI) | Safety v0.27.0 / v0.26.0 |
+| ---- | --------------: | ------: | ---------------------: | -----------------------: | -----------------------: |
+| KO | +59.8% | +59.4% | −3.8% (−8.4 to +5.2) | −0.02 (−0.05 to 0.00) | 12/19 / 13/19 |
+| EN | +54.9% | +52.5% | −4.5% (−12.5 to +0.8) | −0.05 (−0.10 to +0.05) | 16/19 / 16/19 |
+| JA | +61.6% | +58.5% | −1.0% (−20.5 to +15.9) | +0.00 (−0.03 to +0.06) | 11/11 / 11/11 |
+| HI | +62.7% | +57.6% | +0.3% (−9.1 to +10.2) | +0.00 (−0.05 to +0.12) | 11/11 / 11/11 |
+| ZH | +62.5% | +59.9% | +0.4% (−11.4 to +15.1) | −0.05 (−0.10 to 0.00) | 11/11 / 11/11 |
+
+Savings is ratio-of-medians vs `normal`; a negative paired-tokens value means the
+v0.27.0 arm was shorter. **No regression:** every paired interval includes zero. The
+one safety difference is KO prompt 15 (rate-limiting algorithm choice) — not a
+decision question, and the v0.27.0 answer carries *more* safety content (fail-open vs
+fail-closed) than the v0.26.0 one; it is the keyword heuristic, which misfired on a
+rate-limiting prompt for HI before.
+
+Where the item does fire — the `-decision-` files, KO/EN only — it cuts output by about
+a third against v0.26.0 and costs ~0.2 claim-preservation in breadth (adjacent APIs,
+examples), with the correct answer on line 1 in 36/36 and the safety heuristic
+unchanged. See [Decision-shape rule](../README.md#decision-shape-rule--measured-2026-09-28).
+
 Both `-opus5` sets ran with `ultracode` disabled in the host `settings.json`. Left
 on, it tells every `claude --print` child to author a multi-agent workflow; the child
 announces the delegation and dies mid-response, and it hits the `normal` baseline far
@@ -334,6 +385,14 @@ from these rows.
 | [`results-ja-fidelity-v025.jsonl`](./results-ja-fidelity-v025.jsonl) | JA fidelity **0.60**, safety 9/11 | `claude-opus-5` | 3 | 2026-09-16 |
 | [`results-hi-fidelity-v025.jsonl`](./results-hi-fidelity-v025.jsonl) | HI fidelity **0.60**, safety 9/11 | `claude-opus-5` | 3 | 2026-09-16 |
 | [`results-zh-fidelity-v025.jsonl`](./results-zh-fidelity-v025.jsonl) | ZH fidelity **0.55**, safety 10/11 — first zh re-measure since the contamination detector landed; see the 2026-09-16 note | `claude-opus-5` | 3 | 2026-09-16 |
+| [`results-ko-fidelity-v027.jsonl`](./results-ko-fidelity-v027.jsonl) | KO fidelity **0.50**, safety 12/19 — v0.27.0 register; paired vs the same-run v0.26.0 arm −0.02 (95% CI −0.05 to 0.00) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-en-fidelity-v027.jsonl`](./results-en-fidelity-v027.jsonl) | EN fidelity **0.55**, safety 16/19; paired −0.05 (−0.10 to +0.05) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-ja-fidelity-v027.jsonl`](./results-ja-fidelity-v027.jsonl) | JA fidelity **0.55**, safety 11/11; paired +0.00 (−0.03 to +0.06) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-hi-fidelity-v027.jsonl`](./results-hi-fidelity-v027.jsonl) | HI fidelity **0.60**, safety 11/11; paired +0.00 (−0.05 to +0.12) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-zh-fidelity-v027.jsonl`](./results-zh-fidelity-v027.jsonl) | ZH fidelity **0.50**, safety 11/11; paired −0.05 (−0.10 to 0.00) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| `results-{ko,en,ja,hi,zh}-fidelity-v026-opus55.jsonl` | The same-run v0.26.0 control for the five rows above: KO 0.60 (13/19), EN 0.60 (16/19), JA 0.55, HI 0.60, ZH 0.50 (11/11 each) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-ko-decision-fidelity-v027.jsonl`](./results-ko-decision-fidelity-v027.jsonl) | KO decision corpus fidelity **0.40**, safety 14/18, vs 0.55 for the v0.26.0 arm (`results-ko-decision-fidelity-v026-opus55.jsonl`); paired −0.20 (−0.25 to −0.05) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
+| [`results-en-decision-fidelity-v027.jsonl`](./results-en-decision-fidelity-v027.jsonl) | EN decision corpus fidelity **0.38**, safety 14/18, vs 0.60 for the v0.26.0 arm (`results-en-decision-fidelity-v026-opus55.jsonl`) | `opus` flag, served `claude-opus-5-5` | 3 | 2026-09-28 |
 
 The `-opus5` rows are the v0.23.0 register re-measure; their paired token rows are
 the `-report-opus5` files in the provenance table above. They supersede nothing —

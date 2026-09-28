@@ -636,7 +636,7 @@ KO lost one (12/19 vs 13/19): the rate-limiting prompt, not a decision question,
 where the bullet arm's answer carries *more* safety content (fail-open vs
 fail-closed) — the same keyword-heuristic miss noted under [Hindi](#hindi).
 
-Rows are local, not yet in [`published/`](./published/). Reproduce:
+Rows: [`published/results-{ko,en}-decision-*-v027.jsonl`](./published/) (the pre-bullet arm is labelled `scrooge:{lang}/full@v0.26.0`) and, for the regression, `results-*-report-v027.jsonl` / `results-*-fidelity-v027.jsonl` — see the 2026-09-28 register-drift note there. Reproduce:
 
 ```bash
 python3 benchmarks/run.py --prompts benchmarks/prompts/ko-decision-report.txt \
