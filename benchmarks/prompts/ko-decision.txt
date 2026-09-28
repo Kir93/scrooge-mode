@@ -1,0 +1,31 @@
+# Scrooge benchmark — KO decision-shape corpus (DEV, baseline probe)
+#
+# Jev(TypeSafe) 식 "typed answer" 규칙 도입 전 기준선 측정용. 모든 프롬프트는
+# 답이 하나로 정해진 판단형 질문 — 예/아니오, 선택, 등급(low/medium/high).
+# 측정 질문: 현재 full이 이미 답을 첫 줄에 짧게 주는가? 그렇다면 신규 규칙 불필요.
+# 페어링: --arms normal,terse,scrooge:ko/full
+# 비주석 한 줄당 프롬프트 하나. 기대 답은 각 그룹 주석에 순서대로.
+
+# --- yes/no — 기대: 예, 예, 아니오, 예, 예, 아니오, 아니오, 아니오 ---
+JavaScript `Array.prototype.sort()`는 원본 배열을 변경해?
+JavaScript에서 `const`로 선언한 객체의 프로퍼티는 수정할 수 있어?
+PostgreSQL에서 `VARCHAR(255)`가 `TEXT`보다 저장·조회 성능이 좋아?
+Python `dict`는 3.7부터 삽입 순서를 보장해?
+HTTP `PUT` 요청은 멱등(idempotent)이야?
+React `useEffect`는 서버 사이드 렌더링 중에 실행돼?
+`git revert`는 기존 커밋 히스토리를 다시 써?
+`JSON.stringify` 후 `JSON.parse`로 객체 안의 `undefined` 값을 복원할 수 있어?
+
+# --- choice — 기대: SSE, stream, bcrypt, 고유 id, unknown, 정수 cent ---
+서버 → 클라이언트 단방향 실시간 알림에 WebSocket과 SSE 중 뭘 써야 해?
+50만 행 CSV를 Node.js로 읽어 변환할 때 `fs.readFile`과 stream 중 뭐가 맞아?
+사용자 비밀번호 저장용 해시로 SHA-256과 bcrypt 중 뭘 써야 해?
+항목 재정렬·삭제가 있는 React 리스트의 key로 배열 index와 항목 고유 id 중 뭘 써야 해?
+TypeScript에서 외부 API 응답을 `any`와 `unknown` 중 어떤 타입으로 받아야 해?
+JavaScript 결제 금액 계산에 `number` 소수(예: 19.99)와 정수 cent 단위 중 뭘 써야 해?
+
+# --- rating — 기대: high, low, high, high ---
+인덱스 없는 1억 행 테이블에 WHERE 없이 `SELECT *`를 실행하는 API 엔드포인트의 성능 위험도를 low/medium/high로 매겨줘.
+변수명 `data2`를 `userList`로 바꾸자는 코드 리뷰 코멘트의 심각도를 low/medium/high로 매겨줘.
+n=10^6 입력에 `O(n^2)` 중첩 루프를 도는 요청 핸들러의 성능 위험도를 low/medium/high로 매겨줘.
+프로덕션 로그에 사용자 비밀번호를 평문으로 출력하는 코드의 심각도를 low/medium/high로 매겨줘.

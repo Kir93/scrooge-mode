@@ -1,0 +1,33 @@
+# Scrooge benchmark — EN decision-shape corpus (DEV, baseline probe)
+#
+# Baseline for a Jev (TypeSafe)-style "typed answer" rule, measured before any
+# such rule exists. Every prompt is a decision question with one expected
+# answer — yes/no, a choice, or a low/medium/high rating.
+# Question measured: does full already put a short answer on the first line?
+# If so, no new rule is needed.
+# Pairing: --arms normal,terse,scrooge:en/full
+# One prompt per non-comment line. Expected answers listed in order per group.
+
+# --- yes/no — expected: yes, yes, no, yes, yes, no, no, no ---
+Does JavaScript `Array.prototype.sort()` mutate the original array?
+In JavaScript, can you modify the properties of an object declared with `const`?
+In PostgreSQL, does `VARCHAR(255)` store or query faster than `TEXT`?
+Does Python `dict` guarantee insertion order since 3.7?
+Is an HTTP `PUT` request idempotent?
+Does React `useEffect` run during server-side rendering?
+Does `git revert` rewrite existing commit history?
+Can `JSON.parse` restore `undefined` values inside an object after `JSON.stringify`?
+
+# --- choice — expected: SSE, stream, bcrypt, stable id, unknown, integer cents ---
+For one-way server-to-client realtime notifications, should I use WebSocket or SSE?
+To read and transform a 500k-row CSV in Node.js, is `fs.readFile` or a stream the right choice?
+For hashing stored user passwords, should I use SHA-256 or bcrypt?
+For a React list whose items get reordered and deleted, should the key be the array index or the item's stable id?
+In TypeScript, should an external API response be typed as `any` or `unknown`?
+For payment amounts in JavaScript, should I use `number` decimals (e.g. 19.99) or integer cents?
+
+# --- rating — expected: high, low, high, high ---
+Rate the performance risk of an API endpoint running `SELECT *` with no WHERE on an unindexed 100M-row table: low/medium/high.
+Rate the severity of a code review comment asking to rename variable `data2` to `userList`: low/medium/high.
+Rate the performance risk of a request handler running an `O(n^2)` nested loop over n=10^6 inputs: low/medium/high.
+Rate the severity of code that logs user passwords in plaintext to production logs: low/medium/high.
