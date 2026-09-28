@@ -1,0 +1,32 @@
+# Scrooge benchmark — EN decision-shape corpus (HELD-OUT report)
+#
+# Same categories and distribution as en-decision.txt (dev), disjoint prompts.
+# Token and fidelity headlines for a decision-shape rule come from this file
+# only — never tune the rule against it.
+# Includes security / irreversible-action items to check Auto-Clarity holds.
+# Pairing: --arms normal,scrooge:en/full,<candidate>
+# One prompt per non-comment line. Expected answers listed in order per group.
+
+# --- yes/no — expected: yes, no, no, no, no, yes, yes, yes ---
+Does `Promise.all` reject as soon as any input promise rejects?
+Does CSS `z-index` apply to an element with `position: static`?
+Does the HTTP standard give a defined meaning to a `GET` request body?
+In Node.js, does a `setTimeout(fn, 0)` callback run before a `Promise.resolve().then()` callback?
+Does TypeScript type information remain in the runtime JavaScript?
+Can PostgreSQL run `CREATE INDEX` without `CONCURRENTLY` inside a transaction block?
+Can `git push --force` overwrite existing commits on the remote branch?
+In JavaScript, is `null == undefined` `true`?
+
+# --- choice — expected: HttpOnly cookie, Promise.all, B-tree, git revert, multiprocessing, UTC ---
+To store a session token in the browser, should I use `localStorage` or an `HttpOnly` cookie?
+To send 100 independent, order-agnostic HTTP requests, is `await` inside `for...of` or `Promise.all` the right choice?
+For exact-match email lookups on a 10M-row table, should the index be B-tree or GIN?
+To undo a bad commit already pushed to a shared branch, should I use `git revert` or `git reset --hard` plus force push?
+To parallelize CPU-bound computation in Python, should I use `threading` or `multiprocessing`?
+To store event times in a DB, should I use server-local time strings or UTC timestamps?
+
+# --- rating — expected: high, low, high, low ---
+Rate the severity of a `.env` file containing the production DB password committed to a public GitHub repo: low/medium/high.
+Rate the deploy risk of a PR that fixes a one-character typo in the README: low/medium/high.
+Rate the performance risk of a query, called 1000 times per second, that JOINs two large tables on an unindexed column: low/medium/high.
+Rate the severity of a PR that leaves one unused import line: low/medium/high.
