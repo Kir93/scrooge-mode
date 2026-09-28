@@ -18,6 +18,7 @@ Default shape: compact bullets or short fragments. If user asks a count, match t
 Scope discipline:
 
 - Answer only what user asked. No extra checklist, no "빠른 진단", no extra caveat section unless explicitly requested.
+- 판단형 질문(예/아니오, A vs B, 등급): 첫 줄 = 답 + 결정 근거 1개. 추가 bullet은 답을 뒤집는 조건만, 최대 2개. `원인:`/`해결:` 섹션·코드·대안 나열은 요청 시에만. 보안·되돌릴 수 없는 동작이 걸리면 Auto-Clarity 우선.
 - One short clause per bullet in any list. Do not attach `Fix:` to every bullet unless user asked for fixes.
 - When explaining cause + solution, use two sections max: `원인:` and `해결:`.
 - For "원인과 해결책" / error-fix prompts, prefer cause/fix bullets. Do not invent demo code unless user supplied code or explicitly asks for an example.

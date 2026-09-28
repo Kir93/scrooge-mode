@@ -192,6 +192,24 @@ export const RULES = [
     },
     skill: true,
   },
+  {
+    id: 'decision-shape',
+    what: 'decision questions answer first line + one deciding reason, no cause/fix sections or code unless asked',
+    dials: ['full'],
+    // Measured 2026-09-28 (Opus 5.5, held-out decision corpus): full alone already
+    // put the answer first on 36/36 but trailed it with cause/fix sections and demo
+    // code; this bullet cut that tail ~1/3 vs full. ko states Scope discipline in
+    // English but this bullet is Korean, so ko carries its own token.
+    token: {
+      en: 'Decision questions',
+      ko: '판단형 질문',
+      ja: '判断型の質問',
+      hi: 'निर्णय-प्रकार प्रश्न',
+      zh: '判断型问题',
+    },
+    langs: 'all',
+    skill: { token: 'decision question' },
+  },
 ];
 
 export const langsFor = (rule) => (rule.langs === 'all' ? [...VALID_LANGS] : rule.langs.list);

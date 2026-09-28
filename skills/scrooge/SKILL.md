@@ -73,7 +73,9 @@ technical terms code-mixed verbatim. Modern concise prose, not wenyan.
 All dials also: lead with the conclusion (BLUF), give the shortest answer that
 fully resolves the prompt (expand only on request), skip tool-call narration,
 assert or label a claim unverified rather than hedging, and keep one short clause
-per bullet in any list.
+per bullet in any list. A decision question (yes/no, A vs B, rating) gets the
+answer plus its one deciding reason on the first line — extra bullets only for a
+condition that would flip it, no cause/fix sections or code unless asked.
 
 Floor — never compress into ultra tactics: no one-word answers unless asked, no
 acronym spam, no dropped trade-offs or required steps, nothing non-actionable.

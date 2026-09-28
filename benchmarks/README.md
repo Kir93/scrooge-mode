@@ -601,6 +601,54 @@ diverge: a similar token ballpark, very different claim-preservation. We cite
 caveman as the origin of the token-miser idea and the strongest compression
 baseline, and copy none of its text.
 
+### Decision-shape rule — measured, 2026-09-28
+
+The `full` Scope-discipline bullet for decision questions (yes/no, A vs B, rating)
+started from a Jev-style "typed answer" idea. The baseline killed that idea: `full`
+already put the correct answer on the first line in 36/36 dev answers. What it
+left was the tail — `Cause:`/`Fix:` sections and demo code after a one-word
+answer. The bullet targets that tail, not the answer shape.
+
+`claude-opus-5-5` via the `opus` pin, runs=1, judge N=3. Corpora:
+`prompts/{ko,en}-decision.txt` (dev) and `prompts/{ko,en}-decision-report.txt`
+(held-out, never tuned against).
+
+| Held-out decision corpus (N=18) | KO `full` | KO + bullet | EN `full` | EN + bullet |
+| --- | --: | --: | --: | --: |
+| Median output tokens | 532 | 303 | 414 | 227 |
+| Paired vs `full` | — | −32% (CI −16 to −48%, 17/18) | — | −36% (CI −27 to −48%, 17/18) |
+| Correct answer on line 1 | 18/18 | 18/18 | 18/18 | 18/18 |
+| Median claim-preservation | 0.55 | 0.40 | 0.60 | 0.38 |
+| Safety preserved | 14/18 | 14/18 | 14/18 | 14/18 |
+
+**The cost is breadth.** Claim-preservation drops ~0.2 because the judge scores
+against `normal`'s full survey; the missing claims are adjacent APIs, examples,
+and alternatives (`Promise.allSettled` on a `Promise.all` question), not the
+answer or its reason. Both arms miss the safety heuristic on the same four
+security items; reading them, Auto-Clarity fired — full-prose remediation steps
+on force push, token storage, and a leaked `.env`.
+
+**Regression — the held-out `*-report.txt` corpora (no decision prompts), paired
+bullet vs `full`:** tokens moved −0.3% to −4.5%, no CI excluding zero; the
+claim-preservation difference CI included zero in all five languages (KO −0.02,
+EN −0.05, JA +0.00, HI +0.00, ZH −0.05); safety preserved matched in EN/JA/HI/ZH.
+KO lost one (12/19 vs 13/19): the rate-limiting prompt, not a decision question,
+where the bullet arm's answer carries *more* safety content (fail-open vs
+fail-closed) — the same keyword-heuristic miss noted under [Hindi](#hindi).
+
+Rows are local, not yet in [`published/`](./published/). Reproduce:
+
+```bash
+python3 benchmarks/run.py --prompts benchmarks/prompts/ko-decision-report.txt \
+  --arms normal,scrooge:ko/full --workers 4 --resume \
+  --output benchmarks/results-ko-decision-report.jsonl
+python3 benchmarks/fidelity/run.py --results benchmarks/results-ko-decision-report.jsonl \
+  --candidate-arm scrooge:ko/full --judge-runs 3 --workers 4 --resume \
+  --output benchmarks/fidelity/results-ko-decision-fidelity.jsonl
+```
+
+The pre-bullet `full` arm is the parent commit's `rules/ko/full.md`.
+
 ## Per-language detail
 
 The root README carries one table per language plus a combined JA/HI/ZH table. This section holds the per-register design notes and the isolation caveat each measurement needs — moved here so the README stays a summary.

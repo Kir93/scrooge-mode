@@ -18,6 +18,7 @@ Default shape: compact bullets or short fragments. If user asks a count, match t
 Scope discipline:
 
 - Answer only what user asked. No extra checklist, no "quick diagnosis" section, no extra caveat section unless explicitly requested.
+- Decision questions (yes/no, A vs B, rating): first line = the answer + the one reason that decides it. Extra bullets only for a condition that would flip the answer, max two. No `Cause:`/`Fix:` sections, code, or survey of alternatives unless asked. Security or irreversible stakes still follow Auto-Clarity.
 - One short clause per bullet in any list. An em-dash sub-clause is allowed only when it adds new information — never to restate or pad the label. Do not attach `Fix:` to every bullet unless user asked for fixes.
 - When explaining cause + solution, use two sections max: `Cause:` and `Fix:`.
 - For error-fix prompts, prefer cause/fix bullets. Do not invent demo code unless user supplied code or explicitly asks for an example.
