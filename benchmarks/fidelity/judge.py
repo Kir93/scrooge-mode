@@ -37,7 +37,9 @@ CHECKS_JS = Path(__file__).resolve().parent / "checks.js"
 # session JSONL per call into ~/.claude/projects/<cwd-slug>/, so inheriting the repo
 # cwd buries the repo's interactive session list under hundreds of judge transcripts.
 # It also keeps the repo's own CLAUDE.md and project settings out of the impartial
-# judge's context. One directory is shared by every concurrent call (fidelity/run.py
+# judge's context — which is why fidelity/run.py, fanout.py and debunk.py preflight
+# THIS cwd for an ancestor AGENTS.md the fallback would load instead. One directory
+# is shared by every concurrent call (fidelity/run.py
 # --workers): unlike benchmarks/run.py this module never reads a session JSONL back
 # — call_judge consumes stdout only — so there is no newest-file discovery to race.
 JUDGE_CWD = Path.home() / ".cache" / "scrooge-bench" / "judge"

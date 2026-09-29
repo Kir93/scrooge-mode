@@ -331,6 +331,9 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="Walk the turn plan and the JSONL path with synthetic responses. "
                          "Spends no quota — use it to catch a wiring error for free.")
+    ap.add_argument("--allow-contaminated", action="store_true",
+                    help="Proceed even if an AGENTS.md would load into every arm. Off by "
+                         "default: no per-row check detects it.")
     args = ap.parse_args()
 
     if not args.dry_run and shutil.which("claude") is None:
@@ -342,6 +345,13 @@ def main() -> int:
     # character, so a relative --cwd hashes to a directory that does not exist and
     # every transcript lookup silently returns None.
     args.cwd = args.cwd.resolve()
+
+    # `--setting-sources project` keeps the user settings — and with them any
+    # `instructionFiles` choice — out of the CLI, so the agents-md mod runs in its
+    # default mode here whatever the user configured.
+    if not args.dry_run and not BENCH.check_agents_md_clean(
+            (args.cwd,), args.allow_contaminated, mode=BENCH.AGENTS_MD_DEFAULT_MODE):
+        return 2
 
     if args.output.exists() and args.output.stat().st_size:
         print(f"refusing to append to a non-empty {args.output} — "

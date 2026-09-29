@@ -364,23 +364,36 @@ def main() -> int:
                     for fut in concurrent.futures.as_completed(futures):
                         write_rec(*fut.result())
 
-    if args.dry_run or args.no_isolate_host:
+    if args.dry_run:
+        run_loop()
+    elif args.no_isolate_host:
+        # The caller isolates register state itself (fanout's children do), but no
+        # isolation moves an AGENTS.md, so that check still runs here.
+        if not _load_bench_run().check_agents_md_clean((judge_mod.JUDGE_CWD,),
+                                                       args.allow_contaminated):
+            return 2
         run_loop()
     else:
         bench_run = _load_bench_run()
         with bench_run.host_isolation(enabled=True):
-            findings = bench_run.verify_register_clean(BENCH_DIR)
+            findings = bench_run.verify_register_clean(
+                BENCH_DIR, instruction_cwds=(judge_mod.JUDGE_CWD,))
             for sev, m in findings:
                 print(f"[verify] {sev}: {m}", file=sys.stderr)
             blocking = [m for sev, m in findings if sev == "blocking"]
+            agents = [m for m in blocking if m.startswith(bench_run.AGENTS_MD_FINDING)]
             if blocking and not args.allow_contaminated:
                 # Match benchmarks/run.py: an active register hook would inject a
                 # compression directive into the judge's user channel and bias the
                 # impartial verdict. Abort rather than score a contaminated headline.
-                print("error: register not clean — the judge would be biased by a host "
-                      "hook. Isolation should have moved the state files aside; a "
-                      "remaining channel means the move failed or you isolate manually. "
-                      "Re-run, or pass --allow-contaminated to override.", file=sys.stderr)
+                if len(agents) < len(blocking):
+                    print("error: register not clean — the judge would be biased by a "
+                          "host hook. Isolation should have moved the state files aside; "
+                          "a remaining channel means the move failed or you isolate "
+                          "manually. Re-run, or pass --allow-contaminated to override.",
+                          file=sys.stderr)
+                if agents:
+                    print(f"error: {bench_run.AGENTS_MD_ABORT}", file=sys.stderr)
                 return 2
             run_loop()
 

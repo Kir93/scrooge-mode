@@ -143,7 +143,8 @@ def main() -> int:
             # happens here — inside the window, which is what makes it a check that
             # the state files actually moved.
             if BENCH.check_register_clean(BENCH_DIR, args.allow_contaminated,
-                                          per_row_backstop=False) is None:
+                                          per_row_backstop=False,
+                                          instruction_cwds=(FID.judge_mod.JUDGE_CWD,)) is None:
                 return 2
 
         sink: queue.Queue = queue.Queue()

@@ -10,7 +10,10 @@ import unittest
 import unittest.mock
 import types
 
+import ast
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import pathlib
@@ -505,6 +508,172 @@ class TestConfigDirResolution(unittest.TestCase):
                     self.fail("isolation ran its body without a recovery pointer")
         self.assertTrue(marker.exists(), "a state file was moved before the abort")
         self.assertFalse(lock.exists(), "the lock dir was left behind")
+
+
+class TestAgentsMdFallback(unittest.TestCase):
+    """An ancestor AGENTS.md reaches every arm of a CLAUDE.md-less bench cwd.
+
+    Claude Code >= 2.1.277 falls back to AGENTS.md (root down to cwd) when no
+    CLAUDE.md / .claude/CLAUDE.md / CLAUDE.local.md is on that path; the user's
+    config-dir CLAUDE.md does not count. Missing it records a contaminated
+    baseline as `isolation_verified: true`.
+    """
+
+    def setUp(self):
+        self.run = _load("_agents_run", "run.py")
+        self.tmp = pathlib.Path(tempfile.mkdtemp()).resolve()
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.cwd = self.tmp / "home" / "cache" / "bench"
+        self.cwd.mkdir(parents=True)
+        self.cfg = self.tmp / "home" / ".claude"
+        self.cfg.mkdir()
+        env = unittest.mock.patch.dict(os.environ, {"CLAUDE_CONFIG_DIR": str(self.cfg)})
+        env.start()
+        self.addCleanup(env.stop)
+
+    def blocking(self, cwd=None, **kw):
+        return [m for sev, m in self.run.verify_register_clean(cwd or self.cwd, **kw)
+                if sev == "blocking" and "AGENTS.md" in m]
+
+    def test_ancestor_agents_md_blocks(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        got = self.blocking()
+        self.assertEqual(len(got), 1, got)
+        self.assertIn(str(self.tmp / "home" / "AGENTS.md"), got[0])
+
+    def test_dot_claude_agents_md_blocks(self):
+        (self.cfg / "AGENTS.md").write_text("marker", encoding="utf-8")
+        self.assertEqual(len(self.blocking()), 1)
+
+    def test_claude_md_on_path_stands_it_down(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        (self.tmp / "home" / "cache" / "CLAUDE.local.md").write_text("", encoding="utf-8")
+        self.assertEqual(self.blocking(), [])
+
+    def test_user_config_claude_md_does_not_stand_it_down(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        (self.cfg / "CLAUDE.md").write_text("user rules", encoding="utf-8")
+        self.assertEqual(len(self.blocking()), 1)
+
+    def test_instruction_cwds_are_what_gets_checked(self):
+        # The fidelity callers pass BENCH_DIR for state checks but the judge runs
+        # in JUDGE_CWD; the AGENTS.md check must follow the latter.
+        judge = self.tmp / "judge-home" / "judge"
+        judge.mkdir(parents=True)
+        (judge.parent / "AGENTS.md").write_text("marker", encoding="utf-8")
+        self.assertEqual(self.blocking(), [])
+        self.assertEqual(len(self.blocking(instruction_cwds=(judge,))), 1)
+
+    def set_mode(self, **options):
+        (self.cfg / "settings.json").write_text(json.dumps(
+            {"pluginConfigs": {"agents-md@builtin": {"options": options}}}), encoding="utf-8")
+
+    def test_and_mode_ignores_claude_md_on_path(self):
+        # claude-md-and-agents-md loads AGENTS.md beside CLAUDE.md, so a repo-internal
+        # cwd (agentic-run.sh) is no stand-down there.
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        (self.tmp / "home" / "cache" / "CLAUDE.md").write_text("", encoding="utf-8")
+        self.set_mode(instructionFiles="claude-md-and-agents-md")
+        self.assertEqual(len(self.blocking()), 1)
+
+    def test_legacy_key_is_read_while_the_new_one_is_default(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        (self.tmp / "home" / "cache" / "CLAUDE.md").write_text("", encoding="utf-8")
+        self.set_mode(projectInstructions="both")
+        self.assertEqual(len(self.blocking()), 1)
+
+    def test_modes_that_load_no_agents_md(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        for mode in ("claude-md", "managed-only"):
+            self.set_mode(instructionFiles=mode)
+            self.assertEqual(self.blocking(), [], mode)
+        self.set_mode(instructionFiles="typo-mode")  # unknown reads as the default
+        self.assertEqual(len(self.blocking()), 1)
+
+    def test_parallel_call_cwds_are_checked(self):
+        # workers > 1 runs each call in cwd/call-NNNN, reused across runs; a leftover
+        # AGENTS.md there is invisible from cwd alone.
+        call = self.cwd / "call-0001"
+        call.mkdir()
+        (call / "AGENTS.md").write_text("marker", encoding="utf-8")
+        self.assertEqual(self.run.call_cwds(self.cwd, 1), (self.cwd,))
+        self.assertEqual(self.blocking(), [])
+        cwds = self.run.call_cwds(self.cwd, 4)
+        self.assertEqual(cwds, (self.cwd, call))
+        self.assertEqual(len(self.blocking(instruction_cwds=cwds)), 1)
+
+    def test_abort_names_the_real_cause_and_no_backstop(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertIsNone(self.run.check_register_clean(self.cwd))
+        self.assertIn(self.run.AGENTS_MD_ABORT, err.getvalue())
+        self.assertNotIn("per-session check still excludes", err.getvalue())
+
+    def test_callers_pass_the_cwds_their_calls_run_in(self):
+        # Fidelity: without JUDGE_CWD the check runs from BENCH_DIR, whose ancestors
+        # hold the repo CLAUDE.md, and comes back clean whatever the judge loads.
+        # run.py main: without call_cwds a parallel run never looks in call-NNNN.
+        def name(call):
+            f = call.func
+            return f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+
+        # fidelity/run.py's --no-isolate-host branch and persistence-run.py (isolated by
+        # flags, so it never calls check_register_clean) use the AGENTS.md-only gate.
+        preflight = {"verify_register_clean", "check_register_clean"}
+        agents_only = {"check_agents_md_clean"}
+        cases = (
+            ("fidelity/run.py", preflight, "instruction_cwds", "JUDGE_CWD"),
+            ("fidelity/run.py", agents_only, 0, "JUDGE_CWD"),
+            ("fidelity/fanout.py", preflight, "instruction_cwds", "JUDGE_CWD"),
+            ("fidelity/debunk.py", preflight, "instruction_cwds", "JUDGE_CWD"),
+            ("run.py", {"check_register_clean"}, "instruction_cwds", "call_cwds"),
+            ("persistence-run.py", agents_only, 0, "args.cwd"),
+            ("persistence-run.py", agents_only, "mode", "AGENTS_MD_DEFAULT_MODE"),
+        )
+        for rel, names, slot, want in cases:
+            tree = ast.parse((pathlib.Path(__file__).parent / rel).read_text(encoding="utf-8"))
+            calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and name(n) in names]
+            self.assertTrue(calls, (rel, names))
+            for c in calls:
+                args = dict(enumerate(ast.unparse(a) for a in c.args))
+                args.update({k.arg: ast.unparse(k.value) for k in c.keywords})
+                self.assertIn(want, args.get(slot, ""), (rel, slot))
+
+    def test_symlinked_cwd_is_walked_by_its_target(self):
+        # The process runs in the physical dir; its parents, not the link's, apply.
+        real = self.tmp / "elsewhere" / "judge"
+        real.mkdir(parents=True)
+        (real.parent / "AGENTS.md").write_text("marker", encoding="utf-8")
+        link = self.tmp / "home" / "cache" / "judge-link"
+        link.symlink_to(real, target_is_directory=True)
+        self.assertEqual(len(self.blocking(instruction_cwds=(link,))), 1)
+
+    def test_non_string_settings_read_as_default(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        self.set_mode(instructionFiles=["claude-md"])
+        self.assertEqual(len(self.blocking()), 1)
+        self.set_mode(projectInstructions={"x": 1})  # unknown legacy value → claude-md
+        self.assertEqual(self.blocking(), [])
+
+    def test_mode_override_ignores_user_settings(self):
+        # persistence-run's CLI never reads user settings, so it passes the default.
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        self.set_mode(instructionFiles="claude-md")
+        self.assertEqual(self.run.agents_md_fallback_findings(self.cwd), [])
+        got = self.run.agents_md_fallback_findings(self.cwd, self.run.AGENTS_MD_DEFAULT_MODE)
+        self.assertEqual(len(got), 1)
+
+    def test_agents_md_only_gate(self):
+        (self.tmp / "home" / "AGENTS.md").write_text("marker", encoding="utf-8")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertFalse(self.run.check_agents_md_clean((self.cwd,), False))
+            self.assertTrue(self.run.check_agents_md_clean((self.cwd,), True))
+        self.assertIn(self.run.AGENTS_MD_ABORT, err.getvalue())
+        self.assertIn("every row keeps it", err.getvalue())
+        (self.tmp / "home" / "AGENTS.md").unlink()
+        self.assertTrue(self.run.check_agents_md_clean((self.cwd,), False))
 
 
 class TestRetryablePredicateOverride(unittest.TestCase):

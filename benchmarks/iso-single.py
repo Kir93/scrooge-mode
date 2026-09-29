@@ -7,7 +7,8 @@ loads the host system prompt, the project `CLAUDE.md`, and the user's personal
 skills — any of which could be the reason an outbound draft came out in polite
 prose. `--system-prompt` REPLACES the host prompt, and an empty `--cwd` keeps a
 project `CLAUDE.md` out, so a run under both conditions attributes the result to
-the register text and nothing else.
+the register text and nothing else — provided no ancestor `AGENTS.md` fills the
+CLAUDE.md-less cwd, which the preflight below blocks.
 
 The execution is `run.py`'s (`run_one` in replace mode) and so is the preflight
 (`host_isolation` + `check_register_clean`) — imported, not reimplemented, so the

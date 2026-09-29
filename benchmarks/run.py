@@ -45,7 +45,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = REPO_ROOT / "rules"
 # Default bench cwd lives OUTSIDE the repo: an empty dir means no project
 # CLAUDE.md leaks into context (see build_cmd docstring) and bench session
-# JSONL stays out of the repo's interactive session list.
+# JSONL stays out of the repo's interactive session list. Having no CLAUDE.md is
+# also what lets an ancestor AGENTS.md in (agents_md_fallback_findings blocks that).
 DEFAULT_BENCH_CWD = Path.home() / ".cache" / "scrooge-bench"
 
 
@@ -810,7 +811,8 @@ def _neutralize_ultracode(settings: Path, backup_dir: Path) -> Optional[tuple[Pa
 
 
 def check_register_clean(cwd: Path, allow_contaminated: bool = False,
-                         per_row_backstop: bool = True) -> Optional[bool]:
+                         per_row_backstop: bool = True,
+                         instruction_cwds: tuple[Path, ...] = ()) -> Optional[bool]:
     """Preflight for a measured run: report findings, abort on a blocking one.
 
     Returns the `isolation_verified` value to record on each row, or None when the
@@ -828,9 +830,10 @@ def check_register_clean(cwd: Path, allow_contaminated: bool = False,
     promise a row-level exclusion the caller cannot perform — a user who reads it
     and passes `--allow-contaminated` would keep every leaked row.
     """
-    findings = verify_register_clean(cwd)
+    findings = verify_register_clean(cwd, instruction_cwds)
     blocking = [m for sev, m in findings if sev == "blocking"]
     advisory = [m for sev, m in findings if sev == "advisory"]
+    agents = [m for m in blocking if m.startswith(AGENTS_MD_FINDING)]
     for m in advisory:
         print(f"[verify] advisory: {m}", file=sys.stderr)
     if blocking:
@@ -838,16 +841,21 @@ def check_register_clean(cwd: Path, allow_contaminated: bool = False,
         for m in blocking:
             print(f"  - {m}", file=sys.stderr)
         if not allow_contaminated:
-            tail = ("The per-session check still excludes any row that leaked."
-                    if per_row_backstop else
-                    "This caller has NO per-row contamination backstop, so every row "
-                    "would keep the leak.")
-            print("Aborting. Isolation should have moved register state files aside; "
-                  "a remaining .scrooge-active/.caveman-active means the move failed "
-                  "(check the isolation lock) or you passed --no-isolate-host. Re-run "
-                  f"with isolation, or pass --allow-contaminated. {tail}", file=sys.stderr)
+            if len(agents) < len(blocking):
+                tail = ("The per-session check still excludes any row that leaked."
+                        if per_row_backstop else
+                        "This caller has NO per-row contamination backstop, so every row "
+                        "would keep the leak.")
+                print("Aborting. Isolation should have moved register state files aside; "
+                      "a remaining .scrooge-active/.caveman-active means the move failed "
+                      "(check the isolation lock) or you passed --no-isolate-host. Re-run "
+                      f"with isolation, or pass --allow-contaminated. {tail}", file=sys.stderr)
+            if agents:
+                print(AGENTS_MD_ABORT, file=sys.stderr)
             return None
         print("--allow-contaminated set; continuing despite blocking findings.", file=sys.stderr)
+        if agents:
+            print("  No per-row check detects an AGENTS.md: every row keeps it.", file=sys.stderr)
         return False
     msg = "[verify] register clean — 0 active hook channels (scrooge + caveman)."
     if advisory:
@@ -1034,7 +1042,117 @@ def _settings_caveman_active(path: Path) -> bool:
     return False
 
 
-def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
+AGENTS_MD_FINDING = "AGENTS.md loads into every arm"
+AGENTS_MD_ABORT = ("Aborting. An AGENTS.md finding is not a state file: isolation does not "
+                   "move it and no per-row check detects it, so --allow-contaminated would "
+                   "keep it in every row. Move the file aside and re-run.")
+AGENTS_MD_DEFAULT_MODE = "claude-md-or-agents-md"
+_AGENTS_MD_MODES = {"claude-md", AGENTS_MD_DEFAULT_MODE, "claude-md-and-agents-md", "managed-only"}
+_AGENTS_MD_LEGACY = {"none": "managed-only", "claude": "claude-md",
+                     "agents-fallback": AGENTS_MD_DEFAULT_MODE, "both": "claude-md-and-agents-md"}
+
+
+def agents_md_mode() -> str:
+    """The `agents-md@builtin` `instructionFiles` mode from user settings.
+
+    Mirrors the mod's own reading: a value outside the four reads as the default,
+    and the legacy `projectInstructions` key is honoured only while
+    `instructionFiles` is at its default (an unknown legacy value reads as
+    `claude-md`).
+
+    Only the user `settings.json` is read. A mode set in managed settings or via
+    `--settings` is not seen (a managed and-mode under-blocks), and neither is a mod
+    turned off in `/plugin` (that over-blocks: pass `--allow-contaminated`).
+    """
+    try:
+        opts = json.loads((claude_config_dir() / "settings.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return AGENTS_MD_DEFAULT_MODE
+    for key in ("pluginConfigs", "agents-md@builtin", "options"):
+        opts = opts.get(key) if isinstance(opts, dict) else None
+    if not isinstance(opts, dict):
+        return AGENTS_MD_DEFAULT_MODE
+    mode = opts.get("instructionFiles")
+    if isinstance(mode, str) and mode in _AGENTS_MD_MODES and mode != AGENTS_MD_DEFAULT_MODE:
+        return mode
+    if "projectInstructions" in opts:
+        legacy = opts["projectInstructions"]
+        return _AGENTS_MD_LEGACY.get(legacy, "claude-md") if isinstance(legacy, str) else "claude-md"
+    return AGENTS_MD_DEFAULT_MODE
+
+
+def agents_md_fallback_findings(cwd: Path, mode: Optional[str] = None) -> list[tuple[str, str]]:
+    """Blocking findings for AGENTS.md files Claude Code loads into a call run in `cwd`.
+
+    Since 2.1.277 the built-in `agents-md` mod loads every `AGENTS.md` and
+    `.claude/AGENTS.md` from the filesystem root down to the cwd. In its default mode
+    it does so only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` sits
+    on that path (the user's own config-dir `CLAUDE.md` does not count); under
+    `claude-md-and-agents-md` it does so regardless; `claude-md` and `managed-only`
+    load none. An empty bench cwd is exactly the no-CLAUDE.md case, so a file like
+    `~/AGENTS.md` reaches every arm, the `normal` baseline included, even under
+    `--system-prompt` replace (observed: 3/3 marker echoes with an ancestor AGENTS.md,
+    0/3 once a CLAUDE.md joined it).
+
+    `mode` overrides the settings lookup for a caller whose CLI does not read user
+    settings (`--setting-sources project`). The cwd is resolved first: the process
+    runs in the physical directory, so a symlinked cwd must be walked by its target.
+    """
+    mode = mode or agents_md_mode()
+    if mode in ("claude-md", "managed-only"):
+        return []
+    cwd = cwd.resolve()
+    path = [cwd, *cwd.parents]
+    if mode == AGENTS_MD_DEFAULT_MODE:
+        user_md = (claude_config_dir() / "CLAUDE.md").resolve()
+        for d in path:
+            for name in ("CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md"):
+                f = d / name
+                if f.exists() and f.resolve() != user_md:
+                    return []
+    return [("blocking", f"{AGENTS_MD_FINDING} ({mode} mode): {d / name}")
+            for d in reversed(path) for name in ("AGENTS.md", ".claude/AGENTS.md")
+            if (d / name).is_file()]
+
+
+def check_agents_md_clean(cwds: tuple[Path, ...], allow_contaminated: bool,
+                          mode: Optional[str] = None) -> bool:
+    """AGENTS.md-only preflight for a caller that skips `check_register_clean`.
+
+    Returns whether to proceed. Used where the register-state checks do not apply
+    (a runner isolated by flags, or `--no-isolate-host`), which is no reason to skip
+    this one: isolation never moves an AGENTS.md.
+    """
+    leaks: list[tuple[str, str]] = []
+    for d in cwds:
+        leaks += [f for f in agents_md_fallback_findings(d, mode) if f not in leaks]
+    if not leaks:
+        return True
+    for _, m in leaks:
+        print(f"[verify] blocking: {m}", file=sys.stderr)
+    if allow_contaminated:
+        print("--allow-contaminated set; no per-row check detects an AGENTS.md: every "
+              "row keeps it.", file=sys.stderr)
+        return True
+    print(AGENTS_MD_ABORT, file=sys.stderr)
+    return False
+
+
+def call_cwds(cwd_base: Path, workers: int) -> tuple[Path, ...]:
+    """Every cwd a run's calls execute in, for the AGENTS.md preflight.
+
+    Parallel calls run in `cwd_base/call-NNNN`, reused across runs and kept when a
+    call left files behind, so a leftover AGENTS.md there is invisible from
+    `cwd_base` alone. A call dir that does not exist yet is created empty and shares
+    `cwd_base`'s ancestors, which `cwd_base` already covers.
+    """
+    if workers <= 1:
+        return (cwd_base,)
+    return (cwd_base, *sorted(d for d in cwd_base.glob("call-*") if d.is_dir()))
+
+
+def verify_register_clean(cwd: Path,
+                          instruction_cwds: tuple[Path, ...] = ()) -> list[tuple[str, str]]:
     """Scan the effective environment for register-hook activation channels —
     scrooge AND caveman. Returns a list of `(severity, message)`; empty = clean.
 
@@ -1047,8 +1165,11 @@ def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
         every child `claude --print` right now: a present `.scrooge-active*` state
         file (scrooge's UPS/SessionStart hook would compress ALL arms — the bug
         that corrupted the first clean run), a `.caveman-active` flag, or
-        host/project `settings.json` actively wiring caveman. A clean run must not
-        proceed; isolation should have removed the state files.
+        host/project `settings.json` actively wiring caveman, or an `AGENTS.md` the
+        instruction-file fallback loads (`agents_md_fallback_findings`, checked
+        against `instruction_cwds` — every cwd the calls actually run in — or
+        `cwd` when none are given). A clean run must not proceed; isolation should
+        have removed the state files, and an AGENTS.md is never moved by it.
       - `advisory`  — register files installed but only active once enabled via a
         hook channel: caveman plugin-marketplace install, skill symlink. Surfaced,
         not hard-blocked; the per-session `detect_contamination` is the
@@ -1092,6 +1213,8 @@ def verify_register_clean(cwd: Path) -> list[tuple[str, str]]:
         if cav.is_symlink() or cav.exists():
             findings.append(("advisory", f"caveman skill present (inert unless hooked): {cav}"))
 
+    for d in instruction_cwds or (cwd,):
+        findings += [f for f in agents_md_fallback_findings(d) if f not in findings]
     return findings
 
 
@@ -1209,7 +1332,9 @@ def main() -> int:
     with host_isolation(enabled=not args.no_isolate_host and not args.dry_run,
                         isolate_settings=args.isolate_settings):
         if not args.dry_run:
-            isolation_verified = check_register_clean(cwd_base, args.allow_contaminated)
+            isolation_verified = check_register_clean(
+                cwd_base, args.allow_contaminated,
+                instruction_cwds=call_cwds(cwd_base, args.workers))
             if isolation_verified is None:
                 return 2
         with args.output.open("a", encoding="utf-8") as out:

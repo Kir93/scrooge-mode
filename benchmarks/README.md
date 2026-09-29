@@ -63,8 +63,9 @@ over another.
 - **Register pre-flight verification** — before measuring, the harness scans for
   active register-hook channels — **scrooge AND caveman** — and records the result
   (`verify_register_clean`). An *active* channel (a present scrooge state file — `.scrooge/` or a legacy
-  `.scrooge-active*` dotfile — a `.caveman-active` flag, or `settings.json` actively wiring caveman)
-  is **blocking**: the run aborts unless `--allow-contaminated`. Installed-but-inert
+  `.scrooge-active*` dotfile — a `.caveman-active` flag, `settings.json` actively wiring caveman,
+  or an ancestor `AGENTS.md` that Claude Code ≥2.1.277 loads because the empty bench cwd has no
+  `CLAUDE.md` on its path — or regardless of one, under `claude-md-and-agents-md`) is **blocking**: the run aborts unless `--allow-contaminated`. Installed-but-inert
   files (caveman plugin marketplace, skill symlink) are **advisory** (printed,
   non-blocking). Each row records `isolation_verified`. Scrooge matters here
   because the user's own scrooge plugin hook will otherwise inject a compression

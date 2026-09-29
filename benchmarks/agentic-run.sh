@@ -34,11 +34,15 @@ for p in $(seq 1 "$N"); do
   IFS=',' read -ra ARR <<< "$ARMS"
   for arm in "${ARR[@]}"; do
     reset_fixture
-    python3 "$REPO/benchmarks/run.py" \
+    # Keep run.py's exit status: a preflight abort (exit 2) must stop the loop with
+    # its message, not vanish into the progress filter as an empty result.
+    rc=0
+    log=$(python3 "$REPO/benchmarks/run.py" \
       --prompts "$REPO/benchmarks/prompts/en-agentic.txt" \
       --arms "$arm" --runs 1 --model "${AGENTIC_MODEL:-claude-opus-4-8}" \
       --resume --max-prompts "$p" --timeout 300 \
-      --system-prompt-mode append --cwd "$FIX" --output "$OUT" \
-      2>&1 | grep -E "^\s+\[[0-9]+/" || true
+      --system-prompt-mode append --cwd "$FIX" --output "$OUT" 2>&1) || rc=$?
+    if [ "$rc" -ne 0 ]; then printf '%s\n' "$log" >&2; exit "$rc"; fi
+    printf '%s\n' "$log" | grep -E "^\s+\[[0-9]+/" || true
   done
 done

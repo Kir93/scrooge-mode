@@ -51,8 +51,9 @@ import judge as judge_mod  # sibling module (benchmarks/fidelity/judge.py)
 
 BENCH_DIR = Path(__file__).resolve().parent.parent
 
-def _latest_opus() -> str:
-    """Single source for the model pin: benchmarks/run.py LATEST_OPUS.
+def _load_bench_run():
+    """benchmarks/run.py, the single source for the model pin (LATEST_OPUS) and the
+    host-isolation preflight.
 
     Loaded by path rather than re-declared, so generation and judging can never
     drift onto different models — the duplication itself would be the bug.
@@ -63,10 +64,11 @@ def _latest_opus() -> str:
     import sys as _sys
     _sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
-    return mod.LATEST_OPUS
+    return mod
 
 
-LATEST_OPUS = _latest_opus()
+BENCH = _load_bench_run()
+LATEST_OPUS = BENCH.LATEST_OPUS
 
 
 def load_prompts(path: Path) -> list[str]:
@@ -133,6 +135,11 @@ def main() -> int:
                          "benchmarks/run.py, so generation and judging never silently diverge.")
     ap.add_argument("--judge-runs", type=int, default=1, help="Judge calls per answer. Default 1.")
     ap.add_argument("--timeout", type=int, default=120)
+    ap.add_argument("--no-isolate-host", action="store_true",
+                    help="Do not move register state files aside for the judge calls.")
+    ap.add_argument("--allow-contaminated", action="store_true",
+                    help="Proceed even if the pre-flight finds a blocking channel. Off by "
+                         "default: a biased judge must not silently score the safety axis.")
     args = ap.parse_args()
 
     prompts = load_prompts(args.prompts)
@@ -142,33 +149,40 @@ def main() -> int:
         return 2
 
     records = []
-    out_f = args.output.open("w", encoding="utf-8") if args.output else None
-    try:
-        for (arm, pid, run) in sorted(answers):
-            if pid >= len(prompts):
-                continue
-            verdict, per_run, err = judge_once(
-                prompts[pid], answers[(arm, pid, run)], args.model,
-                args.judge_runs, args.timeout)
-            rec = {
-                "arm": arm, "prompt_id": pid, "run": run,
-                "debunked": verdict, "run_verdicts": per_run,
-                # `model_requested`, not `model`: this is the flag we passed, not a
-                # value read back from the judge's transcript. Naming it `model`
-                # would let a provenance table imply the served model was verified
-                # when it was only requested.
-                "judge_runs": args.judge_runs, "model_requested": args.model,
-                "error": err,
-            }
-            records.append(rec)
+    # Same preflight as fidelity/run.py: a host register hook or an ancestor AGENTS.md
+    # of the judge cwd would reach every judge call, and nothing here checks per row.
+    with BENCH.host_isolation(enabled=not args.no_isolate_host):
+        if BENCH.check_register_clean(BENCH_DIR, args.allow_contaminated,
+                                      per_row_backstop=False,
+                                      instruction_cwds=(judge_mod.JUDGE_CWD,)) is None:
+            return 2
+        out_f = args.output.open("w", encoding="utf-8") if args.output else None
+        try:
+            for (arm, pid, run) in sorted(answers):
+                if pid >= len(prompts):
+                    continue
+                verdict, per_run, err = judge_once(
+                    prompts[pid], answers[(arm, pid, run)], args.model,
+                    args.judge_runs, args.timeout)
+                rec = {
+                    "arm": arm, "prompt_id": pid, "run": run,
+                    "debunked": verdict, "run_verdicts": per_run,
+                    # `model_requested`, not `model`: this is the flag we passed, not a
+                    # value read back from the judge's transcript. Naming it `model`
+                    # would let a provenance table imply the served model was verified
+                    # when it was only requested.
+                    "judge_runs": args.judge_runs, "model_requested": args.model,
+                    "error": err,
+                }
+                records.append(rec)
+                if out_f:
+                    out_f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    out_f.flush()
+                mark = "ok " if verdict else ("MISS" if verdict is False else "?   ")
+                print(f"  {mark} {arm} prompt={pid} run={run}", file=sys.stderr)
+        finally:
             if out_f:
-                out_f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-                out_f.flush()
-            mark = "ok " if verdict else ("MISS" if verdict is False else "?   ")
-            print(f"  {mark} {arm} prompt={pid} run={run}", file=sys.stderr)
-    finally:
-        if out_f:
-            out_f.close()
+                out_f.close()
 
     by_arm: dict[str, list] = defaultdict(list)
     for r in records:
