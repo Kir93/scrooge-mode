@@ -32,7 +32,7 @@ Run from a clean tree on `main`:
 
 - `npm ci` — clean install from `package-lock.json` (the release workflow runs it first; a lockfile/manifest mismatch fails here, not after the tag is pushed).
 - `npm test` — passes (Node `node:test` harness).
-- `python3 -m unittest discover -s benchmarks -p 'test_*.py'` — passes (benchmark statistics helpers).
+- `python3 -m unittest discover -s benchmarks -p 'test_*.py'` — passes (benchmark harness: statistics helpers, isolation preflight, runners).
 - `npx markdownlint-cli2@0.23.2 "**/*.md"` — clean.
 - `node .github/scripts/verify-pack.mjs` — packaged file list matches.
 - `node -e "JSON.parse(require('fs').readFileSync('registry.json'))"` and the same

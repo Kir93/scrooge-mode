@@ -75,8 +75,8 @@ jobs:
         run: npm test
 
       # Same guard the PR gate runs; the rationale lives on ci.yml's own
-      # `Test benchmark statistics` step — don't restate it here.
-      - name: Test benchmark statistics
+      # `Test benchmark harness` step — don't restate it here.
+      - name: Test benchmark harness
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
       - name: Markdown lint

@@ -36,11 +36,14 @@ jobs:
       - name: Test
         run: npm test
 
-      # The benchmark harness is Python and is otherwise unguarded. Only the
-      # statistics helpers are covered — they decide whether a published CI can be
-      # re-derived from a committed JSONL, so a silent change to them would
-      # invalidate the numbers in README.md without moving any JS test.
-      - name: Test benchmark statistics
+      # The benchmark harness is Python and is otherwise unguarded. The suite covers
+      # the statistics helpers (whether a published CI can be re-derived from a
+      # committed JSONL) and the runners around them: host isolation and its
+      # clean-run preflight (including the AGENTS.md fallback guard), the
+      # contamination and transcript scans, and the fidelity and persistence runners.
+      # A silent change to any of them would invalidate the numbers in README.md
+      # without moving any JS test.
+      - name: Test benchmark harness
         run: python3 -m unittest discover -s benchmarks -p 'test_*.py'
 
       # registry 경로/도달성 검증은 `npm test`의 tests/test_registry_parity.js가 단일 정본으로
