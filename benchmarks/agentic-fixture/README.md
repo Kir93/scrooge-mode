@@ -10,7 +10,10 @@ files, and the harness does not reset for you — `run.py` runs one arm after
 another in the same `--cwd`. Without a reset, arm 2 starts from arm 1's edits and
 the arms are not answering the same question. The first attempt at this benchmark
 was invalidated exactly that way. `benchmarks/agentic-run.sh` does the reset; use
-it rather than calling `run.py` directly.
+it rather than calling `run.py` directly. It restores from a pristine tarball you
+create once, from a clean tree at the repo root:
+`tar czf /tmp/ag-fixture-pristine.tgz -C benchmarks agentic-fixture` (override the
+path with `AGENTIC_PRISTINE`).
 
 Keep it dependency-free (plain `node --test`) so no install step sits between the
 model and the task. `npm test` on a pristine tree is **2 pass / 1 fail** — the one

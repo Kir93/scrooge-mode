@@ -201,7 +201,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 
 ### 일본어 · 힌디어 · 중국어
 
-셋 다 held-out 전용(N=11)이라 별도 튜닝 표가 없음. JA·HI는 한국어 메커니즘을 각 언어 문법에 사상, ZH는 zh-native 신설계임(중국어엔 제거할 경어 형태소·격조사가 없음).
+셋 다 held-out 전용(N=10–11)이라 별도 튜닝 표가 없음. JA·HI는 한국어 메커니즘을 각 언어 문법에 사상, ZH는 zh-native 신설계임(중국어엔 제거할 경어 형태소·격조사가 없음).
 
 | Register | `normal` | `scrooge` | normal 대비 절감 | fidelity (judge N=3) |
 | -------- | -------: | --------: | ---------------: | -------------------: |
@@ -249,7 +249,7 @@ Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨.
 
 **글로벌 기본값.** 아무 세션에서 활성화하면 그 선택이 글로벌 기본값(`~/.claude/.scrooge/default`)으로 저장됨. 모든 새 세션이 같은 lang/dial/flags로 자동 활성 — 한 번만, 어디서든. `SessionStart` hook이 새 세션을 기본값으로 seed하고 full rule을 재주입. `/scrooge off`는 기본값도 삭제(전역 off); 이미 떠 있는 세션은 재시작 전까지 register 유지 — 한 worktree의 off가 동시 세션을 끊지 않음.
 
-**플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%), **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 두 CI 모두 0을 제외하고 sign test도 p<0.05를 통과해 방향은 확정. 다만 구간이 넓으므로 `lean`은 정밀 수치가 아니라 "대략 5분의 1 절감"으로 읽어야 함. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. 이 수치는 v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체 — 기존 수치는 corpus 구조를 오독했고 양쪽에 tool 사용 행이 섞여 있었음([근거](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`plugin/rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
+**플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%), **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 두 CI 모두 0을 제외. CI와 같은 단위(prompt별 중앙값)로 센 sign test는 KO 8/8(p=0.0078), EN 7/8(p=0.07) — KO는 방향 확정, EN은 일관되나 유의하지 않음. 다만 구간이 넓으므로 `lean`은 정밀 수치가 아니라 "대략 5분의 1 절감"으로 읽어야 함. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. 이 수치는 v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체 — 기존 수치는 corpus 구조를 오독했고 양쪽에 tool 사용 행이 섞여 있었음([근거](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`plugin/rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
 
 **언어 추가** (registry-driven dispatch — 분기 추가 아닌 데이터 추가):
 

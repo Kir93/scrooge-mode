@@ -176,7 +176,7 @@ skills ecosystem path (Codex and other agents):
 
 ```bash
 npx skills add Kir93/scrooge-mode --list           # lists scrooge + scrooge-stats (from plugin/skills/)
-npx skills add Kir93/scrooge-mode -a codex --yes --all
+npx skills add Kir93/scrooge-mode -a codex -g -y --skill '*'
 ```
 
 The one-line installer (`cli/install.js`, run via `npx -y github:Kir93/scrooge-mode`)

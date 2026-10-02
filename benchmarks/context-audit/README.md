@@ -28,11 +28,9 @@ committed numbers were produced, and no longer run against this tree. Anything
 re-opening this direction starts from a new Phase 0, not from this code.
 
 The committed artefacts under [`results/`](./results/) are kept as that decision's
-evidence, and `npm test` asserts they still match a fresh run — so a detector edit
-that leaves them behind fails immediately rather than letting the evidence quietly
-describe code that no longer exists. Editing any audited file (`CLAUDE.md`,
-`rules/**`) moves its measured token counts too, so regenerate and commit both
-outputs together:
+evidence. While the harness existed, `npm test` asserted they still matched a fresh
+run; with the code deleted nothing re-checks them, so they describe the tree as it
+stood at measurement time. The original regeneration steps were:
 
 ```bash
 node benchmarks/context-audit/run.js   # rewrites results/report.json + report.md
@@ -119,11 +117,11 @@ non-deterministic and excluded from the GO verdict (F1).
 | ---- | ---- |
 | `corpus.json` | corpus manifest (self-repo + synthetic + local slot + floor pair) |
 | `labels.jsonl` | labeled ground truth (`{file, category, anchor, note}`) |
-| `lib.js` | shared util: loader, byte/token wrappers, protected-span masking, label schema |
+| `lib.js` | shared util: loader, byte/token wrappers, protected-span masking, label schema — deleted in v0.23.0 |
 | `samples/{medium,loose}.md` | synthetic labeled fixtures |
 | `samples/floor-ref.{original,compressed}.md` | floor re-measurement reference pair |
-| `detectors.js` | the three deterministic detectors (Task 2) |
-| `run.js` | scorer + GO/NO-GO report (Task 3) |
-| `mc-range.js` | LLM-dependent range measurement (Task 4) |
+| `detectors.js` | the three deterministic detectors (Task 2) — deleted in v0.23.0 |
+| `run.js` | scorer + GO/NO-GO report (Task 3) — deleted in v0.23.0 |
+| `mc-range.js` | LLM-dependent range measurement (Task 4) — deleted in v0.23.0 |
 | `results/report.{md,json}` | committed deterministic GO/NO-GO report (Task 3) |
 | `results/mc-range.json` | committed LLM-dependent range (Task 4, non-bit-identical) |

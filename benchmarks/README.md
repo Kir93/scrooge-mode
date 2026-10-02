@@ -186,7 +186,8 @@ isolation). To regenerate a number yourself:
 
 ### Pin the model and isolate the host
 
-Every published number used `--model claude-opus-4-8`. Isolation matters as much
+Every conversational table used `--model claude-opus-4-8`; later rows name their
+model in the [provenance table](./published/README.md). Isolation matters as much
 as the model pin:
 
 - Conversational KO/EN (2026-07-09) used `--cwd <empty-dir>` so no project
@@ -326,10 +327,10 @@ python3 benchmarks/report.py --input benchmarks/published/results-lean2-en.jsonl
   --baseline scrooge:en/full --paired --drop-tool-rows    # EN +18.1% [+10.7, +28.3]
 ```
 
-| Register | Prompts × runs | Median savings | 95% CI | Smaller on | Sign test |
-| -------- | -------------: | -------------: | -----: | ---------: | --------: |
-| `scrooge:ko/full+lean` | 8 × 3 | **+17.6%** | +10.2–+43.7% | 18/21 | p=0.0015 |
-| `scrooge:en/full+lean` | 8 × 3 | **+18.1%** | +10.7–+28.3% | 16/20 | p=0.012 |
+| Register | Prompts × runs | Median savings | 95% CI | Smaller on (prompts) | Sign test |
+| -------- | -------------: | -------------: | -----: | -------------------: | --------: |
+| `scrooge:ko/full+lean` | 8 × 3 | **+17.6%** | +10.2–+43.7% | 8/8 | p=0.0078 |
+| `scrooge:en/full+lean` | 8 × 3 | **+18.1%** | +10.7–+28.3% | 7/8 | p=0.07 |
 
 **These numbers replace the KO +34.6% / EN +10.3% pair published through v0.22.1,
 and the "24pp gap between the languages" reading that went with it.** Two errors
@@ -354,15 +355,18 @@ changes the story, which is exactly why `lean` is quoted per-prompt with an
 interval while the 60–70% language headlines are not sensitive to it.
 
 The intervals are wide and the KO one is skewed — treat `lean` as "roughly a fifth
-off the top, direction certain, magnitude loose", not as a precise figure. Both
-sign tests clear p<0.05 and both CIs exclude zero, so the direction is established;
-resolving the magnitude would need more prompts, not more runs.
+off the top, magnitude loose", not as a precise figure. Both CIs exclude zero. The
+sign test counts the same unit the CI resamples — one median per prompt: KO is
+smaller on 8/8 (p=0.0078), EN on 7/8 (p=0.07; prompt 2 goes the other way). So the
+direction is established for KO and consistent but not significant for EN. Through
+v0.28.1 this table counted the 21/20 correlated pairs (p=0.0015 / 0.012), which
+overstated both. Resolving either would need more prompts, not more runs.
 
 ### Expected variance
 
 The repeated-run corpora give a measured floor. Within one arm and one prompt, with
 nothing changed but the run, output tokens vary by a **median 20–29% CV** (p90
-45–63%, worst cell 92%):
+39–65%):
 
 | Corpus | Arm | Cells | Median CV | p90 CV |
 | ------ | --- | ----: | --------: | -----: |
@@ -1118,8 +1122,8 @@ they parallelise different things — the notes below are not interchangeable.
 - Judges `N` pairs at once. No sub-cwd: the judge reads its verdict from stdout,
   never from a session JSONL, so it has nothing to race over. Rows are written by
   the main thread as each pair completes, so the output file is identical to a
-  serial run (`npm test`'s Python suite pins both the equality and the
-  concurrency).
+  serial run (the Python suite — `python3 -m unittest discover -s benchmarks -p
+  'test_*.py'`, run in CI — pins both the equality and the concurrency).
 - There is **no** early stop on a session limit here, and no retry layer: once
   quota runs out, the remaining pairs error out fast. A pair whose judge calls
   ALL failed is recorded as an error and `--resume` retries it; a pair that lost

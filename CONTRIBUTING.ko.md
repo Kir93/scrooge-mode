@@ -49,7 +49,7 @@ node --test tests/test_registry_parity.js
 
 `npm test`가 이미 이 파일을 실행함. `tests/test_registry_parity.js`가 이 검사의 단일 정본 — `registry ↔ LANG_META ↔ VALID_DIALS` 완전성도 함께 가드하므로, 검사를 추가할 때 문서나 workflow에 사본을 만들지 말고 이 파일에 넣을 것.
 
-GitHub branch protection은 `main` merge 전 세 체크를 필수로 설정: `verify (18)`, `verify (22)`, `markdown-lint`. 이름을 정확히 쓸 것 — `verify`는 node 버전 matrix라 GitHub이 항목마다 체크를 하나씩 발행하고, `verify`라는 이름의 체크는 존재하지 않아 선택할 수 없음. `markdown-lint`는 별 job(node>=20 필요, 버전 matrix 밖에 둬야 낮은 matrix 항목이 깨뜨리거나 matrix 편집이 조용히 누락시키지 않음)이라 `verify` 쌍만 걸면 markdownlint 실패가 merge됨. 셋을 함께 걸어야 test(registry reachability 포함)·benchmark statistics·package file list·markdownlint·JSON 실패가 merge를 차단함. 같은 job의 `plugin/rules/` 재측정 마커는 `continue-on-error`라 아무것도 차단하지 않음. matrix 항목을 추가하면 체크 이름도 늘어남 — 같이 필수로 걸지 않으면 그 버전 실패가 차단을 멈춤.
+GitHub branch protection은 `main` merge 전 세 체크를 필수로 설정: `verify (18)`, `verify (22)`, `markdown-lint`. 이름을 정확히 쓸 것 — `verify`는 node 버전 matrix라 GitHub이 항목마다 체크를 하나씩 발행하고, `verify`라는 이름의 체크는 존재하지 않아 선택할 수 없음. `markdown-lint`는 별 job(node>=22 필요, 버전 matrix 밖에 둬야 낮은 matrix 항목이 깨뜨리거나 matrix 편집이 조용히 누락시키지 않음)이라 `verify` 쌍만 걸면 markdownlint 실패가 merge됨. 셋을 함께 걸어야 test(registry reachability 포함)·benchmark statistics·package file list·markdownlint·JSON 실패가 merge를 차단함. 같은 job의 `plugin/rules/` 재측정 마커는 `continue-on-error`라 아무것도 차단하지 않음. matrix 항목을 추가하면 체크 이름도 늘어남 — 같이 필수로 걸지 않으면 그 버전 실패가 차단을 멈춤.
 
 ## Bilingual + Dial Parity
 
