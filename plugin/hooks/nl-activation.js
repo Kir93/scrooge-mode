@@ -11,8 +11,8 @@
 //     with a negation guard keeps stray mentions ("스크루지 영화 봤어") from
 //     activating.
 //   - lang × dial 2-axis difficulty: NL infers only the LANGUAGE axis (from the
-//     matched phrase) and always uses dial=full. Precise lite/full tuning stays
-//     on the slash path.
+//     matched phrase) and always uses dial=full — the only dial since `lite`
+//     was retired in v0.23.0.
 //   - G9 deterministic-test contract: this is a pure function — same prompt in,
 //     same result out, no I/O and no state — so fixtures cover it exactly like
 //     the slash parser.

@@ -32,8 +32,8 @@
 //          on purpose and is NOT unmeasured: lite-dial-verification (2026-07-20)
 //          measured it and returned NO-GO — lite compresses less than full AND
 //          preserves less (ko 0.650 vs full 0.690; en 0.700 vs 0.720), a Pareto
-//          loss — so decision D2 option A keeps the dial shipped with no ratio on
-//          the product surface, and deriveEstimate returns null for it.
+//          loss — so the dial was retired in v0.23.0 (scrooge-config.js
+//          RETIRED_DIALS migrates saved `lite` state to `full`).
 //   nlCue: natural-language activation cues (see parseNaturalActivation in
 //          nl-activation.js). Each is the language's slice of the original combined
 //          regex; `name`/`meta`/`strong`/`off`/`activate`/`negate` test independently
@@ -180,13 +180,7 @@ export const LANG_META = {
   },
 };
 
-// Language lookup. Returns the row, or null for an unknown language (callers below
-// degrade to a safe fallback rather than crashing on a registry lang with no meta).
-export function langMeta(lang) {
-  return LANG_META[lang] || null;
-}
-
-// Languages that carry activation metadata, in table order (= ko, en, ja). The NL
+// Languages that carry activation metadata, in table order (= ko, en, ja, hi, zh). The NL
 // parser and any future N-ary dispatch iterate this, so a new table row joins the
 // dispatch automatically; appended rows (e.g. a test-injected `xx`) get lowest
 // priority and never disturb the ko→en→ja precedence.
