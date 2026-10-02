@@ -336,4 +336,6 @@ if (isMain) main();
 // Exported for reuse by the SessionStart hook, which re-injects the same full
 // rule for an already-active session. Importing this module does NOT run the
 // stdin handler — main() is gated on isMain — so the import has no side effects.
-export { resolveRepoRoot, readRuleBody, buildFullInjection, assembleRuleBody };
+// main is exported for the Codex wrapper, which imports this module (so isMain
+// is false there) and must start the stdin handler itself.
+export { main, resolveRepoRoot, readRuleBody, buildFullInjection, assembleRuleBody };

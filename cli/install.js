@@ -513,7 +513,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 process.env.CLAUDE_CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.dirname(here);
 process.env.SCROOGE_AGENT = 'codex';
-await import('./hooks/scrooge-activate.js');
+const { main } = await import('./hooks/scrooge-activate.js');
+main();
 `;
 }
 
@@ -638,7 +639,8 @@ export function mergeCodexHookConfig(text, command, keySource = null) {
   return `${before}${before ? '\n\n' : ''}${block}\n${after}${stateBlock}`;
 }
 
-function installCodexPayload(root, dest, opts) {
+// Exported for tests: the copied payload is run end-to-end there.
+export function installCodexPayload(root, dest, opts) {
   const wrapper = path.join(dest, 'codex-activate.mjs');
   if (opts.dryRun) {
     process.stdout.write(`  would copy Scrooge Codex hook payload to ${dest}\n`);

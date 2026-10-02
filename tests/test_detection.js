@@ -25,6 +25,7 @@ import {
   removeCodexHookConfig,
   safeReplaceFile,
   findOwnRepoRoot,
+  installCodexPayload,
 } from '../cli/install.js';
 
 const INSTALL_JS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'install.js');
@@ -560,4 +561,20 @@ test('detectCompetingRegisters is total on junk input', () => {
   for (const junk of [null, undefined, '', 0, {}, []]) {
     assert.deepEqual(detectCompetingRegisters(junk), []);
   }
+});
+
+test('installed Codex payload: the wrapper runs the activate hook end-to-end', () => {
+  // The wrapper imports the hook module, so the hook's own isMain gate never
+  // fires there — this pins that the wrapper still drives the stdin handler.
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codex-'));
+  const pluginRoot = path.join(path.dirname(INSTALL_JS), '..', 'plugin');
+  const wrapper = installCodexPayload(pluginRoot, dest, { dryRun: false });
+  const r = spawnSync(process.execPath, [wrapper], {
+    input: JSON.stringify({ session_id: 'codex-e2e', prompt: '/scrooge ko' }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: dest },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  const out = JSON.parse(r.stdout || '{}');
+  assert.match(out.hookSpecificOutput?.additionalContext ?? '', /SCROOGE MODE ACTIVE — ko\/full/);
 });
