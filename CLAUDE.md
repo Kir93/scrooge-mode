@@ -6,14 +6,14 @@ KO-first pentalingual (KO/EN/JA/HI/ZH) **LLM output-compression skill**. `scroog
 
 ## What this repo is
 
-- **Product = the register rule docs.** The shipped behavioral contract is the register rule files `rules/{lang}/full.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
-- **Runtime tooling ships too — all implemented, not stubs.** The installer (`cli/install.js`), activation + stats hooks (`hooks/`), the session-log/ledger libs (`lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
+- **Product = the register rule docs.** The shipped behavioral contract is the register rule files `plugin/rules/{lang}/full.md` + `plugin/registry.json`, which maps `language × dial → rule file path` 1:1.
+- **Runtime tooling ships too — all implemented, not stubs.** The installer (`cli/install.js`), activation + stats hooks (`plugin/hooks/`), the session-log/ledger libs (`plugin/lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
 - **Test harness:** `npm test` runs `node --test` over an explicit file list in `package.json` (zero-dep, Node built-in) — not a `tests/` glob, so a new test file must be added to that list or it is silently skipped. No other build scripts — don't invent new ones; verify per §4. The Python side (`benchmarks/`) is a separate suite, not reachable from `npm test`: run `python3 -m unittest discover -s benchmarks -p 'test_*.py'`.
 
 ## Conventions
 
 - **Language**: code, comments, and identifiers in English; user-facing docs are KO/EN canonical + JA/ZH landings (`README.ja.md` and `README.zh.md` are lightweight landings, not full mirrors; `hi` ships as a register with no README landing) — keep them in sync.
-- **Registry contract**: renaming/moving any `rules/**` file requires the matching `registry.json` path edit in the *same* change. Dynamic loader reads rules via `registry.json[lang][dial]`.
+- **Registry contract**: renaming/moving any `plugin/rules/**` file requires the matching `plugin/registry.json` path edit (registry paths are relative to `plugin/`) in the *same* change. Dynamic loader reads rules via `registry.json[lang][dial]`.
 - **Bilingual parity**: a substantive change to one rule (or `README.md`) mirrors to its counterpart — `ko` ↔ `en` ↔ `ja` ↔ `hi` ↔ `zh`, `README.md` ↔ `README.ko.md` — or flag explicitly why not. (`README.ja.md` and `README.zh.md` are the lightweight landing exceptions, not held to full mirror.)
 - **markdownlint**: respect `.markdownlint.jsonc`. It tunes (not blocks) the linter — don't delete it. Don't pre-disable a rule speculatively; disable only when one actually surfaces noise.
 - **Dogfood**: this is a compression tool — keep docs and prose tight, no filler/hedging. Clarity wins where it conflicts with compression.
@@ -38,9 +38,9 @@ Touch only what you must; clean up only your own orphans. Don't "improve" adjace
 Verify with `npm test` (the `node:test` harness — covers hook parsing, state security, session-log parsing, detection, G7 safety-escape, doc-compression boundary, doc language-roster parity) plus:
 
 - **markdownlint clean**: `npx --yes markdownlint-cli2@0.23.2 "**/*.md"` (honors `.markdownlint.jsonc`). Keep the version pin in step with `.github/workflows/{ci,release}.yml` — unpinned, `npx` verifies against a different linter than CI runs.
-- **Registry resolves**: every `registry.json` path points at a file that exists; every `rules/**` file is reachable from the registry.
+- **Registry resolves**: every `plugin/registry.json` path points at a file that exists; every `plugin/rules/**` file is reachable from the registry.
 - **Bilingual parity**: `ko`/`en` counterparts stay aligned.
-- **JSON valid**: `registry.json` parses.
+- **JSON valid**: `plugin/registry.json` parses.
 - **Lockfile with `npm ci`**: any CI, release, or doc change that introduces `npm ci` must include/update `package-lock.json` in the same change. `npm ci` fails without a lockfile.
 - **New guard = red first**: break what a new test pins, watch it fail, restore — report that red line with the verify. A green fixture is not evidence the guard bites. Break the guard's own inputs too — the scope it resolves and any baseline it extracts — not just the invariant it asserts; a scan that silently empties passes for a reason no fixture shows.
 

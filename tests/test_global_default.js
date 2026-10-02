@@ -20,12 +20,12 @@ import {
   writeVersionMarker,
   VALID_LANGS,
   VALID_DIALS,
-} from '../hooks/scrooge-config.js';
+} from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const ACTIVATE_HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
-const SESSION_START_HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-session-start.js');
+const ACTIVATE_HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
+const SESSION_START_HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-session-start.js');
 
 const tmpDirs = [];
 function freshConfig() {
@@ -54,7 +54,7 @@ function runHook(hook, payload, configDir, env = {}) {
   const r = spawnSync(process.execPath, [hook], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '', ...env },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '', ...env },
   });
   assert.equal(r.status, 0, `${path.basename(hook)} exited ${r.status}: ${r.stderr}`);
   return r.stdout.trim()
@@ -208,7 +208,7 @@ test('upgrade + active session missing a now-default flag → auto-applied + FYI
   writeVersionMarker('0.0.0-old', versionFile(cfg));
   writeState({ lang: 'ko', dial: 'full', flags: [] }, defaultFile(cfg)); // stale default, no lean
   // Direct spawn with no SCROOGE_DEFAULT_FLAGS so defaultFlags() = ['lean'].
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin') };
   delete env.SCROOGE_DEFAULT_FLAGS;
   const r = spawnSync(process.execPath, [SESSION_START_HOOK], {
     input: JSON.stringify({ session_id: 'sessA' }),

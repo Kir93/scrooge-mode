@@ -23,7 +23,7 @@
 //   { token: '...' } → a SKILL-specific anchor (the rules token does not appear there),
 //   { exempt: '...' }→ out of scope for SKILL.md, reason required.
 
-import { VALID_LANGS } from '../../hooks/scrooge-config.js';
+import { VALID_LANGS } from '../../plugin/hooks/scrooge-config.js';
 
 export const RULES = [
   {

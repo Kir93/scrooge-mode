@@ -18,7 +18,7 @@ import {
   findRecentCodexSession,
   readSession,
   EMPTY_SUMMARY,
-} from '../lib/session-log.js';
+} from '../plugin/lib/session-log.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // sample-session.jsonl encodes the Claude Code transcript schema verified

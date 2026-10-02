@@ -34,12 +34,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { deriveSessionKey, readState, writeState } from '../hooks/scrooge-config.js';
+import { deriveSessionKey, readState, writeState } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const ACTIVATE_HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
-const SESSION_START_HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-session-start.js');
+const ACTIVATE_HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
+const SESSION_START_HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-session-start.js');
 
 // The canonical stdin payloads for each hook. The derived session key is the same
 // value for both (session_id and the transcript stem agree).
@@ -72,7 +72,7 @@ function runHook(hook, payload, configDir) {
     env: {
       ...process.env,
       CLAUDE_CONFIG_DIR: configDir,
-      CLAUDE_PLUGIN_ROOT: REPO_ROOT,
+      CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'),
       SCROOGE_DEFAULT_FLAGS: '',
       SCROOGE_NO_UPDATE_CHECK: '1',
     },

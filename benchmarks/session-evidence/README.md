@@ -15,7 +15,7 @@ carry the full Claude Code system prompt. This directory measures that gap —
 ## Inputs
 
 - Session JSONL (`~/.claude/projects/<slug>/<uuid>.jsonl`) — parsed by
-  `lib/session-log.js` `parseClaudeSessionTurns` (per-turn array; the same
+  `plugin/lib/session-log.js` `parseClaudeSessionTurns` (per-turn array; the same
   `message.id` dedup as the aggregate stats). Primary source: turn trajectories
   need per-turn data.
 - Subagent transcripts (`<slug>/<uuid>/subagents/*.jsonl`) — **opt-in** via
@@ -51,7 +51,7 @@ output vs early-half median) and aggregates one verdict:
 | Verdict | Meaning | Consequence |
 | --- | --- | --- |
 | `caveat-relax` | Trajectories flat — register held across real multi-turn sessions | README single-turn caveat relaxed on the register-**retention** axis only; the savings clause is untouched (no counterfactual → no savings claim, ADR-003) |
-| `reinject-tune` | Majority of conclusive sessions drift upward | Evidence input for tuning the reminder cadence (`hooks/scrooge-activate.js` "every other turn"); the cadence change itself is out of scope here |
+| `reinject-tune` | Majority of conclusive sessions drift upward | Evidence input for tuning the reminder cadence (`plugin/hooks/scrooge-activate.js` "every other turn"); the cadence change itself is out of scope here |
 | `inconclusive` | Too few conclusive sessions (below `minProseTurns`) | No judgment — thresholds in `DEFAULT_THRESHOLDS`, overridable |
 
 Subagent turns (opt-in) are aggregated as a separate compliance readout

@@ -27,7 +27,7 @@ const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(REPO_ROOT, rel), 
 test('all six version sources are identical', () => {
   const pkg = readJson('package.json');
   const marketplace = readJson('.claude-plugin/marketplace.json');
-  const plugin = readJson('.claude-plugin/plugin.json');
+  const plugin = readJson('plugin/.claude-plugin/plugin.json');
   const lock = readJson('package-lock.json');
 
   const sources = {

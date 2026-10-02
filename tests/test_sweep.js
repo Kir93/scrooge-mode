@@ -9,8 +9,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { sweepStaleState } from '../hooks/scrooge-session-start.js';
-import { getStatePath, getDefaultPath, writeState, readState } from '../hooks/scrooge-config.js';
+import { sweepStaleState } from '../plugin/hooks/scrooge-session-start.js';
+import { getStatePath, getDefaultPath, writeState, readState } from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
 function freshConfig() {

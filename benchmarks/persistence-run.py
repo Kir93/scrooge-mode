@@ -83,7 +83,7 @@ def write_bench_settings(cfg_dir: Path, settings_path: Path) -> Path:
     def hook(script: str) -> dict:
         return {"hooks": [{
             "type": "command",
-            "command": f'CLAUDE_CONFIG_DIR={cfg_dir} node "{repo / "hooks" / script}"',
+            "command": f'CLAUDE_CONFIG_DIR={cfg_dir} node "{repo / "plugin" / "hooks" / script}"',
         }]}
     settings_path.write_text(json.dumps({
         "hooks": {

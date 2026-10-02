@@ -21,11 +21,11 @@ import {
   readUpdateCache,
   writeUpdateCache,
   writeState,
-} from '../hooks/scrooge-config.js';
+} from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const SS_HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-session-start.js');
+const SS_HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-session-start.js');
 
 const tmpDirs = [];
 function freshConfig() {
@@ -92,7 +92,7 @@ test('isUpdateCheckDisabled honors SCROOGE_NO_UPDATE_CHECK and CI', () => {
 });
 
 test('readInstalledVersion reads the manifest, null on missing', () => {
-  assert.match(readInstalledVersion(REPO_ROOT), /^\d+\.\d+\.\d+/);
+  assert.match(readInstalledVersion(path.join(REPO_ROOT, 'plugin')), /^\d+\.\d+\.\d+/);
   assert.equal(readInstalledVersion(path.join(os.tmpdir(), 'no-such-scrooge-root')), null);
 });
 
@@ -109,7 +109,7 @@ function seed(dir, cacheOverrides = {}) {
 }
 
 function runSessionStart(dir, source, extra = {}) {
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: dir, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: dir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin') };
   delete env.CI;
   delete env.SCROOGE_NO_UPDATE_CHECK;
   Object.assign(env, extra);

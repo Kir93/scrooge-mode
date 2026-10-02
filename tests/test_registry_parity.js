@@ -25,12 +25,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
-import { LANG_META } from '../hooks/lang-meta.js';
+import { VALID_LANGS, VALID_DIALS } from '../plugin/hooks/scrooge-config.js';
+import { LANG_META } from '../plugin/hooks/lang-meta.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'registry.json'), 'utf8'));
+const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'plugin', 'registry.json'), 'utf8'));
 
 // Language keys = every top-level registry key except the `fragments` sub-tree.
 const registryLangs = Object.keys(REGISTRY).filter((k) => k !== 'fragments');
@@ -99,7 +99,7 @@ function registryPaths() {
 test('every registry path is under rules/ and points at a real file', () => {
   for (const rel of registryPaths()) {
     assert.ok(String(rel).startsWith('rules/'), `path outside rules/: ${rel}`);
-    const abs = path.join(REPO_ROOT, rel);
+    const abs = path.join(REPO_ROOT, 'plugin', rel);
     assert.ok(fs.existsSync(abs) && fs.statSync(abs).isFile(), `registry path missing: ${rel}`);
   }
 });
@@ -112,8 +112,8 @@ test('every rules/**/*.md file is reachable from the registry', () => {
       if (e.isDirectory()) return listMd(fp);
       return e.isFile() && e.name.endsWith('.md') ? [fp] : [];
     });
-  for (const abs of listMd(path.join(REPO_ROOT, 'rules'))) {
-    const rel = path.normalize(path.relative(REPO_ROOT, abs));
+  for (const abs of listMd(path.join(REPO_ROOT, 'plugin', 'rules'))) {
+    const rel = path.normalize(path.relative(path.join(REPO_ROOT, 'plugin'), abs));
     assert.ok(reachable.has(rel), `unreachable rule file: ${rel}`);
   }
 });

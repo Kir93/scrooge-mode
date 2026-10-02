@@ -15,7 +15,7 @@ A release sets one version in six places. They must be identical:
 | `package.json` | `version` |
 | `.claude-plugin/marketplace.json` | `metadata.version` |
 | `.claude-plugin/marketplace.json` | `plugins[0].version` |
-| `.claude-plugin/plugin.json` | `version` |
+| `plugin/.claude-plugin/plugin.json` | `version` |
 | `package-lock.json` | `version` |
 | `package-lock.json` | `packages[""].version` |
 
@@ -35,10 +35,10 @@ Run from a clean tree on `main`:
 - `python3 -m unittest discover -s benchmarks -p 'test_*.py'` — passes (benchmark harness: statistics helpers, isolation preflight, runners).
 - `npx markdownlint-cli2@0.23.2 "**/*.md"` — clean.
 - `node .github/scripts/verify-pack.mjs` — packaged file list matches.
-- `node -e "JSON.parse(require('fs').readFileSync('registry.json'))"` and the same
-  for `package.json`, `.claude-plugin/marketplace.json`, `.claude-plugin/plugin.json` — all parse.
-- Every `registry.json` path resolves to an existing `rules/**` file, and every
-  `rules/**` file is reachable from the registry.
+- `node -e "JSON.parse(require('fs').readFileSync('plugin/registry.json'))"` and the same
+  for `package.json`, `.claude-plugin/marketplace.json`, `plugin/.claude-plugin/plugin.json` — all parse.
+- Every `plugin/registry.json` path resolves to an existing `plugin/rules/**` file, and every
+  `plugin/rules/**` file is reachable from the registry.
 - Bilingual parity holds (`ko`/`en`, `README.md`/`README.ko.md`).
 - Doc-truth: no language with a measured savings/fidelity section still carries a
   "measurement pending" sentence (the `npm test` doc-truth guard enforces this).
@@ -55,11 +55,11 @@ re-measurement consumes subscription quota — an external action behind a human
 approval gate, not metered cash — which is why it stays manual.)
 
 **Rule-regression detection lives here, not in CI (F1).** The deterministic CI check
-runs over a *frozen* corpus, so it is blind to `rules/**` edits — checks.js returns the
+runs over a *frozen* corpus, so it is blind to `plugin/rules/**` edits — checks.js returns the
 same verdict before and after a rule change. Catching a real rule/register regression
 is therefore split across two signals, both outside the deterministic check:
 
-- the **CI rule-diff marker** — a PR **or a direct push to `main`** touching `rules/**`
+- the **CI rule-diff marker** — a PR **or a direct push to `main`** touching `plugin/rules/**`
   gets a non-blocking "register 재측정 필요" annotation (`.github/workflows/ci.yml`),
   flagging that this gate may need a re-run — so a `/my-release` direct push surfaces the
   reminder too, not only an external contributor's PR;
@@ -104,11 +104,11 @@ project actually holds.
 
 ## 2. Bump version
 
-Edit `package.json`, `.claude-plugin/marketplace.json`, and `.claude-plugin/plugin.json` to the new version (semver), then regenerate the lockfile so its two version fields follow:
+Edit `package.json`, `.claude-plugin/marketplace.json`, and `plugin/.claude-plugin/plugin.json` to the new version (semver), then regenerate the lockfile so its two version fields follow:
 
 ```bash
 npm install --package-lock-only
-git commit -m "chore: 버전 vX.Y.Z" package.json package-lock.json .claude-plugin/marketplace.json .claude-plugin/plugin.json
+git commit -m "chore: 버전 vX.Y.Z" package.json package-lock.json .claude-plugin/marketplace.json plugin/.claude-plugin/plugin.json
 ```
 
 ## 3a. Tag-push release (recommended)
@@ -150,14 +150,14 @@ A pushed tag publishes the git-based install paths — both commands in §4 reso
 against it, and `npx -y github:Kir93/scrooge-mode#vX.Y.Z` pins to the tagged
 commit.
 
-> Hook payload note: changes under `hooks/`, `rules/`, `lib/`, or `registry.json`
+> Hook payload note: changes under `plugin/hooks/`, `plugin/rules/`, `plugin/lib/`, or `plugin/registry.json`
 > reach existing Codex installs only on reinstall — the installer copies them into
 > `~/.codex/scrooge/`, so a published fix does not auto-update an already-installed
 > Codex hook. This is the "existing Codex users: reinstall to upgrade" callout; its
 > canonical wording lives in `.github/release-notes-template.md`, which the release
 > workflow prepends to every release body.
 >
-> Statusline note: the installer copies `hooks/scrooge-statusline.sh` into
+> Statusline note: the installer copies `plugin/hooks/scrooge-statusline.sh` into
 > `<config>/hooks/`, and plugin updates do NOT refresh that copy. When a release
 > changes state-file locations the installed script reads, call out "statusline
 > users: re-run the installer" (the script keeps a legacy-path fallback, so only
@@ -175,7 +175,7 @@ claude plugin install scrooge@scrooge              # plugin@marketplace
 skills ecosystem path (Codex and other agents):
 
 ```bash
-npx skills add Kir93/scrooge-mode --list           # lists skills/scrooge
+npx skills add Kir93/scrooge-mode --list           # lists scrooge + scrooge-stats (from plugin/skills/)
 npx skills add Kir93/scrooge-mode -a codex --yes --all
 ```
 

@@ -14,7 +14,7 @@
 
 import { fileURLToPath } from 'node:url';
 
-import { parseClaudeSessionTurns, listSubagentTranscripts } from '../../lib/session-log.js';
+import { parseClaudeSessionTurns, listSubagentTranscripts } from '../../plugin/lib/session-log.js';
 import { detectSafety, extractSpans } from '../fidelity/checks.js';
 
 // Attach compliance signals to each turn. Drops the raw `text` from the output

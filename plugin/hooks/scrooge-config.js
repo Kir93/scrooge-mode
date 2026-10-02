@@ -473,13 +473,14 @@ export function writeVersionMarker(version, versionPath = getVersionPath()) {
   return v === null ? false : safeWriteFile(versionPath, v);
 }
 
-// Installed version from the package manifest at `root`. Shared by the
-// SessionStart hook (upgrade detection) and the update-check probe (behind
-// calculation), so both read the version through one path. Returns null on any
-// read/parse failure — callers treat an unknown version as "cannot compare".
+// Installed version from the plugin manifest at `root` (the plugin dir — the
+// repo's package.json sits one level above it and is not part of the plugin).
+// Shared by the SessionStart hook (upgrade detection) and the update-check probe
+// (behind calculation), so both read the version through one path. Returns null
+// on any read/parse failure — callers treat an unknown version as "cannot compare".
 export function readInstalledVersion(root) {
   try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8'));
     return typeof pkg.version === 'string' ? pkg.version : null;
   } catch (e) {
     return null;

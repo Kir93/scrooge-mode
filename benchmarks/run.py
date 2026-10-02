@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Iterator, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-RULES_DIR = REPO_ROOT / "rules"
+RULES_DIR = REPO_ROOT / "plugin" / "rules"
 # Default bench cwd lives OUTSIDE the repo: an empty dir means no project
 # CLAUDE.md leaks into context (see build_cmd docstring) and bench session
 # JSONL stays out of the repo's interactive session list. Having no CLAUDE.md is

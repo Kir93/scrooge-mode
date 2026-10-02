@@ -4,7 +4,7 @@
 // hosts (Claude Code, Codex) get `rules/{lang}/full.md`; skill-only hosts (Cursor,
 // Windsurf, Cline, Continue, Gemini CLI) get `skills/scrooge/SKILL.md` and nothing
 // else — `cli/install.js` copies hooks/rules/lib on the Codex path, and
-// `.claude-plugin/plugin.json` declares hooks with no skills key. So SKILL.md is
+// `plugin/.claude-plugin/plugin.json` declares hooks with no skills key. So SKILL.md is
 // the whole register for those hosts, and four rule items were missing from it
 // while `npm test` stayed green.
 //
@@ -25,7 +25,7 @@ import { RULES, tokenFor } from './fixtures/register-rules.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SKILL = fs.readFileSync(
-  path.join(HERE, '..', 'skills', 'scrooge', 'SKILL.md'),
+  path.join(HERE, '..', 'plugin', 'skills', 'scrooge', 'SKILL.md'),
   'utf8'
 );
 

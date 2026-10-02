@@ -27,14 +27,14 @@ import {
   buildReminder,
   buildCountermand,
   metaLangs,
-} from '../hooks/lang-meta.js';
-import { parseNaturalActivation } from '../hooks/nl-activation.js';
-import { deriveValidLangs, VALID_DIALS, readState, migrateDial } from '../hooks/scrooge-config.js';
-import { deriveEstimate, formatStats, suffixFor } from '../hooks/scrooge-stats.js';
+} from '../plugin/hooks/lang-meta.js';
+import { parseNaturalActivation } from '../plugin/hooks/nl-activation.js';
+import { deriveValidLangs, VALID_DIALS, readState, migrateDial } from '../plugin/hooks/scrooge-config.js';
+import { deriveEstimate, formatStats, suffixFor } from '../plugin/hooks/scrooge-stats.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const STATUSLINE = path.join(REPO_ROOT, 'hooks', 'scrooge-statusline.sh');
+const STATUSLINE = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-statusline.sh');
 
 // A fake language defined entirely as one LANG_META row — the exact unit a real new
 // language adds. Cue tokens are distinctive ("zzlang") so they never collide with the

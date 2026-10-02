@@ -26,13 +26,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
+import { VALID_LANGS, VALID_DIALS } from '../plugin/hooks/scrooge-config.js';
 import { RULES, langsFor, tokenFor } from './fixtures/register-rules.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const body = (lang, dial) =>
-  fs.readFileSync(path.join(REPO_ROOT, 'rules', lang, `${dial}.md`), 'utf8');
+  fs.readFileSync(path.join(REPO_ROOT, 'plugin', 'rules', lang, `${dial}.md`), 'utf8');
 
 
 for (const rule of RULES) {

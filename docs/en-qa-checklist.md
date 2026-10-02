@@ -1,6 +1,6 @@
 # EN QA Checklist
 
-Self-review baseline for Scrooge `en/full` output quality. Source rules: [rules/en/full.md](../rules/en/full.md), including the safety-escape behavior described in its [Auto-Clarity](../rules/en/full.md#auto-clarity) section.
+Self-review baseline for Scrooge `en/full` output quality. Source rules: [plugin/rules/en/full.md](../plugin/rules/en/full.md), including the safety-escape behavior described in its [Auto-Clarity](../plugin/rules/en/full.md#auto-clarity) section.
 
 EN-specific counterpart to [docs/ko-qa-checklist.md](ko-qa-checklist.md). Categories that only apply to Korean (honorific removal, particle drop) are dropped; a Language-fidelity category is added because the EN dial must not regress to Korean output.
 

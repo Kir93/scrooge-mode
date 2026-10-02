@@ -1,7 +1,7 @@
 # --- Claude Code dev tooling (private; not part of the published product) ---
 # Planning docs (specs, initiatives), injected shared rules/hooks/commands
 # (symlinks into private ai-config), local settings. The shipped product lives
-# at the repo root (skills/, hooks/, cli/, rules/) and in .claude-plugin/.
+# in plugin/ (the Claude plugin), cli/, and .claude-plugin/ (the marketplace).
 .claude/
 CLAUDE.local.md
 
@@ -27,7 +27,7 @@ benchmarks/fidelity/results-*.jsonl
 
 # `skills` CLI install artifacts. If someone runs `npx skills add` (or our
 # installer's curl|bash one-liner) from inside this repo, the skills ecosystem
-# drops a canonical copy at .agents/ + a lock file + may symlink skills/<name>.
+# drops a canonical copy at .agents/ + a lock file + may symlink plugin/skills/<name>.
 # Our self-install guard (cli/install.js) refuses to run skills add here, but
 # direct `npx skills add` invocations bypass that, so guard the git tree too.
 .agents/

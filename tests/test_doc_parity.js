@@ -17,9 +17,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
-import { deriveEstimate } from '../hooks/scrooge-stats.js';
-import { savingsMeta } from '../hooks/lang-meta.js';
+import { VALID_LANGS, VALID_DIALS } from '../plugin/hooks/scrooge-config.js';
+import { deriveEstimate } from '../plugin/hooks/scrooge-stats.js';
+import { savingsMeta } from '../plugin/hooks/lang-meta.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
@@ -66,7 +66,7 @@ for (const f of ['README.md', 'README.ko.md']) {
 
 // (C) The SKILL register table carries a row for every language × shipped dial.
 test('skills/scrooge/SKILL.md register table covers every language × dial', () => {
-  const body = read('skills/scrooge/SKILL.md');
+  const body = read('plugin/skills/scrooge/SKILL.md');
   for (const lang of VALID_LANGS) {
     for (const dial of VALID_DIALS) {
       const re = new RegExp('\\|\\s*' + lang.toUpperCase() + '\\s*·\\s*' + dial + '\\s*\\|');

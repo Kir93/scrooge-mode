@@ -15,12 +15,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseNaturalActivation } from '../hooks/nl-activation.js';
-import { readState } from '../hooks/scrooge-config.js';
+import { parseNaturalActivation } from '../plugin/hooks/nl-activation.js';
+import { readState } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
+const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
 
 // ---- Layer 1: pure parser ----
 
@@ -233,7 +233,7 @@ function runHook(configDir, prompt) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '' },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '' },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   let ctx = null;

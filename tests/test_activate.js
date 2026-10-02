@@ -13,11 +13,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readState } from '../hooks/scrooge-config.js';
+import { readState } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
+const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
 const SESSION_FIXTURE = path.join(HERE, 'fixtures', 'sample-session.jsonl');
 
 const tmpDirs = [];
@@ -63,7 +63,7 @@ function runHook(configDir, prompt, extra = {}, envOverrides = {}) {
     env: {
       ...process.env,
       CLAUDE_CONFIG_DIR: configDir,
-      CLAUDE_PLUGIN_ROOT: REPO_ROOT,
+      CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'),
       // Pin flags off here so lang/dial mechanics stay deterministic regardless of
       // the on-by-default flag policy; default-on is covered by test_flags.js.
       SCROOGE_DEFAULT_FLAGS: '',

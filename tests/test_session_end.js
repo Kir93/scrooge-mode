@@ -11,11 +11,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { handlePayload } from '../hooks/scrooge-session-end.js';
-import { getStatePath, getDefaultPath, writeState, readState } from '../hooks/scrooge-config.js';
+import { handlePayload } from '../plugin/hooks/scrooge-session-end.js';
+import { getStatePath, getDefaultPath, writeState, readState } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HOOK = path.join(HERE, '..', 'hooks', 'scrooge-session-end.js');
+const HOOK = path.join(HERE, '..', 'plugin', 'hooks', 'scrooge-session-end.js');
 
 const tmpDirs = [];
 function freshConfig() {

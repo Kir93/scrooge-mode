@@ -15,12 +15,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readState, VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
+import { readState, VALID_LANGS, VALID_DIALS } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
-const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'registry.json'), 'utf8'));
+const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
+const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'plugin', 'registry.json'), 'utf8'));
 
 // Escape tokens each rule's Auto-Clarity section must name, per language.
 const ESCAPE_TOKENS = {
@@ -41,7 +41,7 @@ for (const lang of VALID_LANGS) {
     test(`rule ${lang}/${dial} carries the Auto-Clarity escape section`, () => {
       const tokens = ESCAPE_TOKENS[lang];
       assert.ok(tokens, `no ESCAPE_TOKENS entry for '${lang}' — add its escape tokens to the per-lang map`);
-      const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');
+      const body = fs.readFileSync(path.join(REPO_ROOT, 'plugin', REGISTRY[lang][dial]), 'utf8');
       assert.match(body, /Auto-Clarity/, 'missing Auto-Clarity heading');
       for (const token of tokens) {
         assert.match(body, token, `missing escape token ${token}`);
@@ -65,7 +65,7 @@ for (const lang of VALID_LANGS) {
       assert.ok(frag, `no '${flag}' fragment registered for '${lang}' in registry.json fragments`);
       const safety = FRAGMENT_SAFETY[lang];
       assert.ok(safety, `no FRAGMENT_SAFETY entry for '${lang}' — add its safety-register pattern`);
-      const body = fs.readFileSync(path.join(REPO_ROOT, frag), 'utf8');
+      const body = fs.readFileSync(path.join(REPO_ROOT, 'plugin', frag), 'utf8');
       assert.match(body, safety, `${lang}/${flag} missing safety register`);
     });
   }
@@ -86,7 +86,7 @@ function injectionFor(prompt, expected) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '' },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '' },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   // The full rule body should reach the model, and state should be active.

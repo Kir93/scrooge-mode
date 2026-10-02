@@ -21,11 +21,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { VALID_LANGS, VALID_DIALS } from '../hooks/scrooge-config.js';
+import { VALID_LANGS, VALID_DIALS } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'registry.json'), 'utf8'));
+const REGISTRY = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'plugin', 'registry.json'), 'utf8'));
 
 // The Docs/prose Boundaries item names this marker, per language.
 const DOCS_BOUNDARY = {
@@ -69,7 +69,7 @@ for (const lang of VALID_LANGS) {
     test(`rule ${lang}/${dial} carries the Docs/prose compression boundary + escape`, () => {
       const boundary = DOCS_BOUNDARY[lang];
       assert.ok(boundary, `no DOCS_BOUNDARY entry for '${lang}' — add its Docs/prose boundary marker`);
-      const body = fs.readFileSync(path.join(REPO_ROOT, REGISTRY[lang][dial]), 'utf8');
+      const body = fs.readFileSync(path.join(REPO_ROOT, 'plugin', REGISTRY[lang][dial]), 'utf8');
       assert.match(body, /## Boundaries/, 'missing Boundaries heading');
       assert.match(body, boundary, 'missing Docs/prose boundary item');
       assert.match(body, DOCS_EXCLUSION, 'missing the permanently-excluded item (code / commit messages / PR descriptions)');

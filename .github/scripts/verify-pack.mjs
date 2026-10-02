@@ -27,12 +27,14 @@ import { checkRepoUrl, extractLinks, repoBases, resolves } from './pack-links.mj
 // with every copy.
 const REQUIRED = [
   'LICENSE',
-  'registry.json',
-  'hooks/',
-  'rules/',
-  'lib/',
+  'plugin/LICENSE',
+  'plugin/registry.json',
+  'plugin/hooks/',
+  'plugin/rules/',
+  'plugin/lib/',
+  'plugin/skills/',
+  'plugin/.claude-plugin/',
   'cli/install.js',
-  'skills/',
   '.claude-plugin/',
 ];
 

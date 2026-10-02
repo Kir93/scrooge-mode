@@ -24,7 +24,7 @@
       "name": "scrooge",
       "description": "Korean-first output compression for AI coding agents \u2014 measured, not estimated: the benchmark rows are published, and it bills its own per-turn injection back to you.",
       "version": "0.27.3",
-      "source": "./",
+      "source": "./plugin",
       "category": "productivity"
     }
   ]

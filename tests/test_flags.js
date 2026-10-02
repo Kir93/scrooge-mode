@@ -21,12 +21,12 @@ import {
   isValidState,
   readState,
   writeState,
-} from '../hooks/scrooge-config.js';
-import { assembleRuleBody } from '../hooks/scrooge-activate.js';
+} from '../plugin/hooks/scrooge-config.js';
+import { assembleRuleBody } from '../plugin/hooks/scrooge-activate.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
-const HOOK = path.join(REPO_ROOT, 'hooks', 'scrooge-activate.js');
+const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
 
 const tmpDirs = [];
 function freshConfig() {
@@ -43,7 +43,7 @@ function runHook(configDir, prompt, env = {}) {
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt, session_id: 'flags' }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: REPO_ROOT, SCROOGE_DEFAULT_FLAGS: '', ...env },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '', ...env },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
   const ctx = r.stdout.trim()
@@ -83,7 +83,7 @@ test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON', () => {
   const cfg = freshConfig();
   // Spawn directly (not the env-pinned helper) so the child sees no env override
   // and exercises the real on-by-default policy (lean on).
-  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: REPO_ROOT };
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin') };
   delete env.SCROOGE_DEFAULT_FLAGS;
   const r = spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ prompt: '/scrooge ko', session_id: 'flags' }),
@@ -121,7 +121,7 @@ test('writeState/readState round-trip flags; legacy file normalizes to []', () =
 // ── Unit: assembleRuleBody (registry fragment assembly + graceful skip) ──────
 
 test('assembleRuleBody appends active fragments after the base register', () => {
-  const body = assembleRuleBody(REPO_ROOT, 'ko', 'full', ['lean']);
+  const body = assembleRuleBody(path.join(REPO_ROOT, 'plugin'), 'ko', 'full', ['lean']);
   assert.match(body, /Auto-Clarity/); // base rule
   assert.match(body, /Flag: lean/);
   assert.equal(/Flag: ctx/.test(body), false); // ctx fragment removed

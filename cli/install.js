@@ -29,8 +29,8 @@ import crypto from 'node:crypto';
 // Release-tuple comparison lives in hooks/scrooge-config.js — one implementation
 // shared by `scrooge --version` and the session-start update notice, so the two
 // can never disagree about what "newer" means (and the hooks tests cover both).
-import { semverGt } from '../hooks/scrooge-config.js';
-import { fetchLatest } from '../hooks/scrooge-update-check.js';
+import { semverGt } from '../plugin/hooks/scrooge-config.js';
+import { fetchLatest } from '../plugin/hooks/scrooge-update-check.js';
 
 const REPO = 'Kir93/scrooge-mode';
 const PLUGIN = 'scrooge'; // used as BOTH plugin and marketplace name → install target `scrooge@scrooge` (line below). Task 6's .claude-plugin/marketplace.json MUST set name: "scrooge" or this target won't resolve.
@@ -229,8 +229,8 @@ function capture(cmd, args) {
   catch (_) { return { status: 1, stdout: '', stderr: '' }; }
 }
 
-function repoRoot() {
-  const root = path.resolve(HERE, '..');
+function pluginRoot() {
+  const root = path.resolve(HERE, '..', 'plugin');
   return safeExists(path.join(root, 'registry.json')) && safeExists(path.join(root, 'hooks')) ? root : null;
 }
 
@@ -429,7 +429,7 @@ function installClaude(opts, results) {
 // dir and register it in settings.json — only when no statusLine exists yet, so
 // we never clobber the user's own.
 function wireStatusline(opts, results) {
-  const root = repoRoot();
+  const root = pluginRoot();
   if (!root) { process.stdout.write('  (statusline: run from a clone to install the badge)\n'); return; }
   const cfg = configDir(opts);
   const hooksDir = path.join(cfg, 'hooks');
@@ -660,9 +660,9 @@ function installCodexPayload(root, dest, opts) {
 }
 
 function wireCodexHook(opts, results) {
-  const root = repoRoot();
+  const root = pluginRoot();
   if (!root) {
-    process.stdout.write('  (codex hook: run from a package/clone that includes hooks, rules, lib, and registry.json)\n');
+    process.stdout.write('  (codex hook: run from a package/clone that includes plugin/ (hooks, rules, lib, registry.json))\n');
     results.failed.push(['codex-hook', 'missing package files']);
     return;
   }

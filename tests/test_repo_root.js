@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-import { repoRootCandidates } from '../hooks/repo-root.js';
+import { repoRootCandidates } from '../plugin/hooks/repo-root.js';
 
 const FROM = '/tmp/scrooge-fake/hooks';
 

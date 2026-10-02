@@ -20,7 +20,7 @@ import {
   deriveSessionKey,
   getStatePath,
   readVersionMarker,
-} from '../hooks/scrooge-config.js';
+} from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
 function tmpDir() {

@@ -128,7 +128,7 @@ installer가 감지된 호스트를 각 기능 tier로 설치함:
 | Cursor · Windsurf · Cline · Continue | skills (skill-only) | — | — | — |
 | Gemini CLI (**opt-in**, `--only gemini`) | skills (skill-only) | — | — | — |
 
-**`SKILL.md` 하나, 런타임 7개.** Agent Skills는 Agentic AI Foundation(Linux Foundation) 산하 공개 표준으로 `name`·`description`만 필수이고, 인식 못 하는 frontmatter 키는 무시하도록 규정한다 — [`skills/scrooge/SKILL.md`](skills/scrooge/SKILL.md)이 정확히 그 두 필드만 갖고 있다. 그래서 파일 하나로 Claude Code·Codex·Cursor·Windsurf·Cline·Continue·Gemini CLI 일곱 곳에 닿을 수 있고, 위 표는 포팅 개수가 아니라 호스트별로 얼마나 *자동화*가 감싸는지를 나타낸다. 도달 가능성은 표준에서 오는 것이지 우리가 측정한 것이 아니다 — [`benchmarks/published/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/published)의 모든 행이 Claude이고, Codex 행은 pre-opus48에 harness·tokenizer가 달라 stale하며(그 harness는 [v0.23.0에서 제거됨](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#codex-secondary-benchmark--removed-in-v0230)) published에 하나도 없고, skill-only 호스트 다섯은 행 자체가 없다. 그 다섯은 위 표준 근거에만 기댄다.
+**`SKILL.md` 하나, 런타임 7개.** Agent Skills는 Agentic AI Foundation(Linux Foundation) 산하 공개 표준으로 `name`·`description`만 필수이고, 인식 못 하는 frontmatter 키는 무시하도록 규정한다 — [`plugin/skills/scrooge/SKILL.md`](plugin/skills/scrooge/SKILL.md)이 정확히 그 두 필드만 갖고 있다. 그래서 파일 하나로 Claude Code·Codex·Cursor·Windsurf·Cline·Continue·Gemini CLI 일곱 곳에 닿을 수 있고, 위 표는 포팅 개수가 아니라 호스트별로 얼마나 *자동화*가 감싸는지를 나타낸다. 도달 가능성은 표준에서 오는 것이지 우리가 측정한 것이 아니다 — [`benchmarks/published/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/published)의 모든 행이 Claude이고, Codex 행은 pre-opus48에 harness·tokenizer가 달라 stale하며(그 harness는 [v0.23.0에서 제거됨](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#codex-secondary-benchmark--removed-in-v0230)) published에 하나도 없고, skill-only 호스트 다섯은 행 자체가 없다. 그 다섯은 위 표준 근거에만 기댄다.
 
 tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. Codex는 `UserPromptSubmit`만 배선(`SessionStart` 없음)하므로 업데이트 알림·`↑vX` 마커는 Claude 전용이고 업그레이드는 재설치([Update](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.ko.md#update)). statusline `✓`는 보이는 것보다 좁다 — one-line installer가 배선하며 **`/plugin install` 경로는 배선하지 않음**. 수동 `settings.json` 항목은 [INSTALL.ko.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.ko.md#statusline).
 
@@ -152,7 +152,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 전 언어. **측정:** 잘못된 전제 질문에서 KO 19/20·EN 10/10 반박(비압축 baseline은 19/19·9/9) — 재현되는 KO 실패 1건이 있으나 표본이 가려낼 수 있는 격차는 아님([상세](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit)). |
 | Boundaries               | 압축 적용 범위. 코드·커밋 메시지·PR 설명은 영구 제외 — 압축이 문법을 깨뜨림. 모델이 생성하는 Docs·prose 산출물(README·명세·보고서, 그리고 외부로 보낼 초안 — Slack·DM·메일)은 압축 **적용**: 군더더기만 제거하고 정보·어조는 무손실. **측정:** 20턴 hook 세션에서 compaction을 한 번 지난 뒤에도 제외 클래스가 유지됨 — 산출물 7건 중 압축된 것 0건, liveness 대조 턴 전부에서 register 활성 확인 ([상세](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#register-persistence-boundary-survival), 행: [`results-ko-persistence.jsonl`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/published/results-ko-persistence.jsonl)). |
-| `registry.json`          | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 2개(`full` + `lean` fragment) + 레지스트리 항목 2줄 + `hooks/lang-meta.js` 1행. |
+| `plugin/registry.json`   | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 2개(`full` + `lean` fragment) + 레지스트리 항목 2줄 + `plugin/hooks/lang-meta.js` 1행. |
 | `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. |
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks) 참조.           |
@@ -243,18 +243,18 @@ Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨.
 ## 메커니즘
 
 1. `/scrooge [lang] [dial]` 명령으로 모드 활성화. 토큰 순서 무관 — `/scrooge ko`, `/scrooge full`, `/scrooge ko full` 등.
-2. `UserPromptSubmit` hook이 명령 파싱 → 상태 파일에 `{lang, dial}` 저장 → [`registry.json`](registry.json)으로 규칙 경로 해석 → `additionalContext`로 주입.
+2. `UserPromptSubmit` hook이 명령 파싱 → 상태 파일에 `{lang, dial}` 저장 → [`plugin/registry.json`](plugin/registry.json)으로 규칙 경로 해석 → `additionalContext`로 주입.
 3. 이후 매 turn마다 경량 reminder 재주입으로 register drift 방지.
 4. `/scrooge off`로 상태 + 글로벌 기본값 삭제(전역 off, 아래 참조). 규칙 자체의 auto-clarity가 안전 컨텍스트(보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차)에서는 압축 해제 — 사용자가 opt-out할 필요 없음.
 
 **글로벌 기본값.** 아무 세션에서 활성화하면 그 선택이 글로벌 기본값(`~/.claude/.scrooge/default`)으로 저장됨. 모든 새 세션이 같은 lang/dial/flags로 자동 활성 — 한 번만, 어디서든. `SessionStart` hook이 새 세션을 기본값으로 seed하고 full rule을 재주입. `/scrooge off`는 기본값도 삭제(전역 off); 이미 떠 있는 세션은 재시작 전까지 register 유지 — 한 worktree의 off가 동시 세션을 끊지 않음.
 
-**플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%), **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 두 CI 모두 0을 제외하고 sign test도 p<0.05를 통과해 방향은 확정. 다만 구간이 넓으므로 `lean`은 정밀 수치가 아니라 "대략 5분의 1 절감"으로 읽어야 함. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. 이 수치는 v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체 — 기존 수치는 corpus 구조를 오독했고 양쪽에 tool 사용 행이 섞여 있었음([근거](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
+**플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%), **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 두 CI 모두 0을 제외하고 sign test도 p<0.05를 통과해 방향은 확정. 다만 구간이 넓으므로 `lean`은 정밀 수치가 아니라 "대략 5분의 1 절감"으로 읽어야 함. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. 이 수치는 v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체 — 기존 수치는 corpus 구조를 오독했고 양쪽에 tool 사용 행이 섞여 있었음([근거](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`plugin/rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
 
 **언어 추가** (registry-driven dispatch — 분기 추가 아닌 데이터 추가):
 
-1. `rules/{lang}/full.md` 규칙 파일 + `lean` fragment(`rules/{lang}/fragments/lean.md`) 작성 — `lean`은 기본 on이라 언어마다 필수.
-2. [`registry.json`](registry.json)에 항목 2개 추가 — rule path와 `fragments` path. `VALID_LANGS`는 `fragments`를 뺀 최상위 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식:
+1. `plugin/rules/{lang}/full.md` 규칙 파일 + `lean` fragment(`plugin/rules/{lang}/fragments/lean.md`) 작성 — `lean`은 기본 on이라 언어마다 필수.
+2. [`plugin/registry.json`](plugin/registry.json)에 항목 2개 추가 — rule path와 `fragments` path. `VALID_LANGS`는 `fragments`를 뺀 최상위 키에서 derive되므로 slash parser·rule loader가 코드 수정 없이 언어 인식:
 
    ```json
    {
@@ -263,7 +263,7 @@ Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨.
    }
    ```
 
-3. [`hooks/lang-meta.js`](hooks/lang-meta.js)에 `LANG_META` 1행 추가 — `reminder`, `countermand`, `flagHint`, `nlCue` — per-turn reminder·off countermand·자연어 활성화 구동. registry 언어에 행이 없으면 `test_registry_parity.js`가 fail.
+3. [`plugin/hooks/lang-meta.js`](plugin/hooks/lang-meta.js)에 `LANG_META` 1행 추가 — `reminder`, `countermand`, `flagHint`, `nlCue` — per-turn reminder·off countermand·자연어 활성화 구동. registry 언어에 행이 없으면 `test_registry_parity.js`가 fail.
 4. 5건 sample 출력을 QA checklist ([CONTRIBUTING.md](https://github.com/Kir93/scrooge-mode/blob/main/CONTRIBUTING.md)) 기준 self-check → PR.
 
 ## 기여

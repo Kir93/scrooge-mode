@@ -1,6 +1,6 @@
 # KO QA Checklist
 
-Self-review baseline for Scrooge `ko/full` output quality. Source rules: [rules/ko/full.md](../rules/ko/full.md), including the safety-escape behavior described in its [Auto-Clarity](../rules/ko/full.md#auto-clarity) section.
+Self-review baseline for Scrooge `ko/full` output quality. Source rules: [plugin/rules/ko/full.md](../plugin/rules/ko/full.md), including the safety-escape behavior described in its [Auto-Clarity](../plugin/rules/ko/full.md#auto-clarity) section.
 
 **범위.** A–E는 `ko/full`을, F는 `lean` 플래그(기본 on)를 다룹니다. (G는 `lite` dial 판정용이었으나, 그 dial은 자체 측정이 기각해 v0.23.0에서 제거됐습니다.) 이 문서는 **사람이 수행하는 self-review** 보조 도구이지 자동 게이트가 아닙니다 — `npm test`에서 실행되지 않으며, frozen fixture 세트로 만들지도 않았습니다(`RELEASE.md`가 rule-text 회귀를 수동 judge 게이트에 고정). 체크리스트는 `en`·`ko`에만 있고 `ja`/`hi`/`zh`에는 없습니다 — 네이티브 검수 없이 만들면 픽스처 자체가 잘못된 기준이 되기 때문입니다.
 

@@ -18,7 +18,7 @@ import {
   sinceToEpoch,
   priceForModel,
   inputPriceForModel,
-} from '../lib/ledger.js';
+} from '../plugin/lib/ledger.js';
 
 const tmpDirs = [];
 function tmpHistory() {

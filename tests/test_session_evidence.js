@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 import { attachSignals, trajectory, analyzeSession } from '../benchmarks/session-evidence/analyze.js';
 import { classifySession, buildReport, DEFAULT_THRESHOLDS } from '../benchmarks/session-evidence/report.js';
-import { parseClaudeSessionTurns } from '../lib/session-log.js';
+import { parseClaudeSessionTurns } from '../plugin/lib/session-log.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE = path.join(HERE, 'fixtures', 'turns-session.jsonl');

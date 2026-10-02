@@ -17,7 +17,7 @@ import {
   parseClaudeSessionTurns,
   listSubagentTranscripts,
   findRecentClaudeSession,
-} from '../lib/session-log.js';
+} from '../plugin/lib/session-log.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // turns-session.jsonl: 3 counted responses — msg_T1 prose with a duplicated

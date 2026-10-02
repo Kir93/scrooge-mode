@@ -11,12 +11,8 @@
   },
   "files": [
     "cli/",
-    "hooks/",
-    "lib/",
-    "rules/",
-    "skills/",
-    ".claude-plugin/",
-    "registry.json"
+    "plugin/",
+    ".claude-plugin/"
   ],
   "keywords": [
     "claude-code",

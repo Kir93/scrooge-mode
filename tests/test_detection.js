@@ -202,7 +202,7 @@ test('release comparison comes from hooks/scrooge-config.js, not a local copy', 
   // `scrooge --version` and the session-start update notice must agree on what
   // "newer" means. A second parser here drifts silently — no test would fail.
   const src = fs.readFileSync(INSTALL_JS, 'utf8');
-  assert.match(src, /import \{ semverGt \} from '\.\.\/hooks\/scrooge-config\.js'/);
+  assert.match(src, /import \{ semverGt \} from '\.\.\/plugin\/hooks\/scrooge-config\.js'/);
   assert.ok(!/function (isNewerVersion|semverGt)\s*\(/.test(src), 'install.js redefines the version compare');
 });
 

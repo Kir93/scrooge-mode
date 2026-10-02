@@ -242,7 +242,7 @@ Repo-side release 검증:
 npm test
 python3 -m unittest discover -s benchmarks -p 'test_*.py'
 npx markdownlint-cli2@0.23.2 "**/*.md"
-node -e "JSON.parse(require('fs').readFileSync('registry.json'))"
+node -e "JSON.parse(require('fs').readFileSync('plugin/registry.json'))"
 ```
 
 markdownlint 줄은 Node.js 22 이상 필요 — `markdownlint-cli2@0.23.2`의 `engines.node`가 `>=22`로 위 Prerequisites floor보다 높음.
@@ -276,7 +276,7 @@ Windows에서는 `bash`가 PATH에 있어야 합니다 — [플랫폼 지원](#p
 Linux·macOS가 CI 검증 플랫폼 — 매 push마다 `ubuntu-latest`에서 `npm test` 실행. **Windows는 best-effort, CI 미검증.** installer에 Windows 분기(경로 처리, `where` 프로브, shell spawn, `EPERM`/`EISDIR` 정리)와 PowerShell shim이 있으나 `windows-latest` job이 이를 실행하지 않으므로 릴리스 보장 대상에서 Windows는 unsupported로 간주. 세 known-limit는 닫지 않고 문서화만:
 
 - **`install.ps1` / `uninstall.ps1`**은 `node cli/install.js`로 위임하는 얇은 shim. CI 미실행 — Windows에서 수동 검증 필요.
-- **Windows에선 symlink 보호가 약함.** atomic state writer는 symlink로 바꿔치기된 target을 거부하려 `O_NOFOLLOW`로 open하지만, Windows엔 `fs.constants.O_NOFOLLOW`가 없어 `0`으로 폴백(`hooks/scrooge-config.js`)돼 open 시점 symlink 거부가 no-op. sanitized-key 경로 격리는 유지되고 symlink-swap 가드만 상실.
+- **Windows에선 symlink 보호가 약함.** atomic state writer는 symlink로 바꿔치기된 target을 거부하려 `O_NOFOLLOW`로 open하지만, Windows엔 `fs.constants.O_NOFOLLOW`가 없어 `0`으로 폴백(`plugin/hooks/scrooge-config.js`)돼 open 시점 symlink 거부가 no-op. sanitized-key 경로 격리는 유지되고 symlink-swap 가드만 상실.
 - **Windows에서는 statusline 배지가 동작하지 않음.** installer가 `statusLine`을 `bash "<config>/hooks/scrooge-statusline.sh"`로 배선하는데, `bash`는 기본 Windows PATH에 없음. 영향 범위는 배지뿐 — 활성화·매 턴 reinject hook·`/scrooge-stats`는 순수 Node라 정상 동작하고, 상태 표시줄에 토큰 카운터만 안 뜸. Git Bash(또는 WSL)를 설치해 `bash`를 PATH에 올리면 동작.
 
 ## Troubleshooting

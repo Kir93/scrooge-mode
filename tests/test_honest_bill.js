@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatStats, estimateTokens } from '../hooks/scrooge-stats.js';
+import { formatStats, estimateTokens } from '../plugin/hooks/scrooge-stats.js';
 
 const ACTIVE = { lang: 'ko', dial: 'full', flags: ['lean'] };
 

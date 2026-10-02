@@ -1,5 +1,5 @@
 # Scrooge — Gemini entry point
 
-@./skills/scrooge/SKILL.md
+@./plugin/skills/scrooge/SKILL.md
 
 @./CLAUDE.md

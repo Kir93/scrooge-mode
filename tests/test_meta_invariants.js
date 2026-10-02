@@ -4,7 +4,7 @@
 //   (a) `scripts.test` is an explicit file list, not a glob. A new tests/*.js that
 //       is never registered runs green forever because it never runs at all — the
 //       failure mode is silent and permanent.
-//   (b) `.claude-plugin/plugin.json` wires three hooks by hardcoded path string.
+//   (b) `plugin/.claude-plugin/plugin.json` wires three hooks by hardcoded path string.
 //       A rename or move produces a plugin that installs cleanly and then does
 //       nothing: the host just fails to spawn a missing file.
 //   (c) The markdownlint version is pinned in two workflows and named again in the
@@ -76,7 +76,7 @@ test('every tests/*.js file is registered in package.json scripts.test', () => {
 });
 
 test('every plugin.json hook command points at a file that exists', () => {
-  const plugin = readJson('.claude-plugin/plugin.json');
+  const plugin = readJson('plugin/.claude-plugin/plugin.json');
   const commands = [];
   for (const [event, entries] of Object.entries(plugin.hooks ?? {})) {
     for (const entry of entries ?? []) {
@@ -93,7 +93,7 @@ test('every plugin.json hook command points at a file that exists', () => {
     assert.ok(m, `${event}: hook command has no \${CLAUDE_PLUGIN_ROOT} path: ${command}`);
     const rel = m[1];
     assert.ok(
-      fs.existsSync(path.join(REPO_ROOT, rel)),
+      fs.existsSync(path.join(REPO_ROOT, 'plugin', rel)),
       `${event}: hook command points at a missing file: ${rel}`
     );
   }
@@ -102,7 +102,7 @@ test('every plugin.json hook command points at a file that exists', () => {
 test('plugin.json hook files are inside the packaged file list', () => {
   // A hook that exists in the repo but is not in package.json "files" is missing
   // for anyone who installs from the package rather than a clone.
-  const plugin = readJson('.claude-plugin/plugin.json');
+  const plugin = readJson('plugin/.claude-plugin/plugin.json');
   const files = readJson('package.json').files ?? [];
   const roots = files.map((f) => (f.endsWith('/') ? f : `${f}`));
   for (const entries of Object.values(plugin.hooks ?? {})) {
@@ -112,7 +112,7 @@ test('plugin.json hook files are inside the packaged file list', () => {
         if (!m) continue;
         const rel = m[1];
         assert.ok(
-          roots.some((r) => (r.endsWith('/') ? rel.startsWith(r) : rel === r)),
+          roots.some((r) => (r.endsWith('/') ? `plugin/${rel}`.startsWith(r) : `plugin/${rel}` === r)),
           `hook ${rel} is not covered by package.json "files": ${roots.join(', ')}`
         );
       }

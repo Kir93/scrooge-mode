@@ -18,7 +18,7 @@ import {
   getVersionPath,
   getSuffixPath,
   getHistoryPath,
-} from '../hooks/scrooge-config.js';
+} from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
 function freshConfig() {

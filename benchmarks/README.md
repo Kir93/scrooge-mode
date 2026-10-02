@@ -18,7 +18,7 @@ over another.
 | --- | --- |
 | `normal` | No rule injection — the model's default register. **Baseline.** |
 | `terse` | Generic "answer concisely" control arm. Use it to separate skill-specific compression from a plain brevity instruction. |
-| `scrooge:LANG/DIAL` | Inject `rules/LANG/DIAL.md` as a prefix (e.g. `scrooge:ko/full`). |
+| `scrooge:LANG/DIAL` | Inject `plugin/rules/LANG/DIAL.md` as a prefix (e.g. `scrooge:ko/full`). |
 | `caveman:LEVEL` | Best-effort search for a local caveman install and inject its rule. |
 | `file:PATH` | Inject the file at `PATH` verbatim. |
 | `NAME=PATH` | Inject `PATH`, labelled `NAME` in the output. |
@@ -59,7 +59,7 @@ over another.
   usage once, and splits prose vs tool_use. The headline `output_tokens` is the
   **prose-only** bucket — the same basis `scrooge-stats` uses — and the pre-dedup
   naive sum is kept as `raw_output_tokens` so a regression to double-counting is
-  visible in the data. This mirrors `lib/session-log.js` `parseClaudeSession`.
+  visible in the data. This mirrors `plugin/lib/session-log.js` `parseClaudeSession`.
 - **Register pre-flight verification** — before measuring, the harness scans for
   active register-hook channels — **scrooge AND caveman** — and records the result
   (`verify_register_clean`). An *active* channel (a present scrooge state file — `.scrooge/` or a legacy
@@ -75,7 +75,7 @@ over another.
   exclusions: the cwd/gitBranch metadata, and the arm's own injected `--system-prompt`,
   which the transcript records verbatim at `attachment.systemPrompt`. Both are
   self-trigger guards — a register file may legitimately NAME a competing register, and
-  `rules/zh/full.md` does) for a register-hook injection: scrooge's reminder (`SCROOGE 활성 …`) in
+  `plugin/rules/zh/full.md` does) for a register-hook injection: scrooge's reminder (`SCROOGE 활성 …`) in
   ANY arm, or a caveman fingerprint in a non-caveman arm. A hit marks the row
   `contaminated`, drops it from scoring, and lets `--resume` retry once the channel
   is removed. This is the authoritative backstop behind the pre-flight check; it
@@ -96,7 +96,7 @@ over another.
   pairs after the fact rather than retrying a single call in place.
 - **Train/test separation** — `prompts/{ko,en}.txt` is the *dev* corpus the rules
   were tuned against; `prompts/{ko,en}-report.txt` is the held-out *report* corpus
-  for headline numbers. Never tune `rules/{ko,en}/*.md` against the report set, or
+  for headline numbers. Never tune `plugin/rules/{ko,en}/*.md` against the report set, or
   the headline overstates real-world savings. The dev and report sets mirror the
   same categories (debug/explain/review/plan) and domains with disjoint prompts.
 - **Every new measurement uses the latest Opus — enforced, not requested.** The
@@ -1052,7 +1052,7 @@ it proves:
   answer carries the same claims. Claim-equivalence is the LLM judge's job (offline,
   manual, subscription-gated).
 - **Static corpus → rule-text blind (F1).** The corpus is frozen committed text, so
-  checks.js returns the same verdict before and after any `rules/**` edit. This test
+  checks.js returns the same verdict before and after any `plugin/rules/**` edit. This test
   is a tripwire on **checks.js's logic and the frozen fixtures**, *not* a live
   rule-text / register-regression detector — editing a rule moves no number here.
   Detecting a real rule/register regression is the job of the CI rule-diff
