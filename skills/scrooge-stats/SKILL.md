@@ -9,7 +9,7 @@ description: >
 Run the stats script and show its output verbatim:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT:-.}/hooks/scrooge-stats.js"
+node "${CLAUDE_PLUGIN_ROOT}/hooks/scrooge-stats.js"
 ```
 
 Append `--share` for a one-line summary. Report only what the script prints
