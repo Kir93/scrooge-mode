@@ -153,3 +153,20 @@ test('notice is suppressed when not behind', () => {
   seed(dir, { behind: false });
   assert.doesNotMatch(runSessionStart(dir, 'startup'), /newer Scrooge is available/);
 });
+
+// The statusline's ↑vX reads only `behind`. Once the user updates to (or past) the
+// cached latest, the next session start must clear it, not wait for the daily probe.
+test('session start clears a behind flag the installed version already satisfies', () => {
+  const dir = freshConfig();
+  const installed = readInstalledVersion(path.join(REPO_ROOT, 'plugin'));
+  seed(dir, { latest: installed });
+  runSessionStart(dir, 'resume');
+  assert.equal(readUpdateCache(path.join(dir, '.scrooge', 'update')).behind, false);
+});
+
+test('session start keeps behind while a newer release is still pending', () => {
+  const dir = freshConfig();
+  seed(dir);
+  runSessionStart(dir, 'resume');
+  assert.equal(readUpdateCache(path.join(dir, '.scrooge', 'update')).behind, true);
+});

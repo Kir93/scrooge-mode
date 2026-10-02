@@ -33,6 +33,7 @@ import {
   writeUpdateCache,
   isUpdateCheckDisabled,
   defaultFlags,
+  DEFAULT_ON_SINCE,
   sameState,
   migrateLegacyState,
 } from './scrooge-config.js';
@@ -150,11 +151,13 @@ function buildUpgradeNotice({ from, to }) {
 // On a version upgrade, fold any newly-default-on flags (defaultFlags(), env-aware)
 // into both the session state and the saved global default, so an existing user
 // picks up new defaults (e.g. lean) automatically — re-running `/scrooge ko` would
-// NOT, since it preserves the saved flags. Gated on the version bump (once), so a
-// prior explicit opt-out is re-applied at most once. SCROOGE_DEFAULT_FLAGS=''
-// (global opt-out) → defaultFlags() empty → no-op. Returns the newly-added flags.
-function applyNewDefaultFlags(statePath, state) {
-  const added = defaultFlags().filter((f) => !state.flags.includes(f));
+// NOT, since it preserves the saved flags. Gated on the bump crossing the flag's
+// DEFAULT_ON_SINCE release, so an opt-out made after that release is never undone.
+// SCROOGE_DEFAULT_FLAGS='' (global opt-out) → defaultFlags() empty → no-op.
+// Returns the newly-added flags.
+function applyNewDefaultFlags(statePath, state, from) {
+  const crossed = (f) => DEFAULT_ON_SINCE[f] === undefined || !semverGt(from, DEFAULT_ON_SINCE[f]);
+  const added = defaultFlags().filter((f) => !state.flags.includes(f) && crossed(f));
   if (!added.length) return null;
   state.flags = VALID_FLAGS.filter((f) => state.flags.includes(f) || added.includes(f));
   writeState(state, statePath);
@@ -204,6 +207,21 @@ function maybeUpdateNotice(root, source, eligible) {
   return buildUpdateNotice(cache.latest);
 }
 
+// The statusline's ↑vX trusts `behind` without comparing versions, and the probe
+// only re-runs once a day — so after an update the badge would keep advertising
+// the release the user is already on. Clear it as soon as the installed version
+// catches up.
+function clearSatisfiedUpdate(root) {
+  try {
+    const cache = readUpdateCache();
+    if (!cache || !cache.behind || !cache.latest) return;
+    const installed = readInstalledVersion(root);
+    if (installed && !semverGt(cache.latest, installed)) writeUpdateCache({ ...cache, behind: false });
+  } catch (e) {
+    /* best-effort — a stale badge must never break session start */
+  }
+}
+
 // Refresh the update cache in a detached background process, throttled to once a
 // day. Never blocks: the child is unref'd with stdio ignored, so session start
 // returns immediately regardless of network speed. A missing cache refreshes now
@@ -249,6 +267,7 @@ function handlePayload(data) {
 
     // Update-available notice for real users; refresh the cache in the background
     // (both no-ops off session startup / under opt-out / in CI).
+    clearSatisfiedUpdate(root);
     const eligible = !!state || hasActivationArtifact();
     const updateNotice = maybeUpdateNotice(root, source, eligible);
     scheduleUpdateRefresh(source);
@@ -268,7 +287,7 @@ function handlePayload(data) {
     // On a version bump, auto-apply any newly-default-on flags to this active
     // session + the saved default (B), so existing users pick them up without
     // re-running. Must run before assembleRuleBody so the new fragment is injected.
-    const applied = upgraded ? applyNewDefaultFlags(getStatePath(sessionKey), state) : null;
+    const applied = upgraded ? applyNewDefaultFlags(getStatePath(sessionKey), state, upgraded.from) : null;
 
     // Re-inject base rule + active flag fragments, matching the activation turn
     // so a resumed session restores the same register (flags included).

@@ -223,3 +223,24 @@ test('upgrade + active session missing a now-default flag → auto-applied + FYI
   assert.deepEqual(readState(stateFile(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: ['lean'] });
   assert.deepEqual(readState(defaultFile(cfg)), { lang: 'ko', dial: 'full', flags: ['lean'] });
 });
+
+// lean became default-on in v0.11.0. A user upgrading from a release that already
+// had it and saved `flags: []` opted out with `/scrooge nolean` — every later
+// release bump must leave that alone, not re-add lean each time.
+test('upgrade from a post-lean release keeps an explicit nolean opt-out', () => {
+  const cfg = freshConfig();
+  writeVersionMarker('0.20.0', versionFile(cfg));
+  writeState({ lang: 'ko', dial: 'full', flags: [] }, defaultFile(cfg));
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin') };
+  delete env.SCROOGE_DEFAULT_FLAGS;
+  const r = spawnSync(process.execPath, [SESSION_START_HOOK], {
+    input: JSON.stringify({ session_id: 'sessA' }),
+    encoding: 'utf8',
+    env,
+  });
+  assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.doesNotMatch(ctx, /now ON by default/);
+  assert.deepEqual(readState(defaultFile(cfg)), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(readState(stateFile(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: [] });
+});
