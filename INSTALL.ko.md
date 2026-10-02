@@ -36,6 +36,7 @@ Claude Code 세션에서 활성화:
 
 ```bash
 claude plugin uninstall scrooge@scrooge
+claude plugin marketplace remove scrooge
 ```
 
 원라이너로 statusline까지 설치했다면 project uninstaller도 실행.
@@ -108,7 +109,7 @@ npx -y github:Kir93/scrooge-mode -- --only claude
 release 버전 핀(재현 가능한 설치 — 원하는 release tag로 교체):
 
 ```bash
-# curl|bash / npx — npm git-ref로 직접 핀(보장)
+# npx — npm git-ref로 직접 핀(보장; curl|bash shim은 항상 main 설치)|bash / npx — npm git-ref로 직접 핀(보장)
 npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # installer가 구동하는 marketplace / skills 채널에도 tag 전달
@@ -208,7 +209,7 @@ claude plugin update scrooge@scrooge
 
 > **Codex tier 한계.** Codex 통합은 `UserPromptSubmit` hook만 배선하고 `SessionStart`는 미배선 — 세션 내 업데이트 알림과 `↑vX` statusline 마커가 Codex에는 뜨지 않음. Codex payload는 copy 방식(in-place `plugin update` 없음)이고 버전 마커도 없어서 **업그레이드 = installer 재실행** — 멱등이라 재실행이 곧 수동 업데이트 확인.
 
-latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
+latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. 전체를 핀하려면 둘 다 지정 — `#ref`는 installer 사본 자체(Codex payload·statusline script가 여기서 복사됨), `--tag`는 marketplace / skills 채널을 핀함. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
 
 ### 업데이트 알림
 
@@ -323,6 +324,7 @@ Claude Code plugin:
 
 ```bash
 claude plugin uninstall scrooge@scrooge
+claude plugin marketplace remove scrooge
 ```
 
 원라이너:

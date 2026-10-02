@@ -36,6 +36,7 @@ Uninstall:
 
 ```bash
 claude plugin uninstall scrooge@scrooge
+claude plugin marketplace remove scrooge
 ```
 
 If the statusline was installed by the one-line installer, run the project uninstaller too.
@@ -109,7 +110,7 @@ npx -y github:Kir93/scrooge-mode -- --only claude
 Pin a released version (reproducible installs — swap the tag for the release you want):
 
 ```bash
-# curl|bash / npx — pins directly via the npm git-ref (guaranteed)
+# npx — pins directly via the npm git-ref (guaranteed; the curl|bash shim always installs main)|bash / npx — pins directly via the npm git-ref (guaranteed)
 npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # forward the tag to the marketplace / skills channels the installer drives
@@ -211,7 +212,7 @@ For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, regist
 
 > **Codex tier limit.** The Codex integration wires only the `UserPromptSubmit` hook, not `SessionStart` — so the in-session update notice and the `↑vX` statusline marker never surface on Codex. Because the Codex payload is a copy (no in-place `plugin update`) and carries no version marker, **upgrading means re-running the installer** — it is idempotent, so re-running it is also the manual update check.
 
-To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
+To update to a specific version instead of latest, add `--tag <ref>`/`#ref` as in the [One-Line Installer](#one-line-installer) pinning matrix. Pass both to pin everything: `#ref` pins the installer copy itself (the Codex payload and the statusline script are copied from it), `--tag` pins the marketplace / skills channels. For Claude this re-points the marketplace to the ref and reinstalls — `claude plugin marketplace remove scrooge`, then `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, then `claude plugin install scrooge@scrooge`.
 
 ### Update notifications
 
@@ -327,6 +328,7 @@ Claude Code plugin:
 
 ```bash
 claude plugin uninstall scrooge@scrooge
+claude plugin marketplace remove scrooge
 ```
 
 One-line installer:

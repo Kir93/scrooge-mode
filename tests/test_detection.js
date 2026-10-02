@@ -23,6 +23,7 @@ import {
   mergeCodexHookConfig,
   pruneClaudeSkillLeak,
   removeCodexHookConfig,
+  hasMixedScroogeGroup,
   safeReplaceFile,
   findOwnRepoRoot,
   installCodexPayload,
@@ -343,7 +344,9 @@ test('mergeCodexHookConfig replaces old scrooge hook and preserves unrelated hoo
   assert.doesNotMatch(after, /\/old\/scrooge-activate\.js/);
   assert.match(after, /echo keep/);
   assert.equal((after.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 2);
-  assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:1:0"\]/);
+  // Rewritten in place: our group keeps index 0, so "echo keep" keeps index 1.
+  assert.ok(after.indexOf('/new/codex-activate.mjs') < after.indexOf('echo keep'));
+  assert.match(after, /\[hooks\.state\."\/home\/me\/\.codex\/config\.toml:user_prompt_submit:0:0"\]/);
 });
 
 test('mergeCodexHookConfig removes legacy nested scrooge hooks and stale hook state', () => {
@@ -398,6 +401,54 @@ test('mergeCodexHookConfig is idempotent across a re-run (update-path Codex guar
   assert.equal(twice, once, 're-applying the merge must be a stable no-op');
   assert.equal((twice.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 1);
   assert.match(twice, /codex-activate\.mjs/);
+});
+
+// Codex keys hook trust by group position (`<source>:user_prompt_submit:<group>:0`),
+// so moving our group on a re-run would hand its index — and the user's trust — to
+// whichever hook slid into it.
+const KEY = '/home/me/.codex/config.toml';
+const userAfterScrooge = (command) =>
+  mergeCodexHookConfig('', command, KEY).replace(
+    /\[hooks\.state/,
+    '[[hooks.UserPromptSubmit]]\nhooks = [{ type = "command", command = "echo user" }]\n\n[hooks.state'
+  ) + `\n[hooks.state."${KEY}:user_prompt_submit:1:0"]\ntrusted_hash = "sha256:user"\nenabled = true\n`;
+
+test('mergeCodexHookConfig re-run keeps scrooge in place so a later user hook keeps its trust', () => {
+  const command = 'node "/new/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(userAfterScrooge('node "/old/scrooge/codex-activate.mjs"'), command, KEY);
+
+  assert.ok(after.indexOf('codex-activate.mjs') < after.indexOf('echo user'), 'scrooge group stays first');
+  assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "sha256:user"`));
+  assert.match(after, new RegExp(`user_prompt_submit:0:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
+  assert.doesNotMatch(after, /\/old\/scrooge/);
+});
+
+test('removeCodexHookConfig with a key source drops our trust state and shifts later keys down', () => {
+  const after = removeCodexHookConfig(userAfterScrooge('node "/x/scrooge/codex-activate.mjs"'), KEY);
+
+  assert.doesNotMatch(after, /codex-activate\.mjs/);
+  assert.match(after, /echo user/);
+  assert.match(after, /user_prompt_submit:0:0"\]\ntrusted_hash = "sha256:user"/, 'user hook now at 0 keeps its hash');
+  assert.doesNotMatch(after, /user_prompt_submit:1:0/);
+  assert.equal((after.match(/trusted_hash/g) || []).length, 1, 'no orphaned scrooge trust block');
+});
+
+// A user may add their own command into our group's `hooks` array. Rewriting that
+// group would delete it, so a mixed group is left as is and the caller warns.
+const MIXED = [
+  '[[hooks.UserPromptSubmit]]',
+  'hooks = [',
+  '  { type = "command", command = "node /x/scrooge/codex-activate.mjs" },',
+  '  { type = "command", command = "policy-check.sh" },',
+  ']',
+  '',
+].join('\n');
+
+test('mixed scrooge + user group: merge and remove leave it untouched, detector flags it', () => {
+  assert.equal(mergeCodexHookConfig(MIXED, 'node "/new/scrooge/codex-activate.mjs"', KEY), MIXED);
+  assert.equal(removeCodexHookConfig(MIXED, KEY), MIXED);
+  assert.equal(hasMixedScroogeGroup(MIXED), true);
+  assert.equal(hasMixedScroogeGroup(mergeCodexHookConfig('', 'node "/a/codex-activate.mjs"', KEY)), false);
 });
 
 test('removeCodexHookConfig removes only scrooge hook blocks', () => {

@@ -16,8 +16,8 @@
 //
 // Pure Node stdlib, zero runtime deps. ESM (package.json "type": "module").
 //
-// NOTE: `claude plugin install` / `npx skills add` resolve against the PUBLISHED
-// artifacts (npm + GitHub release). Use --dry-run to inspect actions without
+// NOTE: `claude plugin install` / `npx skills add` resolve against the GitHub repo
+// (no npm publish — RELEASE.md §6). Use --dry-run to inspect actions without
 // installing.
 
 import fs from 'node:fs';
@@ -589,10 +589,62 @@ function collectUserPromptSubmitBlock(lines, start) {
   return { block, next: start };
 }
 
-export function removeCodexHookConfig(text, keySource = null) {
+const isScroogeCommand = (s) => s.includes('scrooge-activate.js') || s.includes('codex-activate.mjs');
+
+function isScroogeHookBlock(block) {
+  return isScroogeCommand(block.join('\n'));
+}
+
+// A group whose `hooks` array also holds a non-scrooge command — a user added
+// theirs next to ours. Rewriting or dropping that group would delete it, so it is
+// never touched; the installer warns instead (hasMixedScroogeGroup).
+function isMixedHookBlock(block) {
+  const commands = block.filter((l) => /\bcommand\s*=/.test(l));
+  return commands.some(isScroogeCommand) && commands.some((l) => !isScroogeCommand(l));
+}
+
+export function hasMixedScroogeGroup(text) {
+  const lines = String(text || '').split(/\n/);
+  for (let i = 0; i < lines.length;) {
+    if (!isUserPromptSubmitHeader(lines[i])) { i++; continue; }
+    const { block, next } = collectUserPromptSubmitBlock(lines, i);
+    if (isMixedHookBlock(block)) return true;
+    i = next;
+  }
+  return false;
+}
+
+// Codex keys hook trust by position (`<source>:user_prompt_submit:<group>:<hook>`).
+// Dropping a group therefore drops its trust state and shifts every later group's
+// key down by one, so a user hook after ours keeps its own hash.
+function renumberHookStateKeys(text, keySource, removedIndices) {
+  if (!keySource || !removedIndices.length) return text;
+  const prefix = `${keySource}:user_prompt_submit:`;
+  return String(text || '').split(/\n/).map((line) => {
+    const m = /^\s*\[hooks\.state\.(".*")\]\s*$/.exec(line);
+    if (!m) return line;
+    let key;
+    try { key = JSON.parse(m[1]); } catch (_) { return line; }
+    if (typeof key !== 'string' || !key.startsWith(prefix)) return line;
+    const [group, ...rest] = key.slice(prefix.length).split(':');
+    const n = Number(group);
+    if (!Number.isInteger(n)) return line;
+    const shift = removedIndices.filter((r) => r < n).length;
+    return shift ? `[hooks.state.${JSON.stringify(`${prefix}${n - shift}:${rest.join(':')}`)}]` : line;
+  }).join('\n');
+}
+
+// One pass over the UserPromptSubmit groups. Every scrooge group is dropped,
+// except that `replacement` (when given) takes the FIRST one's slot — a re-run
+// rewrites our group where it stands instead of moving it to the end, so no
+// group's index (and trust) changes. Returns the new text and our slot (-1 when
+// there was no scrooge group to replace).
+function rewriteScroogeGroups(text, keySource, replacement) {
   const lines = String(text || '').split(/\n/);
   const out = [];
-  const removedStateKeys = [];
+  const removed = [];
+  let slot = -1;
+  let mixed = false;
   let groupIndex = 0;
   for (let i = 0; i < lines.length;) {
     if (!isUserPromptSubmitHeader(lines[i])) {
@@ -601,42 +653,57 @@ export function removeCodexHookConfig(text, keySource = null) {
     }
     const { block, next } = collectUserPromptSubmitBlock(lines, i);
     i = next;
-    const joined = block.join('\n');
-    if (joined.includes('scrooge-activate.js') || joined.includes('codex-activate.mjs')) {
-      if (keySource) removedStateKeys.push(`${keySource}:user_prompt_submit:${groupIndex}:0`);
-      groupIndex++;
-      continue;
+    if (isScroogeHookBlock(block) && isMixedHookBlock(block)) {
+      mixed = true;
+      out.push(...block);
+    } else if (!isScroogeHookBlock(block)) {
+      out.push(...block);
+    } else if (replacement && slot === -1) {
+      slot = groupIndex;
+      let blank = 0;
+      while (blank < block.length && block[block.length - 1 - blank].trim() === '') blank++;
+      out.push(...replacement.replace(/\n$/, '').split('\n'), ...block.slice(block.length - blank));
+    } else {
+      removed.push(groupIndex);
     }
-    out.push(...block);
     groupIndex++;
   }
   let nextText = out.join('\n');
-  for (const stateKey of removedStateKeys) {
-    nextText = removeHookStateBlock(nextText, stateKey);
+  if (keySource) {
+    for (const idx of slot === -1 ? removed : [slot, ...removed]) {
+      nextText = removeHookStateBlock(nextText, `${keySource}:user_prompt_submit:${idx}:0`);
+    }
+    nextText = renumberHookStateKeys(nextText, keySource, removed);
   }
-  return nextText.replace(/\n{3,}/g, '\n\n');
+  return { text: nextText.replace(/\n{3,}/g, '\n\n'), slot, mixed };
+}
+
+export function removeCodexHookConfig(text, keySource = null) {
+  return rewriteScroogeGroups(text, keySource, null).text;
 }
 
 export function mergeCodexHookConfig(text, command, keySource = null) {
-  let current = removeCodexHookConfig(text, keySource).replace(/\s*$/, '');
-  const stateIdx = current.search(/^\[hooks\.state/m);
-  const beforeState = stateIdx === -1 ? current : current.slice(0, stateIdx);
-  const groupIndex = countUserPromptSubmitGroups(beforeState);
-  const stateKey = keySource ? `${keySource}:user_prompt_submit:${groupIndex}:0` : null;
-  current = removeHookStateBlock(current, stateKey).replace(/\s*$/, '');
   const block =
     `[[hooks.UserPromptSubmit]]\n` +
     `hooks = [\n` +
     `  { type = "command", command = ${JSON.stringify(command)}, timeout = 5, statusMessage = ${JSON.stringify(CODEX_HOOK_STATUS)} },\n` +
     `]\n`;
-  const stateBlock = stateKey
-    ? `\n[hooks.state.${JSON.stringify(stateKey)}]\ntrusted_hash = ${JSON.stringify(codexHookHash(command))}\nenabled = true\n`
+  const stateFor = (idx) => keySource
+    ? `\n[hooks.state.${JSON.stringify(`${keySource}:user_prompt_submit:${idx}:0`)}]\ntrusted_hash = ${JSON.stringify(codexHookHash(command))}\nenabled = true\n`
     : '';
-  const newStateIdx = current.search(/^\[hooks\.state/m);
-  if (newStateIdx === -1) return `${current}${current ? '\n\n' : ''}${block}${stateBlock}`;
-  const before = current.slice(0, newStateIdx).replace(/\s*$/, '');
-  const after = current.slice(newStateIdx).replace(/^\s*/, '');
-  return `${before}${before ? '\n\n' : ''}${block}\n${after}${stateBlock}`;
+  const rewritten = rewriteScroogeGroups(text, keySource, block);
+  // Our command already runs from a mixed group: appending another would run it
+  // twice per prompt. Leave the file alone; the caller warns.
+  if (rewritten.mixed && rewritten.slot === -1) return String(text || '');
+  if (rewritten.slot !== -1) return `${rewritten.text.replace(/\s*$/, '')}\n${stateFor(rewritten.slot)}`;
+
+  const current = rewritten.text.replace(/\s*$/, '');
+  const stateIdx = current.search(/^\[hooks\.state/m);
+  const groupIndex = countUserPromptSubmitGroups(stateIdx === -1 ? current : current.slice(0, stateIdx));
+  if (stateIdx === -1) return `${current}${current ? '\n\n' : ''}${block}${stateFor(groupIndex)}`;
+  const before = current.slice(0, stateIdx).replace(/\s*$/, '');
+  const after = current.slice(stateIdx).replace(/^\s*/, '');
+  return `${before}${before ? '\n\n' : ''}${block}\n${after}${stateFor(groupIndex)}`;
 }
 
 // Exported for tests: the copied payload is run end-to-end there.
@@ -659,6 +726,14 @@ export function installCodexPayload(root, dest, opts) {
   fs.writeFileSync(wrapper, codexWrapperBody());
   try { fs.chmodSync(wrapper, 0o755); } catch (_) {}
   return wrapper;
+}
+
+function warnMixedCodexGroup(configPath) {
+  process.stdout.write(
+    `  ! ${configPath}: a [[hooks.UserPromptSubmit]] group holds the Scrooge hook AND\n` +
+      `    another command. Left untouched so yours is not deleted — edit the Scrooge\n` +
+      `    entry (codex-activate.mjs) in that group by hand.\n`
+  );
 }
 
 function wireCodexHook(opts, results) {
@@ -685,6 +760,7 @@ function wireCodexHook(opts, results) {
     fs.mkdirSync(cfg, { recursive: true });
     const before = safeExists(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
     const after = mergeCodexHookConfig(before, command, normalizedPath(configPath));
+    if (hasMixedScroogeGroup(before)) warnMixedCodexGroup(configPath);
     if (after !== before) {
       safeReplaceFile(configPath, after + (after.endsWith('\n') ? '' : '\n'));
       process.stdout.write('  Codex user-level hook configured.\n');
@@ -714,7 +790,8 @@ function unwireCodexHook(opts, results) {
   if (safeExists(configPath)) {
     try {
       const before = fs.readFileSync(configPath, 'utf8');
-      const after = removeCodexHookConfig(before);
+      const after = removeCodexHookConfig(before, normalizedPath(configPath));
+      if (hasMixedScroogeGroup(before)) warnMixedCodexGroup(configPath);
       if (after !== before) {
         safeReplaceFile(configPath, after.replace(/\s*$/, '\n'));
         process.stdout.write('  removed Scrooge Codex hook from config.toml\n');
@@ -741,6 +818,9 @@ function uninstall(opts, results) {
     const probe = capture('claude', ['plugin', 'list']);
     if (probe.status === 0 && /scrooge/i.test(probe.stdout || '')) {
       run('claude', ['plugin', 'uninstall', `${PLUGIN}@${PLUGIN}`], opts.dryRun);
+      // Install added the marketplace too (installClaude); remove it so uninstall
+      // reverses install instead of leaving a registered source behind.
+      run('claude', ['plugin', 'marketplace', 'remove', PLUGIN], opts.dryRun);
       results.removed.push('claude');
     } else process.stdout.write('  claude plugin not installed — skipping\n');
   }
