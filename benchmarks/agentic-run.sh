@@ -40,9 +40,24 @@ for p in $(seq 1 "$N"); do
     log=$(python3 "$REPO/benchmarks/run.py" \
       --prompts "$REPO/benchmarks/prompts/en-agentic.txt" \
       --arms "$arm" --runs 1 --model "${AGENTIC_MODEL:-claude-opus-4-8}" \
-      --resume --max-prompts "$p" --timeout 300 \
+      --resume --max-prompts "$p" --timeout 300 --no-timeout-retry \
       --system-prompt-mode append --cwd "$FIX" --output "$OUT" 2>&1) || rc=$?
     if [ "$rc" -ne 0 ]; then printf '%s\n' "$log" >&2; exit "$rc"; fi
     printf '%s\n' "$log" | grep -E "^\s+\[[0-9]+/" || true
+    # Stop on a failed call. --resume does not count an error row as done, so the
+    # next iteration would run this prompt AND the next one in one run.py process —
+    # the second starting from the tree the first left, with no reset between.
+    # Re-running the script then retries it alone, on a fresh fixture.
+    if ! python3 - "$OUT" "$arm" "$((p - 1))" <<'PY'
+import json, sys
+path, arm, pid = sys.argv[1], sys.argv[2], int(sys.argv[3])
+rows = [json.loads(l) for l in open(path, encoding="utf-8") if l.strip()]
+sys.exit(0 if any(r.get("arm") == arm and r.get("prompt_id") == pid and not r.get("error")
+                  for r in rows) else 1)
+PY
+    then
+      echo "prompt $((p - 1)) / $arm failed — stopping; re-run to retry it on a fresh fixture" >&2
+      exit 1
+    fi
   done
 done

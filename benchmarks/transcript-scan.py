@@ -28,9 +28,9 @@ is "does the boundary hold across N turns of boundary-free reminders", and N is
 bounded in practice — measured p99 = 22 user turns, max 33.
 
 Read `scorable=` before reading `violations=`. A single-line Korean commit SUBJECT
-(`type: 한글 설명`, the format most repos here enforce) carries no sentence ending
-for the scorer to judge, so it cannot produce a violation whatever the register
-did. Counting those into a clean rate turns "0 violations" into a near-tautology,
+(`type: 한글 설명`, the format most repos here enforce) usually carries no sentence
+ending for the scorer to judge; one that does end in a register ending (`… 수정함`)
+is a visible leak and is counted as scorable. Counting those into a clean rate turns "0 violations" into a near-tautology,
 which is why the summary reports the prose-shaped subset separately.
 
 Privacy: rows carry verbatim commit messages, PR bodies, and Slack text from EVERY
@@ -247,6 +247,7 @@ def scan_session(path: Path) -> list[dict]:
             for kind, body in artifacts_in(name, inp, files):
                 if not active:
                     continue
+                score = SCORE.score(body)
                 rows.append({
                     "session": path.stem,
                     "project": path.parent.name,
@@ -255,12 +256,15 @@ def scan_session(path: Path) -> list[dict]:
                     "drift_turns": turns_since,
                     "artifact": body,
                     # Whether this artifact can carry a sentence ending at all.
-                    # A single-line commit subject cannot, so it cannot violate.
-                    "prose_shaped": "\n" in body or bool(PROSE_RE.search(body)),
+                    # Multi-line or punctuated prose can; a single-line subject
+                    # can only when it ends in one of the scorer's endings (they
+                    # match at end of line too), which a violation demonstrates —
+                    # so `violations` always stays inside `scorable`.
+                    "prose_shaped": "\n" in body or bool(PROSE_RE.search(body)) or bool(score.get("violated")),
                     # No `=== OUTPUT ===` fence in real work, so score the body
                     # directly — each class here IS a whole tool argument, with no
                     # room for the trailing meta that made the fence necessary.
-                    **SCORE.score(body),
+                    **score,
                 })
     return rows
 
@@ -319,7 +323,7 @@ def main() -> int:
               f"violations={sum(1 for r in group if r['violated'])}", file=sys.stderr)
     if rows and len(scorable) < len(rows):
         print(f"  ^ {len(rows) - len(scorable)} artifact(s) are single-line with no "
-              "sentence ending — they cannot carry a leak the scorer can see, so "
+              "sentence or register ending — they carry no leak the scorer can see, so "
               "they are not evidence either way. Read `violations` against "
               "`scorable`, not against `artifacts`.", file=sys.stderr)
     # Outbound is the one class whose correct voice is 존댓말 (`## Boundaries`:

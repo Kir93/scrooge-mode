@@ -218,8 +218,8 @@ class TestMeasurementPower(unittest.TestCase):
     """`prose_shaped` is what keeps "0 violations" from being a tautology.
 
     Measured: 538 of 540 commit artifacts on this machine are single-line Korean
-    subjects (`type: 한글 설명`) with no terminal punctuation — a shape that cannot
-    carry any ending the scorer looks for, whatever the register did. Reporting
+    subjects (`type: 한글 설명`) with no terminal punctuation — a shape that carries
+    no ending the scorer looks for unless it ends in a register ending itself. Reporting
     them in the same total as prose artifacts inflates a clean rate out of
     artifacts that could never have been dirty.
     """
@@ -231,6 +231,17 @@ class TestMeasurementPower(unittest.TestCase):
         ]))
         self.assertFalse(rows[0]["prose_shaped"])
         self.assertFalse(rows[0]["violated"])
+
+    def test_a_single_line_subject_ending_in_a_register_ending_is_scorable(self):
+        # The scorer's endings match at end of line too, so `수정함` with no
+        # terminal punctuation IS a visible leak. It must land inside `scorable`,
+        # or `violations` would count rows outside its own denominator.
+        rows = SCAN.scan_session(write_session([
+            hook_injection(),
+            assistant(("Bash", {"command": 'git commit -m "fix: 로직 수정함"'})),
+        ]))
+        self.assertTrue(rows[0]["violated"])
+        self.assertTrue(rows[0]["prose_shaped"])
 
     def test_a_multi_line_or_punctuated_artifact_is(self):
         rows = SCAN.scan_session(write_session([

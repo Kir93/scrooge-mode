@@ -171,7 +171,9 @@ def main() -> int:
                     # value read back from the judge's transcript. Naming it `model`
                     # would let a provenance table imply the served model was verified
                     # when it was only requested.
-                    "judge_runs": args.judge_runs, "model_requested": args.model,
+                    # Calls that returned, not calls requested: judge_once skips a
+                    # failed call, so a "judge N=3" provenance must count what ran.
+                    "judge_runs": len(per_run), "model_requested": args.model,
                     "error": err,
                 }
                 records.append(rec)

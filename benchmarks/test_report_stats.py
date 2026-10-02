@@ -54,6 +54,24 @@ class TestMde(unittest.TestCase):
         self.assertEqual(mde([5.0] * 6), 0.0)
 
 
+class TestPairedSignTestUnit(unittest.TestCase):
+    """Runs of one prompt are correlated, which is why the CI resamples prompts.
+    The sign test must count the same unit, or repeated runs inflate N and the
+    p-value reads smaller than the corpus supports."""
+
+    def test_clustered_sign_test_counts_prompts_not_pairs(self):
+        import contextlib, io
+        from report import print_paired_stats
+        base = {(p, r): 100 for p in range(2) for r in range(3)}
+        arm = {(0, 0): 90, (0, 1): 90, (0, 2): 90, (1, 0): 90, (1, 1): 90, (1, 2): 110}
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            print_paired_stats({"b": base, "a": arm}, ["b", "a"], "b", None, 200, "prompt", 0)
+        row = next(l for l in out.getvalue().splitlines() if l.startswith("| `a`"))
+        self.assertIn("| 2/2c |", row)
+        self.assertIn(f"| {sign_test(2, 0):.2g} |", row)
+
+
 class TestBootstrapCi(unittest.TestCase):
     def test_constant_sample_has_degenerate_interval(self):
         lo, hi = bootstrap_ci([[7.0]] * 20, n_resamples=200, seed=0)
@@ -190,6 +208,28 @@ class TestUltracodeNeutralization(unittest.TestCase):
             before = self.settings.read_text(encoding="utf-8")
             self.assertIsNone(self.run._neutralize_ultracode(self.settings, self.tmp))
             self.assertEqual(self.settings.read_text(encoding="utf-8"), before)
+
+    def test_restore_is_byte_for_byte_when_nothing_else_changed(self):
+        self.settings.write_text('{"ultracode": true,  "model": "opus"}\n', encoding="utf-8")
+        before = self.settings.read_text(encoding="utf-8")
+        live, backup = self.run._neutralize_ultracode(self.settings, self.tmp)
+        self.run._restore_ultracode(live, backup)
+        self.assertEqual(self.settings.read_text(encoding="utf-8"), before)
+        self.assertFalse(backup.exists())
+
+    def test_restore_keeps_edits_made_during_the_run(self):
+        # Another session can write settings.json while a long run is going; the
+        # restore must put back only the key it changed, not the whole snapshot.
+        self._write({"ultracode": True, "model": "opus"})
+        live, backup = self.run._neutralize_ultracode(self.settings, self.tmp)
+        mid = json.loads(self.settings.read_text(encoding="utf-8"))
+        mid["enabledPlugins"] = {"new": True}
+        self._write(mid)
+        self.run._restore_ultracode(live, backup)
+        after = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertTrue(after["ultracode"])
+        self.assertEqual(after["enabledPlugins"], {"new": True})
+        self.assertFalse(backup.exists())
 
     def test_missing_or_unparseable_settings_is_not_fatal(self):
         self.assertIsNone(self.run._neutralize_ultracode(self.tmp / "absent.json", self.tmp))

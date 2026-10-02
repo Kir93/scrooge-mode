@@ -75,3 +75,21 @@ test('scanFile scans markdown whole-file for a leaked path (derived docs in scop
   const md = '# Provenance\n\nRun at /Users/crhan/Documents/toy/scrooge-mode.\n';
   assert.ok(scanFile('manifest.md', md).some((e) => e.leak.startsWith('home-path:')));
 });
+
+// transcript-scan.py rows carry the verbatim artifact (other projects' commits, PR
+// bodies, Slack text) and the Claude project slug (`-Users-<name>-…`). Its
+// docstring sends them through this scrub before anything is published.
+test('transcript-scan rows: transform drops artifact + project, scan flags both and the slug', () => {
+  const row = {
+    session: 'abc', project: '-Users-crhan-Documents-job-secret', class: 'commit',
+    artifact: 'fix: 사내 결제 로직 수정함', drift_turns: 3, violated: true,
+  };
+  const leaks = scanRow(row);
+  assert.ok(leaks.includes('artifact-present'));
+  assert.ok(leaks.includes('project-present'));
+  assert.ok(scanText(JSON.stringify(row)).some((l) => l.startsWith('home-path:-Users-crhan')));
+  const pub = toPublishRow(row);
+  assert.ok(!('artifact' in pub) && !('project' in pub));
+  assert.deepEqual(scanRow(pub), []);
+  assert.deepEqual(scanText(JSON.stringify(pub)), []);
+});

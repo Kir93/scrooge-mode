@@ -581,6 +581,11 @@ def is_retryable(error: Optional[str]) -> bool:
     return bool(re.search(r"(?:error|status|code|http)[^a-z0-9]{0,8}(?:429|5\d\d)\b", lowered))
 
 
+def no_timeout_retry(error: Optional[str]) -> bool:
+    """`is_retryable` minus the timeout case, for a cwd the call mutates."""
+    return is_retryable(error) and "timeout" not in (error or "").lower()
+
+
 def call_with_retry(make_cmd, cwd: Path, timeout: int, label: str = "",
                     retryable=None):
     """Run the CLI under the bounded retry policy above.
@@ -632,7 +637,8 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             cwd: Path, dry_run: bool, timeout: int, model: Optional[str] = None,
             isolation_verified: Optional[bool] = None,
             disallow_tools: bool = False,
-            system_prompt_mode: str = "replace") -> RunResult:
+            system_prompt_mode: str = "replace",
+            retryable=None) -> RunResult:
     session_dir = cwd_session_dir(cwd)
     start = time.monotonic()
 
@@ -671,7 +677,7 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
 
     r, error, reason = call_with_retry(
         make_cmd, cwd, timeout,
-        label=f"arm={arm} prompt={prompt_id} run={run}")
+        label=f"arm={arm} prompt={prompt_id} run={run}", retryable=retryable)
 
     elapsed = time.monotonic() - start
     if error:
@@ -808,6 +814,29 @@ def _neutralize_ultracode(settings: Path, backup_dir: Path) -> Optional[tuple[Pa
     print(f"[isolation] ultracode disabled in {settings} for this run "
           f"(backup {backup})", file=sys.stderr)
     return (settings, backup)
+
+
+def _restore_ultracode(live: Path, backup: Path) -> None:
+    """Undo `_neutralize_ultracode` without clobbering edits made during the run.
+
+    A long run overlaps other sessions, and any of them may write settings.json
+    (a plugin toggle, a model switch, a permission). When the live file is still
+    exactly what neutralization left, the backup goes back byte-for-byte; when it
+    changed, only the `ultracode` key is restored into the current content. An
+    unreadable live file falls back to the backup, which is the only safe copy.
+    """
+    try:
+        original = json.loads(backup.read_text(encoding="utf-8"))
+        current = json.loads(live.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        shutil.move(str(backup), str(live))
+        return
+    if current == {**original, "ultracode": False}:
+        shutil.move(str(backup), str(live))
+        return
+    current["ultracode"] = original.get("ultracode")
+    live.write_text(json.dumps(current, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    backup.unlink()
 
 
 def check_register_clean(cwd: Path, allow_contaminated: bool = False,
@@ -994,7 +1023,7 @@ def host_isolation(enabled: bool, isolate_settings: bool = False):
                 print(f"[isolation] discarded stale backup {backup}", file=sys.stderr)
         if settings_edit:
             live, backup = settings_edit
-            shutil.move(str(backup), str(live))
+            _restore_ultracode(live, backup)
             print(f"[isolation] restored {live} (ultracode)", file=sys.stderr)
         # Non-recursive on purpose. Restoration above is best-effort, so a backup
         # can outlive it — and that backup may be the only copy of the user's
@@ -1245,6 +1274,10 @@ def main() -> int:
                     help="Job order. Default prompt-major keeps arms balanced under quota limits.")
     ap.add_argument("--max-prompts", type=int, default=0,
                     help="Only use the first N prompts. Default 0 = all prompts.")
+    ap.add_argument("--no-timeout-retry", action="store_true",
+                    help="Never retry a timed-out call. For a --cwd the task mutates "
+                         "(agentic-run.sh): a killed call may already have edited files, "
+                         "so a retry would start from a tree no other arm saw.")
     ap.add_argument("--resume", action="store_true",
                     help="Skip successful (arm, prompt_id, run) keys already present in --output.")
     ap.add_argument("--keep-going-on-limit", action="store_true",
@@ -1318,7 +1351,8 @@ def main() -> int:
                             timeout=args.timeout, model=args.model,
                             isolation_verified=isolation_verified,
                             disallow_tools=args.disallow_tools,
-                            system_prompt_mode=args.system_prompt_mode)
+                            system_prompt_mode=args.system_prompt_mode,
+                            retryable=no_timeout_retry if args.no_timeout_retry else None)
 
     def write_result(idx, result):
         out.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")

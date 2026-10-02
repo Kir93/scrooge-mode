@@ -254,15 +254,19 @@ def print_paired_stats(by_key: dict[str, dict[tuple[int, int], int]],
             print(f"| `{arm}` | 0 | — | — | — | — | — |")
             continue
         lo, hi = bootstrap_ci(list(grouped.values()), n_resamples, seed)
-        wins = sum(1 for d in deltas if d > 0)
-        losses = sum(1 for d in deltas if d < 0)
+        # Same unit as the CI: when runs are clustered by prompt they are
+        # correlated, so the sign test and MDE count one median per prompt —
+        # counting pairs would inflate N and understate p.
+        clustered = cluster_by == "prompt"
+        units = [statistics.median(v) for v in grouped.values()] if clustered else deltas
+        wins = sum(1 for d in units if d > 0)
+        losses = sum(1 for d in units if d < 0)
         p = sign_test(wins, losses)
-        m = mde(deltas)
-        unit = "clusters" if cluster_by == "prompt" else "pairs"
-        n_label = f"{len(deltas)}" if cluster_by != "prompt" else f"{len(deltas)} / {len(grouped)}c"
+        m = mde(units)
+        n_label = f"{len(deltas)}" if not clustered else f"{len(deltas)} / {len(grouped)}c"
         ci = "—" if lo is None else f"{lo:+.1f}–{hi:+.1f}%"
         print(f"| `{arm}` | {n_label} | {statistics.median(deltas):+.1f}% | {ci} | "
-              f"{wins}/{len(deltas)} | {'—' if p is None else f'{p:.2g}'} | "
+              f"{wins}/{len(units)}{'c' if clustered else ''} | {'—' if p is None else f'{p:.2g}'} | "
               f"{'—' if m is None else f'{m:.1f}pp'} |")
     print()
     print(f"- CI: percentile bootstrap, {n_resamples} resamples, seed {seed}, "
@@ -270,6 +274,8 @@ def print_paired_stats(by_key: dict[str, dict[tuple[int, int], int]],
           f"{' (`c` = prompt clusters)' if cluster_by == 'prompt' else ''}.")
     print("- MDE: smallest paired effect this N resolves at α=.05, power=.80. "
           "A point estimate below its own MDE is not a finding.")
+    if cluster_by == "prompt":
+        print("- Sign test and MDE use the CI's unit: one median delta per prompt cluster.")
     print()
 
 

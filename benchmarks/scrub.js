@@ -34,9 +34,11 @@ export const HOST_RULE_TOKENS = [
 
 const HOST_RULE_LOWER = HOST_RULE_TOKENS.map((t) => t.toLowerCase());
 
-// Home / absolute-path leak: a /Users/... or /home/... POSIX path, or a Windows
-// C:\Users\ / \Users\ path. Hoisted so the scan loop does not recompile it per row.
-const HOME_PATH_RE = /\/(?:Users|home)\/[^\s"'\\]+|[A-Za-z]:\\Users\\[^\s"']+|\\Users\\[^\s"']+/;
+// Home / absolute-path leak: a /Users/... or /home/... POSIX path, a Windows
+// C:\Users\ / \Users\ path, or the dash-joined form Claude uses for project
+// directory names (`-Users-<name>-…`). Hoisted so the scan loop does not recompile
+// it per row.
+const HOME_PATH_RE = /\/(?:Users|home)\/[^\s"'\\]+|[A-Za-z]:\\Users\\[^\s"']+|\\Users\\[^\s"']+|(?<![A-Za-z0-9])-(?:Users|home)-[^\s"'\\]+/;
 
 // Scan a raw string for host-context leaks (common to JSONL lines and markdown).
 export function scanText(text) {
@@ -58,7 +60,9 @@ export function scanText(text) {
 // echoed the bench working directory, so the excerpt carried a /Users/ path the
 // enumerated-token scan would otherwise have to guess at. Excerpts stay in the
 // gitignored local file; published rows keep only the scores derived from them.
-const PROSE_KEYS = ['output_text', 'missing_claims'];
+// `artifact` / `project` are transcript-scan.py's: the verbatim tool argument from
+// ANY project on the machine, and that project's home-path slug.
+const PROSE_KEYS = ['output_text', 'missing_claims', 'artifact', 'project'];
 
 // Structural checks on a parsed JSONL row: the prose keys must be gone (D2, full
 // removal — a truncated remnant is rejected because its key still being present
