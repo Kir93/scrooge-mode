@@ -219,6 +219,9 @@ function handlePayload(data) {
       try {
         const argv = [path.join(HERE, 'scrooge-stats.js')];
         if (data.transcript_path) argv.push('--session-file', data.transcript_path);
+        // Codex's transcript stem (`rollout-<ts>-<id>`) is not the session_id this
+        // hook keys state under, so hand stats the id itself.
+        if (typeof data.session_id === 'string') argv.push('--session-id', data.session_id);
         if (statsCommand.share) argv.push('--share');
         const out = execFileSync(process.execPath, argv, { encoding: 'utf8', timeout: 5000 });
         process.stdout.write(JSON.stringify({ decision: 'block', reason: out.trim() }));

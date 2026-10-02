@@ -51,6 +51,18 @@ test('upsertSession overwrites a session with its latest totals', () => {
   assert.equal(agg.savedTokens, 700); // latest, not summed
 });
 
+// `/scrooge off` clears the state, so a later stats run in the same session has no
+// estimate to offer. That must not rewrite the savings the active stretch earned.
+test('upsertSession keeps prior savings/overhead when the new entry carries none (inactive run)', () => {
+  const h = tmpHistory();
+  upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 500, savedTokens: 300, inputOverheadTokens: 40, ts: 1000 }, h);
+  upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 900, ts: 2000 }, h);
+  const agg = aggregateLedger({}, h);
+  assert.equal(agg.savedTokens, 300);
+  assert.equal(agg.inputOverheadTokens, 40);
+  assert.equal(agg.proseOutputTokens, 900, 'measured totals still update');
+});
+
 test('aggregateLedger sums distinct sessions', () => {
   const h = tmpHistory();
   upsertSession({ sessionId: 's1', model: 'claude-opus-4-7', proseOutputTokens: 1000, savedTokens: 600, ts: 1000 }, h);

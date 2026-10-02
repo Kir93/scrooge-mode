@@ -119,6 +119,22 @@ test('Codex intercepts /scrooge-stats and returns the measured hook report', () 
   assert.match(result.reason, /Output tokens:/);
 });
 
+// Codex names its transcript `rollout-<timestamp>-<session_id>.jsonl`, so the
+// transcript stem is NOT the session_id the activation keyed its state under.
+test('Codex /scrooge-stats reads the state the activation wrote (session_id, not transcript stem)', () => {
+  const cfg = freshConfig();
+  const sid = '01a0f02f-bf9f-7553-bf28-400074c5bf1e';
+  const src = makeCodexSession();
+  const transcript = path.join(path.dirname(src), `rollout-2026-09-30T11-40-56-${sid}.jsonl`);
+  fs.renameSync(src, transcript);
+  runHook(cfg, '/scrooge ko', { session_id: sid, transcript_path: transcript }, CODEX_ENV);
+  const { result } = runHook(cfg, '/scrooge-stats', { session_id: sid, transcript_path: transcript }, CODEX_ENV);
+
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /ko\/full/);
+  assert.doesNotMatch(result.reason, /inactive/);
+});
+
 test('Codex intercepts the $scrooge-stats skill trigger like the slash command', () => {
   const cfg = freshConfig();
   const { result } = runHook(cfg, '$scrooge-stats', { transcript_path: makeCodexSession() }, CODEX_ENV);

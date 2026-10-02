@@ -94,6 +94,30 @@ export function findRecentClaudeSession(claudeDir) {
   return findRecentJsonl(claudeProjectsDir(claudeDir));
 }
 
+// Claude names a main transcript `projects/<project-slug>/<session_id>.jsonl`, so a
+// known session id resolves directly — recency would pick whichever concurrent
+// session wrote last. Only a plain id is accepted (no separators, no `..`), since
+// it becomes a path component. Null when absent, so callers fall back to recency.
+export function findClaudeSessionById(claudeDir, sessionId) {
+  if (typeof sessionId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(sessionId)) return null;
+  const root = claudeProjectsDir(claudeDir);
+  let projects;
+  try {
+    projects = fs.readdirSync(root);
+  } catch (e) {
+    return null;
+  }
+  for (const p of projects) {
+    const file = path.join(root, p, `${sessionId}.jsonl`);
+    try {
+      if (fs.statSync(file).isFile()) return file;
+    } catch (e) {
+      /* not in this project */
+    }
+  }
+  return null;
+}
+
 export function findRecentCodexSession(codexDir) {
   return findRecentJsonl(codexSessionsDir(codexDir));
 }
@@ -400,13 +424,13 @@ export function parseCodexSession(filePath) {
 
 // Single entry point. agent defaults to 'claude'. sessionFile, when given
 // (e.g. the hook's transcript_path), wins over auto-discovery.
-export function readSession({ agent = 'claude', claudeDir, codexDir, sessionFile } = {}) {
+export function readSession({ agent = 'claude', claudeDir, codexDir, sessionFile, sessionId } = {}) {
   if (agent === 'codex') {
     const file = sessionFile || findRecentCodexSession(codexDir);
     if (!file) return { agent, file: null, ...EMPTY_SUMMARY };
     return { agent, file, ...parseCodexSession(file) };
   }
-  const file = sessionFile || findRecentClaudeSession(claudeDir);
+  const file = sessionFile || findClaudeSessionById(claudeDir, sessionId) || findRecentClaudeSession(claudeDir);
   if (!file) return { agent: 'claude', file: null, ...EMPTY_SUMMARY };
   return { agent: 'claude', file, ...parseClaudeSession(file) };
 }

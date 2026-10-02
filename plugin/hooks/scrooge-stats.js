@@ -3,9 +3,11 @@
 // token usage plus (when benchmark data exists) an estimated savings figure.
 //
 // Run directly:    node hooks/scrooge-stats.js
-// Inside Claude:   /scrooge-stats is intercepted by scrooge-activate.js, which
+// Inside Codex:    /scrooge-stats is intercepted by scrooge-activate.js, which
 //                  runs this with --session-file <transcript_path> so we read
 //                  the active session rather than the most-recently-modified one.
+// Inside Claude:   the scrooge-stats skill runs this directly (no intercept) with
+//                  --session-id ${CLAUDE_SESSION_ID}, which resolves the same way.
 //
 // Honesty: token counts are MEASURED from the session JSONL `usage` fields.
 // Savings are a COUNTERFACTUAL ESTIMATE (what the same turns would have cost
@@ -237,6 +239,8 @@ function main() {
   const args = process.argv.slice(2);
   const sfIdx = args.indexOf('--session-file');
   const sessionFile = sfIdx !== -1 ? args[sfIdx + 1] : null;
+  const sidIdx = args.indexOf('--session-id');
+  const sessionId = sidIdx !== -1 ? args[sidIdx + 1] || null : null;
   const share = args.includes('--share');
   const sinceIdx = args.indexOf('--since');
   const sinceArg = sinceIdx !== -1 ? args[sinceIdx + 1] || null : null;
@@ -266,11 +270,13 @@ function main() {
     claudeDir,
     codexDir: defaultCodexDir,
     sessionFile,
+    sessionId,
   });
-  // Session-scoped state: derive the canonical session key from the transcript
-  // (its stem is the session_id, the same key the activation hook wrote under) so
-  // stats reads the SAME state file the other surfaces use, not the global one.
-  const sessionKey = deriveSessionKey({ transcript_path: sess.file });
+  // Session-scoped state: derive the canonical session key the activation hook
+  // wrote under, so stats reads the SAME state file the other surfaces use. An
+  // explicit --session-id wins; otherwise the transcript stem stands in for it,
+  // which holds on Claude (`<session_id>.jsonl`) but not on Codex (`rollout-…`).
+  const sessionKey = deriveSessionKey({ session_id: sessionId, transcript_path: sess.file });
   const state = readState(getStatePath(sessionKey));
 
   // Upsert this session into the lifetime ledger BEFORE aggregating, so the
@@ -284,9 +290,10 @@ function main() {
       sessionId: sessionKey,
       model: sess.model,
       proseOutputTokens: sess.proseOutputTokens,
-      savedTokens: est ? est.saved : 0,
+      // Inactive → undefined: the ledger keeps whatever an active run recorded.
+      savedTokens: state ? (est ? est.saved : 0) : undefined,
       reasoningTokens: sess.reasoningOutputTokens,
-      inputOverheadTokens,
+      inputOverheadTokens: state ? inputOverheadTokens : undefined,
       ts: Date.now(),
     });
   }

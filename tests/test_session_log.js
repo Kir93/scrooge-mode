@@ -330,3 +330,20 @@ test('findRecentClaudeSession skips subagent transcripts and picks the main sess
 
   assert.equal(findRecentClaudeSession(dir), main);
 });
+
+// Claude runs the stats skill with `--session-id ${CLAUDE_SESSION_ID}`. Recency
+// alone would pick a concurrent session in another project that wrote last.
+test('readSession resolves a Claude sessionId to its own transcript, not the newest one', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-sid-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const mine = path.join(dir, 'projects', '-proj-a', 'aaaa-1111.jsonl');
+  const other = path.join(dir, 'projects', '-proj-b', 'bbbb-2222.jsonl');
+  for (const f of [mine, other]) {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.copyFileSync(FIXTURE, f);
+  }
+  const past = new Date(Date.now() - 60_000);
+  fs.utimesSync(mine, past, past); // the other session wrote more recently
+  assert.equal(readSession({ claudeDir: dir, sessionId: 'aaaa-1111' }).file, mine);
+  assert.equal(readSession({ claudeDir: dir, sessionId: '../bbbb-2222' }).file, other, 'unknown id → recency fallback');
+});

@@ -183,7 +183,15 @@ export function upsertSession(entry, historyPath = getHistoryPath()) {
     warnUnreadable(historyPath);
     return false;
   }
-  byId.set(entry.sessionId, normalizeEntry(entry));
+  // An inactive run (state cleared by `/scrooge off`) has no estimate to offer and
+  // passes the two estimate fields as undefined — keep what the active stretch
+  // recorded rather than zeroing it.
+  const prev = byId.get(entry.sessionId);
+  const merged = { ...entry };
+  for (const k of ['savedTokens', 'inputOverheadTokens']) {
+    if (merged[k] === undefined && prev) merged[k] = prev[k];
+  }
+  byId.set(entry.sessionId, normalizeEntry(merged));
   return writeEntries(byId, historyPath, entry.sessionId);
 }
 
