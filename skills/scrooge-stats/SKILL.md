@@ -4,7 +4,6 @@ description: >
   Show measured Scrooge session token usage and estimated savings when
   available. Use when the user invokes /scrooge-stats, $scrooge-stats, asks for
   Scrooge token stats, or asks how many output tokens Scrooge saved.
-allowed-tools: Bash
 ---
 
 Run the stats script and show its output verbatim:
