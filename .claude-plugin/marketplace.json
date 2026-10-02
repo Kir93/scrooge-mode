@@ -6,18 +6,7 @@
     "url": "https://github.com/Kir93"
   },
   "metadata": {
-    "version": "0.28.0",
-    "keywords": [
-      "compression",
-      "korean",
-      "token-saving",
-      "skill",
-      "codex",
-      "claude-code",
-      "caveman-alternative",
-      "llm-output-compression"
-    ],
-    "homepage": "https://github.com/Kir93/scrooge-mode"
+    "version": "0.28.0"
   },
   "plugins": [
     {

@@ -7,6 +7,17 @@
     "url": "https://github.com/Kir93"
   },
   "license": "MIT",
+  "homepage": "https://github.com/Kir93/scrooge-mode",
+  "keywords": [
+    "compression",
+    "korean",
+    "token-saving",
+    "skill",
+    "codex",
+    "claude-code",
+    "caveman-alternative",
+    "llm-output-compression"
+  ],
   "hooks": {
     "UserPromptSubmit": [
       {
