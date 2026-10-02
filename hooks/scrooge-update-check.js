@@ -32,7 +32,7 @@ const FETCH_TIMEOUT_MS = 4000;
 // API is rate-limited to 60/hr per IP — a once-a-day probe stays well within it.
 // A User-Agent header is mandatory (GitHub rejects UA-less requests with 403).
 //
-// `repo` is a parameter, and bin/install.js imports this rather than keeping its
+// `repo` is a parameter, and cli/install.js imports this rather than keeping its
 // own copy: the installer and the probe must never disagree about which release
 // is "latest", and a fork previously had to edit the repo in two places (a const
 // here and another there) with nothing catching the mismatch. Same reasoning as

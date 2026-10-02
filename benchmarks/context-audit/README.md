@@ -8,7 +8,7 @@ scores detection rate + byte-exact saving against a GO/NO-GO threshold.
 > **Phase 0 is measurement only.** The `scrooge audit` command and any
 > rewrite/compression logic are Non-goals until this gate returns GO. The
 > detectors here are throwaway measurement prototypes isolated under
-> `benchmarks/context-audit/` — the product surface (`lib/` · `hooks/` · `bin/`)
+> `benchmarks/context-audit/` — the product surface (`lib/` · `hooks/` · `cli/`)
 > is never touched. Anchors: mcp-shrink 2.6% NO-GO, memory-compress 7.7% floor.
 
 ## Status: closed at WEAK — not GO; harness removed in v0.23.0, results kept

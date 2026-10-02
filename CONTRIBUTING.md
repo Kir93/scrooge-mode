@@ -22,7 +22,7 @@ cd scrooge-mode
 npm ci
 ```
 
-The repo intentionally has no build step. The shipped product is `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `lib/**`, `bin/**`, and `.claude-plugin/**`.
+The repo intentionally has no build step. The shipped product is `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `lib/**`, `cli/**`, and `.claude-plugin/**`.
 
 ## Test & Lint
 

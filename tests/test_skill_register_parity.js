@@ -3,7 +3,7 @@
 // Two shipping surfaces carry the register, and only one was ever tested. Hook
 // hosts (Claude Code, Codex) get `rules/{lang}/full.md`; skill-only hosts (Cursor,
 // Windsurf, Cline, Continue, Gemini CLI) get `skills/scrooge/SKILL.md` and nothing
-// else — `bin/install.js` copies hooks/rules/lib on the Codex path, and
+// else — `cli/install.js` copies hooks/rules/lib on the Codex path, and
 // `.claude-plugin/plugin.json` declares hooks with no skills key. So SKILL.md is
 // the whole register for those hosts, and four rule items were missing from it
 // while `npm test` stayed green.

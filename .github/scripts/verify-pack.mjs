@@ -31,7 +31,7 @@ const REQUIRED = [
   'hooks/',
   'rules/',
   'lib/',
-  'bin/install.js',
+  'cli/install.js',
   'skills/',
   '.claude-plugin/',
 ];

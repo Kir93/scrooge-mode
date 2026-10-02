@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scrooge uninstaller shim — delegates to bin/install.js --uninstall.
+# scrooge uninstaller shim — delegates to cli/install.js --uninstall.
 set -euo pipefail
 
 if ! command -v node >/dev/null 2>&1; then
@@ -10,7 +10,7 @@ fi
 SOURCE="${BASH_SOURCE[0]:-$0}"
 DIR="$(cd "$(dirname "$SOURCE")" 2>/dev/null && pwd || true)"
 
-if [ -n "$DIR" ] && [ -f "$DIR/bin/install.js" ]; then
-  exec node "$DIR/bin/install.js" --uninstall "$@"
+if [ -n "$DIR" ] && [ -f "$DIR/cli/install.js" ]; then
+  exec node "$DIR/cli/install.js" --uninstall "$@"
 fi
 exec npx -y github:Kir93/scrooge-mode -- --uninstall "$@"

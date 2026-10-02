@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 # scrooge installer shim (Windows).
-#   Local clone:  ./install.ps1 [flags]   → node bin/install.js
+#   Local clone:  ./install.ps1 [flags]   → node cli/install.js
 #   else:         npx github delegation
 # Best-effort Windows shim — NOT exercised by CI (ubuntu-latest only); validate
 # manually on Windows. See INSTALL.md "Platform support". Logic: delegate to node.
@@ -12,7 +12,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 }
 
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$local = Join-Path $dir 'bin/install.js'
+$local = Join-Path $dir 'cli/install.js'
 if (Test-Path $local) {
   & node $local @args
 } else {

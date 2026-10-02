@@ -279,7 +279,7 @@ then the badge is yours to compose). On Windows the badge needs `bash` on PATH; 
 
 Linux and macOS are the CI-verified platforms — every push runs `npm test` on `ubuntu-latest`. **Windows is best-effort, not CI-verified.** The installer carries Windows branches (path handling, `where` probe, shell spawn, `EPERM`/`EISDIR` cleanup) and a PowerShell shim, but no `windows-latest` job exercises them, so treat Windows as unsupported for release guarantees. Three known limits are documented, not closed:
 
-- **`install.ps1` / `uninstall.ps1`** are thin shims that delegate to `node bin/install.js`. They are not run in CI; validate them manually on Windows.
+- **`install.ps1` / `uninstall.ps1`** are thin shims that delegate to `node cli/install.js`. They are not run in CI; validate them manually on Windows.
 - **Symlink hardening is weaker on Windows.** The atomic state writer opens with `O_NOFOLLOW` to refuse a target swapped for a symlink, but `fs.constants.O_NOFOLLOW` is absent on Windows and falls back to `0` (`hooks/scrooge-config.js`), so that open-time symlink refusal is a no-op there. The sanitized-key path containment still applies; only the symlink-swap guard is lost.
 - **The statusline badge does not run on Windows.** The installer wires `statusLine` as `bash "<config>/hooks/scrooge-statusline.sh"` — a shell script invoked through `bash`, which is not on a stock Windows PATH. Scope: the badge only. Activation, the per-turn reinject hook, and `/scrooge-stats` are plain Node and work normally; you simply see no token counter in the status bar. Installing Git Bash (or WSL) and putting `bash` on PATH makes it work.
 

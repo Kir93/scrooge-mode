@@ -11,7 +11,7 @@
 // Undetected agents are skipped without error.
 //
 // Distribution:
-//   local clone:  node bin/install.js [flags]
+//   local clone:  node cli/install.js [flags]
 //   curl|bash:    install.sh shim → npx -y github:Kir93/scrooge-mode -- [flags]
 //
 // Pure Node stdlib, zero runtime deps. ESM (package.json "type": "module").
@@ -864,7 +864,7 @@ function main() {
 function printHelp() {
   process.stdout.write(`scrooge installer
 
-Usage: node bin/install.js [flags]
+Usage: node cli/install.js [flags]
 
 Flags:
   --only <id>      install only the named agent (repeatable; allows soft agents)
@@ -880,7 +880,7 @@ Flags:
 `);
 }
 
-// Installed version from the packaged manifest (one dir up from bin/install.js).
+// Installed version from the packaged manifest (one dir up from cli/install.js).
 function installedVersion() {
   try {
     const here = path.dirname(fileURLToPath(import.meta.url));

@@ -7,7 +7,7 @@ KO-first pentalingual (KO/EN/JA/HI/ZH) **LLM output-compression skill**. `scroog
 ## What this repo is
 
 - **Product = the register rule docs.** The shipped behavioral contract is the register rule files `rules/{lang}/full.md` + `registry.json`, which maps `language × dial → rule file path` 1:1.
-- **Runtime tooling ships too — all implemented, not stubs.** The installer (`bin/install.js`), activation + stats hooks (`hooks/`), the session-log/ledger libs (`lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
+- **Runtime tooling ships too — all implemented, not stubs.** The installer (`cli/install.js`), activation + stats hooks (`hooks/`), the session-log/ledger libs (`lib/`), and the benchmark harness (`benchmarks/`) are real, working code. Genuinely future work is tracked in `.claude/docs/specs/`; don't fill in unrequested features speculatively — skeletons and "TBD" markers are scaffolding, not gaps.
 - **Test harness:** `npm test` runs `node --test` over an explicit file list in `package.json` (zero-dep, Node built-in) — not a `tests/` glob, so a new test file must be added to that list or it is silently skipped. No other build scripts — don't invent new ones; verify per §4. The Python side (`benchmarks/`) is a separate suite, not reachable from `npm test`: run `python3 -m unittest discover -s benchmarks -p 'test_*.py'`.
 
 ## Conventions

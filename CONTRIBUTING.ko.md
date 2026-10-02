@@ -22,7 +22,7 @@ cd scrooge-mode
 npm ci
 ```
 
-별도 build step 없음. 출하 대상은 `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `lib/**`, `bin/**`, `.claude-plugin/**`.
+별도 build step 없음. 출하 대상은 `rules/**`, `registry.json`, `skills/**`, `hooks/**`, `lib/**`, `cli/**`, `.claude-plugin/**`.
 
 ## Test & Lint
 

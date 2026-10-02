@@ -25,9 +25,9 @@ import {
   removeCodexHookConfig,
   safeReplaceFile,
   findOwnRepoRoot,
-} from '../bin/install.js';
+} from '../cli/install.js';
 
-const INSTALL_JS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'install.js');
+const INSTALL_JS = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'cli', 'install.js');
 
 test('a single matching clause detects', () => {
   assert.equal(detectMatch('command:claude', { command: (v) => v === 'claude' }), true);
@@ -112,7 +112,7 @@ test('main() fires when invoked through a bin symlink (CLI-guard regression)', {
 
 // ── Installer exit status ─────────────────────────────────────────────────────
 // A run that failed a host still printed `Done. … failed [cursor]` and exited 0,
-// so `install.sh`'s `exec node bin/install.js` under a curl|bash `set -euo
+// so `install.sh`'s `exec node cli/install.js` under a curl|bash `set -euo
 // pipefail`, and any CI wrapper, read a broken install as a good one. Both sides
 // are pinned here: a recorded failure exits non-zero, a skip stays zero.
 

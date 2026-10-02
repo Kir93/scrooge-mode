@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# scrooge uninstaller shim (Windows) — delegates to bin/install.js --uninstall.
+# scrooge uninstaller shim (Windows) — delegates to cli/install.js --uninstall.
 $ErrorActionPreference = 'Stop'
 
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -8,7 +8,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 }
 
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$local = Join-Path $dir 'bin/install.js'
+$local = Join-Path $dir 'cli/install.js'
 if (Test-Path $local) {
   & node $local --uninstall @args
 } else {
