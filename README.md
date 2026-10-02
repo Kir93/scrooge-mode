@@ -134,6 +134,13 @@ The installer sets up each detected host at its capability tier:
 
 What the tiers mean: skill-only hosts load the register but activation is manual — no per-turn reinject hook, no token stats. Codex wires only `UserPromptSubmit` (no `SessionStart`), so its update notice and `↑vX` marker are Claude-only and upgrades are a reinstall (see [Update](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.md#update)). The statusline `✓` is narrower than it looks: it is wired by the one-line installer, and **the `/plugin install` path does not wire it** — see [INSTALL.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.md#statusline) for the manual `settings.json` entry.
 
+**Inside Claude.** Hooks run only in Claude Code. On claude.ai, desktop chat, and Cowork the plugin loads as a skill alone:
+
+| Surface | Loads | Activation | Reinject hook | Stats | Statusline |
+| ------- | ----- | ---------- | :-----------: | :---: | :--------: |
+| Claude Code (CLI · desktop Code tab · IDE) | skills + hooks | `/scrooge` or plain language, persists across sessions | ✓ | ✓ | ✓ |
+| claude.ai · desktop chat · Cowork | skill only | ask in each conversation | — | — | — |
+
 For a host not in the table, the standard's convergent location is `~/.agents/skills/` — which is where `npx skills add … -g` already writes, on the same spec argument as the five above.
 
 ## Surface

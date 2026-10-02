@@ -132,6 +132,13 @@ installer가 감지된 호스트를 각 기능 tier로 설치함:
 
 tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가 수동 — 턴마다 reinject hook 없음, 토큰 stats 없음. Codex는 `UserPromptSubmit`만 배선(`SessionStart` 없음)하므로 업데이트 알림·`↑vX` 마커는 Claude 전용이고 업그레이드는 재설치([Update](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.ko.md#update)). statusline `✓`는 보이는 것보다 좁다 — one-line installer가 배선하며 **`/plugin install` 경로는 배선하지 않음**. 수동 `settings.json` 항목은 [INSTALL.ko.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.ko.md#statusline).
 
+**Claude 안에서.** hook은 Claude Code에서만 돈다. claude.ai·desktop chat·Cowork에서는 plugin이 skill로만 로드됨:
+
+| 표면 | 로드 | 활성화 | Reinject hook | Stats | Statusline |
+| ---- | ---- | ------ | :-----------: | :---: | :--------: |
+| Claude Code (CLI · desktop Code tab · IDE) | skills + hooks | `/scrooge` 또는 자연어, 세션 간 유지 | ✓ | ✓ | ✓ |
+| claude.ai · desktop chat · Cowork | skill만 | 대화마다 요청 | — | — | — |
+
 표에 없는 호스트는 표준의 수렴 위치인 `~/.agents/skills/`를 쓰면 된다 — `npx skills add … -g`가 이미 쓰는 경로이고, 근거는 위 다섯과 같은 표준 논거다.
 
 ## 표면
