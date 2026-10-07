@@ -42,6 +42,7 @@ import argparse
 import json
 import statistics
 import sys
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional
@@ -101,7 +102,8 @@ def load_answers(path: Path) -> dict[tuple[str, int, int], str]:
 
 
 def judge_once(question: str, answer: str, model: Optional[str], runs: int,
-               timeout: int) -> tuple[Optional[bool], list, Optional[str]]:
+               timeout: int, extra_args=(), cwd: Optional[Path] = None
+               ) -> tuple[Optional[bool], list, Optional[str]]:
     """Majority verdict over `runs` judge calls. Returns (verdict, per_run, error).
 
     A tie or all-unparseable leaves the verdict None — never silently `false`,
@@ -110,7 +112,8 @@ def judge_once(question: str, answer: str, model: Optional[str], runs: int,
     per_run = []
     err = None
     for _ in range(max(1, runs)):
-        text, e = judge_mod.call_debunk_judge(question, answer, model, timeout=timeout)
+        text, e = judge_mod.call_debunk_judge(question, answer, model, timeout=timeout,
+                                              extra_args=extra_args, cwd=cwd)
         if e:
             err = err or e
             continue
@@ -140,7 +143,16 @@ def main() -> int:
     ap.add_argument("--allow-contaminated", action="store_true",
                     help="Proceed even if the pre-flight finds a blocking channel. Off by "
                          "default: a biased judge must not silently score the safety axis.")
+    ap.add_argument("--isolate-memory", action="store_true",
+                    help="Keep the host's ~/.claude/CLAUDE.md and rules out of the judge — "
+                         "same flag and reason as benchmarks/run.py --isolate-memory. The judge "
+                         "then runs from a fresh temp dir, since its default cwd sits under $HOME.")
     args = ap.parse_args()
+    judge_cwd = Path(tempfile.mkdtemp(prefix="scrooge-judge-")) if args.isolate_memory else None
+    if judge_cwd and BENCH.memory_ancestor_findings(judge_cwd):
+        print(f"error: judge temp dir has memory files on its path: "
+              f"{BENCH.memory_ancestor_findings(judge_cwd)}", file=sys.stderr)
+        return 2
 
     prompts = load_prompts(args.prompts)
     answers = load_answers(args.results)
@@ -154,7 +166,7 @@ def main() -> int:
     with BENCH.host_isolation(enabled=not args.no_isolate_host):
         if BENCH.check_register_clean(BENCH_DIR, args.allow_contaminated,
                                       per_row_backstop=False,
-                                      instruction_cwds=(judge_mod.JUDGE_CWD,)) is None:
+                                      instruction_cwds=(judge_cwd or judge_mod.JUDGE_CWD,)) is None:
             return 2
         out_f = args.output.open("w", encoding="utf-8") if args.output else None
         try:
@@ -163,7 +175,8 @@ def main() -> int:
                     continue
                 verdict, per_run, err = judge_once(
                     prompts[pid], answers[(arm, pid, run)], args.model,
-                    args.judge_runs, args.timeout)
+                    args.judge_runs, args.timeout,
+                    BENCH.MEMORY_ISOLATION_ARGS if args.isolate_memory else (), judge_cwd)
                 rec = {
                     "arm": arm, "prompt_id": pid, "run": run,
                     "debunked": verdict, "run_verdicts": per_run,

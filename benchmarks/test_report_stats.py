@@ -797,6 +797,73 @@ class TestFreshSessionPerCall(unittest.TestCase):
         self.assertEqual(second.model, "m-second")
 
 
+class TestMemoryIsolation(unittest.TestCase):
+    """`--isolate-memory` must reach the CLI argv of every arm and of the judge.
+
+    `--system-prompt` replace leaves the user memory channel open: a host
+    `~/.claude/CLAUDE.md` reached every arm of a 2026-10-07 false-premise run and
+    turned 30/30 EN answers Korean. The flag is the only isolation for that channel,
+    so a call site that drops it re-opens the leak with no per-row signal.
+    """
+
+    FLAG = ["--setting-sources", "project"]
+
+    def _has_flag_before_prompt(self, cmd):
+        i = cmd.index("--")
+        return any(cmd[j:j + 2] == self.FLAG for j in range(i))
+
+    def test_run_one_passes_the_flag_only_when_asked(self):
+        run = _load("_mem_run", "run.py")
+        seen = []
+
+        def fake(cmd, **kw):
+            seen.append(cmd)
+            return run.subprocess.CompletedProcess(cmd, 1, stdout="", stderr="stop")
+
+        cwd = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, cwd, True)
+        with unittest.mock.patch.object(run.subprocess, "run", fake):
+            run.run_one("normal", "", "p", 0, 0, cwd=cwd, dry_run=False, timeout=5,
+                        isolate_memory=True, retryable=lambda _e: False)
+            run.run_one("normal", "", "p", 0, 0, cwd=cwd, dry_run=False, timeout=5,
+                        retryable=lambda _e: False)
+        self.assertTrue(self._has_flag_before_prompt(seen[0]), seen[0])
+        self.assertFalse(self._has_flag_before_prompt(seen[-1]), seen[-1])
+
+    def test_debunk_judge_passes_the_flag(self):
+        deb = _load("_mem_deb", "fidelity/debunk.py")
+        seen = []
+
+        def fake(cmd, **kw):
+            seen.append((cmd, kw.get("cwd")))
+            return deb.judge_mod.subprocess.CompletedProcess(
+                cmd, 0, stdout='{"debunked": true}', stderr="")
+
+        cwd = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, cwd, True)
+        with unittest.mock.patch.object(deb.judge_mod.subprocess, "run", fake):
+            deb.judge_once("q", "a", "opus", 1, 5, deb.BENCH.MEMORY_ISOLATION_ARGS, cwd)
+        self.assertTrue(self._has_flag_before_prompt(seen[0][0]), seen[0][0])
+        # The judge's default cwd sits under $HOME, where the flag alone still
+        # loads ~/.claude/CLAUDE.md as an ancestor project file.
+        self.assertEqual(seen[0][1], cwd)
+
+    def test_ancestor_memory_files_are_found(self):
+        # `--setting-sources project` keeps the project walk, so a cwd below a
+        # directory holding `.claude/CLAUDE.md` or `.claude/rules` still loads them.
+        run = _load("_mem_run2", "run.py")
+        root = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        deep = root / "a" / "b"
+        deep.mkdir(parents=True)
+        self.assertEqual(run.memory_ancestor_findings(deep), [])
+        (root / ".claude" / "rules").mkdir(parents=True)
+        (root / ".claude" / "CLAUDE.md").write_text("x", encoding="utf-8")
+        hits = run.memory_ancestor_findings(deep)
+        self.assertIn(str((root / ".claude" / "CLAUDE.md").resolve()), hits)
+        self.assertIn(str((root / ".claude" / "rules").resolve()), hits)
+
+
 
 if __name__ == "__main__":
     unittest.main()

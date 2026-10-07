@@ -28,7 +28,7 @@ import statistics
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 CHECKS_JS = Path(__file__).resolve().parent / "checks.js"
 
@@ -107,17 +107,20 @@ def build_debunk_prompt(question: str, answer: str) -> str:
 
 
 def call_debunk_judge(question: str, answer: str, model: Optional[str],
-                      timeout: int = 120) -> tuple[Optional[str], Optional[str]]:
+                      timeout: int = 120,
+                      extra_args: Sequence[str] = (),
+                      cwd: Optional[Path] = None) -> tuple[Optional[str], Optional[str]]:
     """Run the debunk judge once. Returns (verdict_text, error)."""
     prompt = build_debunk_prompt(question, answer)
     cmd = ["claude", "--print", "--system-prompt", DEBUNK_SYSTEM]
     if model:
         cmd += ["--model", model]
-    cmd += ["--", prompt]
-    JUDGE_CWD.mkdir(parents=True, exist_ok=True)
+    cmd += [*extra_args, "--", prompt]
+    cwd = cwd or JUDGE_CWD
+    cwd.mkdir(parents=True, exist_ok=True)
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
-                           cwd=JUDGE_CWD)
+                           cwd=cwd)
     except subprocess.TimeoutExpired:
         return None, "judge timeout"
     if r.returncode != 0:

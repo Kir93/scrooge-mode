@@ -229,11 +229,30 @@ NORMAL_BASELINE_SYSTEM = (
     "writes in. Provide complete, accurate technical answers."
 )
 
+# `--system-prompt` replaces the system prompt but not the memory channel:
+# `~/.claude/CLAUDE.md` and `~/.claude/rules/*` still reach every arm and the judge
+# (observed 2026-10-07: a host "respond in Korean" turned 30/30 EN answers Korean).
+# Dropping the user setting source drops them as *user* memory, the host plugin and
+# its hooks with it, without touching any file under ~/.claude. It does not stop the
+# *project* walk from the cwd upward, so a cwd under $HOME still loads
+# `~/.claude/CLAUDE.md` as an ancestor's `.claude/CLAUDE.md` — `memory_ancestor_findings`
+# is the half that closes that path.
+MEMORY_ISOLATION_ARGS = ["--setting-sources", "project"]
+
+
+def memory_ancestor_findings(cwd: Path) -> list[str]:
+    """Memory files Claude Code loads as project instructions from `cwd` or an ancestor."""
+    cwd = cwd.resolve()
+    return [str(d / n) for d in [cwd, *cwd.parents]
+            for n in ("CLAUDE.md", ".claude/CLAUDE.md", "CLAUDE.local.md", ".claude/rules")
+            if (d / n).exists()]
+
 
 def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
               disallow_tools: bool = False,
               system_prompt_mode: str = "replace",
-              session_id: Optional[str] = None) -> list[str]:
+              session_id: Optional[str] = None,
+              isolate_memory: bool = False) -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -286,6 +305,8 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
         cmd += ["--disallowedTools", "Write", "Edit", "NotebookEdit", "Bash"]
     if session_id:
         cmd += ["--session-id", session_id]
+    if isolate_memory:
+        cmd += MEMORY_ISOLATION_ARGS
     cmd += ["--", prompt]
     return cmd
 
@@ -638,7 +659,7 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
             isolation_verified: Optional[bool] = None,
             disallow_tools: bool = False,
             system_prompt_mode: str = "replace",
-            retryable=None) -> RunResult:
+            retryable=None, isolate_memory: bool = False) -> RunResult:
     session_dir = cwd_session_dir(cwd)
     start = time.monotonic()
 
@@ -673,7 +694,7 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
     def make_cmd(_attempt):
         session_ids.append(str(uuid.uuid4()))
         return build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode,
-                         session_id=session_ids[-1])
+                         session_id=session_ids[-1], isolate_memory=isolate_memory)
 
     r, error, reason = call_with_retry(
         make_cmd, cwd, timeout,
@@ -1302,6 +1323,10 @@ def main() -> int:
                          "emits its answer inline. Use for document-generation corpora: otherwise "
                          "the model may write the doc to a file and emit only a 'wrote X.md' line, "
                          "collapsing the prose-only token count and faking compression.")
+    ap.add_argument("--isolate-memory", action="store_true",
+                    help="Pass `--setting-sources project` so the host's ~/.claude/CLAUDE.md, "
+                         "~/.claude/rules/* and user settings reach no arm. Without it a host "
+                         "memory file leaks into every arm, `normal` included.")
     args = ap.parse_args()
 
     if not args.dry_run and shutil.which("claude") is None:
@@ -1322,6 +1347,16 @@ def main() -> int:
     total = len(arms) * len(prompts) * args.runs
     print(f"arms={len(arms)} prompts={len(prompts)} runs={args.runs} "
           f"order={args.order} total={total}", file=sys.stderr)
+
+    if args.isolate_memory and not args.dry_run:
+        hits = memory_ancestor_findings(args.cwd)
+        if hits:
+            for h in hits:
+                print(f"[verify] blocking: memory file on the --cwd path loads as project "
+                      f"instructions despite --isolate-memory: {h}", file=sys.stderr)
+            print("Use a --cwd outside $HOME, e.g. --cwd \"$TMPDIR/scrooge-bench\".",
+                  file=sys.stderr)
+            return 2
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     jobs = list(enumerate(iter_jobs(arms, prompts, args.runs, args.order), 1))
@@ -1352,7 +1387,8 @@ def main() -> int:
                             isolation_verified=isolation_verified,
                             disallow_tools=args.disallow_tools,
                             system_prompt_mode=args.system_prompt_mode,
-                            retryable=no_timeout_retry if args.no_timeout_retry else None)
+                            retryable=no_timeout_retry if args.no_timeout_retry else None,
+                            isolate_memory=args.isolate_memory)
 
     def write_result(idx, result):
         out.write(json.dumps(asdict(result), ensure_ascii=False) + "\n")
