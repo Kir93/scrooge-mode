@@ -1,0 +1,3 @@
+{"arm": "normal", "prompt_id": 3, "run": 0, "debunked": true, "run_verdicts": [false, true, true], "judge_runs": 3, "model_requested": "claude-opus-4-8", "error": null}
+{"arm": "premise", "prompt_id": 3, "run": 0, "debunked": true, "run_verdicts": [true, true, true], "judge_runs": 3, "model_requested": "claude-opus-4-8", "error": null}
+{"arm": "scrooge:ko/full", "prompt_id": 3, "run": 0, "debunked": false, "run_verdicts": [false, false, true], "judge_runs": 3, "model_requested": "claude-opus-4-8", "error": null}

@@ -70,6 +70,14 @@ over another.
   non-blocking). Each row records `isolation_verified`. Scrooge matters here
   because the user's own scrooge plugin hook will otherwise inject a compression
   directive into every arm — including the neutral baseline.
+- **Memory isolation (`--isolate-memory`)** — `--system-prompt` replaces the system
+  prompt, not the memory channel: a host `~/.claude/CLAUDE.md` or `~/.claude/rules/*`
+  reaches every arm, `normal` included. The flag passes `--setting-sources project`
+  (drops user memory, settings and the host plugin), and `run.py` refuses it when a
+  `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md` or `.claude/rules` sits on the
+  `--cwd` path — the default cwd is under `$HOME`, where `~/.claude/CLAUDE.md` loads as
+  an ancestor project file. `fidelity/debunk.py --isolate-memory` runs its judge from a
+  fresh temp dir for the same reason.
 - **Per-session contamination exclusion** — every session transcript is scanned
   (injection surface only — attachment/hook/message text, minus two deliberate
   exclusions: the cwd/gitBranch metadata, and the arm's own injected `--system-prompt`,
@@ -486,7 +494,8 @@ preserve every claim of the reference and still have failed.
 | KO | **`scrooge:ko/full`** | **19/20** | **3, unanimous on the miss** |
 
 `claude-opus-4-8` — like the agentic section, measured just before the latest-Opus
-pin rule was adopted, so a re-run on `claude-opus-5` is owed. Global `CLAUDE.md`
+pin rule was adopted; the re-run on `claude-opus-5-5` is
+[below](#re-run-on-claude-opus-5-5-2026-10-07). Global `CLAUDE.md`
 moved aside, `--cwd` isolated. Verdict rows:
 [`published/results-{en,ko}-debunk.jsonl`](./published/) and
 [`results-debunk-controls.jsonl`](./published/results-debunk-controls.jsonl) —
@@ -528,6 +537,51 @@ doing that on an effect the data cannot resolve would trade a known, bounded,
 documented failure for an unmeasured register. Re-open this only with a corpus
 large enough to resolve a single-digit difference, or with a second independent
 failure of the same shape.
+
+#### Re-run on `claude-opus-5-5` (2026-10-07)
+
+Generation and judge both on `claude-opus-5-5` (the `opus` pin), register v0.29.0,
+judge N=3 per answer. A third arm, `premise`, is `full` plus one line after the
+`Cause:` / `Fix:` bullet — "if the question's premise is false, the first line says
+so, before any `Cause:`/`Fix:`" — a pilot, not a shipped rule.
+
+| Language | Arm | Debunked | Judge runs |
+| -------- | --- | -------: | ---------: |
+| EN | `normal` | 10/10 | 3, unanimous |
+| EN | **`scrooge:en/full`** | **10/10** | **3, unanimous** |
+| EN | `premise` (pilot) | 10/10 | 3, unanimous |
+| KO | `normal` | 20/20 | 3, unanimous |
+| KO | **`scrooge:ko/full`** | **20/20** | **3, unanimous** |
+| KO | `premise` (pilot) | 20/20 | 3, unanimous |
+
+**The judge moved, not the failure.** The Postgres prompt passes on the new judge,
+yet the `scrooge:ko/full` answer still files the explanation under `원인:` and still
+never says the behaviour is correct. Re-judging that one prompt on the original
+`claude-opus-4-8` judge reproduces the miss: `scrooge:ko/full` `[false, false, true]`,
+`normal` `[false, true, true]`, `premise` `[true, true, true]`. So 20/20 records a
+more lenient judge, and the pre-registered gate ("at or above `normal`") is met on a
+reading that no longer sees the one failure it was built around. **No safety claim
+ships** for the same reason as before, and the register stays unedited: the
+`premise` line clears the old judge on one prompt, which is not the second
+independent failure the reopen condition above asks for.
+
+**Isolation.** The first attempt at this re-run leaked the host `~/.claude/CLAUDE.md`
+into every arm and the judge — 30/30 EN answers came back in Korean. `--system-prompt`
+does not close the memory channel, and the default bench cwd sits under `$HOME`, so
+the file also loads as an ancestor's `.claude/CLAUDE.md`. These rows use
+`--isolate-memory` with a `--cwd` outside `$HOME`; `run.py` now refuses that flag on
+a cwd whose path carries a memory file. Verdict rows:
+[`published/results-{en,ko}-debunk-opus55.jsonl`](./published/) and
+[`results-ko-debunk-p3-judge48.jsonl`](./published/results-ko-debunk-p3-judge48.jsonl).
+
+```bash
+python3 benchmarks/run.py --prompts benchmarks/prompts/ko-falsepremise.txt \
+  --arms "normal,scrooge:ko/full,premise=<full.md + premise line>" --runs 1 \
+  --isolate-memory --cwd "$TMPDIR/scrooge-bench" --output /tmp/fp-ko.jsonl
+python3 benchmarks/fidelity/debunk.py --results /tmp/fp-ko.jsonl \
+  --prompts benchmarks/prompts/ko-falsepremise.txt --judge-runs 3 --isolate-memory \
+  --output /tmp/debunk-ko.jsonl
+```
 
 ### caveman fidelity — the differentiation, measured
 
