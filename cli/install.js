@@ -84,6 +84,9 @@ function parseArgs(argv) {
       default: die(`error: unknown flag: ${a}\nrun 'npx -y github:Kir93/scrooge-mode -- --help' for usage`);
     }
   }
+  // Uninstall always sweeps every host; honouring half of an `--only` scope would
+  // remove more than the user named.
+  if (o.uninstall && o.only.length) die('error: --uninstall cannot be combined with --only (uninstall always removes every host)');
   if (o.only.length) {
     const known = new Set(PROVIDERS.map((p) => p.id));
     for (const id of o.only) if (!known.has(id)) die(`error: unknown agent: ${id}\n  see --list`);
@@ -217,16 +220,22 @@ export function detectMatch(spec, probes = DEFAULT_PROBES) {
 }
 
 // ── Run helpers ─────────────────────────────────────────────────────────────
-function run(cmd, args, dry, cwd) {
+function run(cmd, args, dry, cwd, env = process.env) {
   if (dry) { process.stdout.write(`  would run: ${cmd} ${args.join(' ')}\n`); return { status: 0 }; }
   process.stdout.write(`  $ ${cmd} ${args.join(' ')}\n`);
-  if (IS_WIN) return child_process.spawnSync(`${cmd} ${args.join(' ')}`, [], { shell: true, stdio: 'inherit', cwd });
-  return child_process.spawnSync(cmd, args, { stdio: 'inherit', cwd });
+  if (IS_WIN) return child_process.spawnSync(`${cmd} ${args.join(' ')}`, [], { shell: true, stdio: 'inherit', cwd, env });
+  return child_process.spawnSync(cmd, args, { stdio: 'inherit', cwd, env });
 }
 
-function capture(cmd, args) {
-  try { return child_process.spawnSync(cmd, args, { encoding: 'utf8' }); }
+function capture(cmd, args, env = process.env) {
+  try { return child_process.spawnSync(cmd, args, { encoding: 'utf8', env }); }
   catch (_) { return { status: 1, stdout: '', stderr: '' }; }
+}
+
+// `--config-dir` must reach the `claude` CLI too, or the plugin lands in the
+// default profile while the statusline is wired into the requested one.
+function claudeEnv(opts) {
+  return opts.configDir ? { ...process.env, CLAUDE_CONFIG_DIR: opts.configDir } : process.env;
 }
 
 function pluginRoot() {
@@ -351,8 +360,8 @@ export function claudeAction(opts, installed) {
   return installed ? 'update' : 'install';
 }
 
-function scroogePluginInstalled() {
-  const r = capture('claude', ['plugin', 'list']);
+function scroogePluginInstalled(opts) {
+  const r = capture('claude', ['plugin', 'list'], claudeEnv(opts));
   return (r.status || 0) === 0 && /scrooge/i.test(r.stdout || '');
 }
 
@@ -383,8 +392,8 @@ export function detectCompetingRegisters(pluginListStdout) {
   return COMPETING_REGISTERS.filter((name) => active.some((e) => e.includes(name)));
 }
 
-function warnCompetingRegisters() {
-  const r = capture('claude', ['plugin', 'list']);
+function warnCompetingRegisters(opts) {
+  const r = capture('claude', ['plugin', 'list'], claudeEnv(opts));
   if ((r.status || 0) !== 0) return;
   const found = detectCompetingRegisters(r.stdout);
   if (!found.length) return;
@@ -400,13 +409,13 @@ function installClaude(opts, results) {
   results.detected++;
   process.stdout.write('→ Claude Code detected\n');
 
-  warnCompetingRegisters();
-  const installed = opts.force ? false : scroogePluginInstalled();
+  warnCompetingRegisters(opts);
+  const installed = opts.force ? false : scroogePluginInstalled(opts);
   if (claudeAction(opts, installed) === 'update') {
     process.stdout.write(`  scrooge plugin already installed — ${opts.tag ? `re-pinning to ${opts.tag}` : 'updating to latest'}\n`);
     let ok = true;
     for (const [cmd, args] of claudeUpdatePlan(opts)) {
-      if ((run(cmd, args, opts.dryRun).status || 0) !== 0) ok = false;
+      if ((run(cmd, args, opts.dryRun, undefined, claudeEnv(opts)).status || 0) !== 0) ok = false;
     }
     if (ok) results.updated.push('claude');
     else results.failed.push(['claude', 'claude plugin update failed']);
@@ -415,8 +424,8 @@ function installClaude(opts, results) {
     return;
   }
 
-  const r1 = run('claude', ['plugin', 'marketplace', 'add', repoSpec(opts)], opts.dryRun);
-  const r2 = run('claude', ['plugin', 'install', `${PLUGIN}@${PLUGIN}`], opts.dryRun);
+  const r1 = run('claude', ['plugin', 'marketplace', 'add', repoSpec(opts)], opts.dryRun, undefined, claudeEnv(opts));
+  const r2 = run('claude', ['plugin', 'install', `${PLUGIN}@${PLUGIN}`], opts.dryRun, undefined, claudeEnv(opts));
   if ((r1.status || 0) === 0 && (r2.status || 0) === 0) results.installed.push('claude');
   else results.failed.push(['claude', 'claude plugin install failed']);
 
@@ -511,7 +520,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-process.env.CLAUDE_CONFIG_DIR = process.env.CLAUDE_CONFIG_DIR || path.dirname(here);
+// Always the Codex dir: an inherited CLAUDE_CONFIG_DIR would point Codex at a
+// Claude profile, so a Codex \`/scrooge off\` would clear Claude's default.
+process.env.CLAUDE_CONFIG_DIR = path.dirname(here);
 process.env.SCROOGE_AGENT = 'codex';
 const { main } = await import('./hooks/scrooge-activate.js');
 main();
@@ -545,8 +556,40 @@ function normalizedPath(p) {
   return path.resolve(p);
 }
 
+// A line with any trailing `# comment` cut off (a `#` inside a quoted key or
+// string is kept), trimmed. Every header comparison goes through this, so a
+// commented header counts the same everywhere — a header one matcher sees and
+// another misses shifts group slots and hands one hook's trust to another.
+function stripTomlComment(line) {
+  const s = String(line || '');
+  let quote = null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quote) {
+      if (c === '\\' && quote === '"') i++;
+      else if (c === quote) quote = null;
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === '#') return s.slice(0, i).trim();
+  }
+  return s.trim();
+}
+
 function countUserPromptSubmitGroups(text) {
-  return (String(text || '').match(/^\s*\[\[hooks\.UserPromptSubmit\]\]/gm) || []).length;
+  return String(text || '').split(/\n/).filter(isUserPromptSubmitHeader).length;
+}
+
+// Comment/blank lines directly above the next table header introduce that
+// section, not the one ending here — returns where the current section's own
+// lines stop so a rewrite or removal leaves them in place.
+function sectionBodyEnd(lines, start, end) {
+  while (end > start && (lines[end - 1].trim() === '' || /^\s*#/.test(lines[end - 1]))) end--;
+  return end;
+}
+
+function hookStateBlockEnd(lines, i) {
+  let end = i + 1;
+  while (end < lines.length && !isTableHeader(lines[end])) end++;
+  return sectionBodyEnd(lines, i + 1, end);
 }
 
 function removeHookStateBlock(text, stateKey) {
@@ -555,22 +598,34 @@ function removeHookStateBlock(text, stateKey) {
   const header = `[hooks.state.${JSON.stringify(stateKey)}]`;
   const out = [];
   for (let i = 0; i < lines.length;) {
-    if (lines[i].trim() !== header) {
+    if (stripTomlComment(lines[i]) !== header) {
       out.push(lines[i++]);
       continue;
     }
-    i++;
-    while (i < lines.length && !/^\s*\[/.test(lines[i])) i++;
+    i = hookStateBlockEnd(lines, i);
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
+// The `enabled` value recorded under a trust block, or null when absent.
+function readHookStateEnabled(text, stateKey) {
+  const lines = String(text || '').split(/\n/);
+  const header = `[hooks.state.${JSON.stringify(stateKey)}]`;
+  const i = lines.findIndex((l) => stripTomlComment(l) === header);
+  if (i === -1) return null;
+  for (const line of lines.slice(i + 1, hookStateBlockEnd(lines, i))) {
+    const m = /^enabled\s*=\s*(true|false)$/.exec(stripTomlComment(line));
+    if (m) return m[1] === 'true';
+  }
+  return null;
+}
+
 function isUserPromptSubmitHeader(line) {
-  return String(line || '').trim() === '[[hooks.UserPromptSubmit]]';
+  return stripTomlComment(line) === '[[hooks.UserPromptSubmit]]';
 }
 
 function isUserPromptSubmitHooksHeader(line) {
-  return String(line || '').trim() === '[[hooks.UserPromptSubmit.hooks]]';
+  return stripTomlComment(line) === '[[hooks.UserPromptSubmit.hooks]]';
 }
 
 function isTableHeader(line) {
@@ -578,15 +633,15 @@ function isTableHeader(line) {
 }
 
 function collectUserPromptSubmitBlock(lines, start) {
-  const block = [lines[start++]];
+  const first = start++;
   while (start < lines.length) {
     const line = lines[start];
     if (isUserPromptSubmitHeader(line)) break;
     if (isTableHeader(line) && !isUserPromptSubmitHooksHeader(line)) break;
-    block.push(line);
     start++;
   }
-  return { block, next: start };
+  const next = sectionBodyEnd(lines, first + 1, start);
+  return { block: lines.slice(first, next), next };
 }
 
 const isScroogeCommand = (s) => s.includes('scrooge-activate.js') || s.includes('codex-activate.mjs');
@@ -621,8 +676,10 @@ function renumberHookStateKeys(text, keySource, removedIndices) {
   if (!keySource || !removedIndices.length) return text;
   const prefix = `${keySource}:user_prompt_submit:`;
   return String(text || '').split(/\n/).map((line) => {
-    const m = /^\s*\[hooks\.state\.(".*")\]\s*$/.exec(line);
+    const header = stripTomlComment(line);
+    const m = /^\[hooks\.state\.(".*")\]$/.exec(header);
     if (!m) return line;
+    const comment = line.slice(line.indexOf(header) + header.length);
     let key;
     try { key = JSON.parse(m[1]); } catch (_) { return line; }
     if (typeof key !== 'string' || !key.startsWith(prefix)) return line;
@@ -630,7 +687,7 @@ function renumberHookStateKeys(text, keySource, removedIndices) {
     const n = Number(group);
     if (!Number.isInteger(n)) return line;
     const shift = removedIndices.filter((r) => r < n).length;
-    return shift ? `[hooks.state.${JSON.stringify(`${prefix}${n - shift}:${rest.join(':')}`)}]` : line;
+    return shift ? `[hooks.state.${JSON.stringify(`${prefix}${n - shift}:${rest.join(':')}`)}]${comment}` : line;
   }).join('\n');
 }
 
@@ -660,22 +717,23 @@ function rewriteScroogeGroups(text, keySource, replacement) {
       out.push(...block);
     } else if (replacement && slot === -1) {
       slot = groupIndex;
-      let blank = 0;
-      while (blank < block.length && block[block.length - 1 - blank].trim() === '') blank++;
-      out.push(...replacement.replace(/\n$/, '').split('\n'), ...block.slice(block.length - blank));
+      out.push(...replacement.replace(/\n$/, '').split('\n'));
     } else {
       removed.push(groupIndex);
     }
     groupIndex++;
   }
   let nextText = out.join('\n');
+  // A user who disabled our hook keeps it disabled across a re-install.
+  let enabled = null;
   if (keySource) {
+    if (slot !== -1) enabled = readHookStateEnabled(nextText, `${keySource}:user_prompt_submit:${slot}:0`);
     for (const idx of slot === -1 ? removed : [slot, ...removed]) {
       nextText = removeHookStateBlock(nextText, `${keySource}:user_prompt_submit:${idx}:0`);
     }
     nextText = renumberHookStateKeys(nextText, keySource, removed);
   }
-  return { text: nextText.replace(/\n{3,}/g, '\n\n'), slot, mixed };
+  return { text: nextText.replace(/\n{3,}/g, '\n\n'), slot, mixed, enabled };
 }
 
 export function removeCodexHookConfig(text, keySource = null) {
@@ -688,22 +746,32 @@ export function mergeCodexHookConfig(text, command, keySource = null) {
     `hooks = [\n` +
     `  { type = "command", command = ${JSON.stringify(command)}, timeout = 5, statusMessage = ${JSON.stringify(CODEX_HOOK_STATUS)} },\n` +
     `]\n`;
-  const stateFor = (idx) => keySource
-    ? `\n[hooks.state.${JSON.stringify(`${keySource}:user_prompt_submit:${idx}:0`)}]\ntrusted_hash = ${JSON.stringify(codexHookHash(command))}\nenabled = true\n`
+  const stateKey = (idx) => `${keySource}:user_prompt_submit:${idx}:0`;
+  const stateFor = (idx, enabled) => keySource
+    ? `\n[hooks.state.${JSON.stringify(stateKey(idx))}]\ntrusted_hash = ${JSON.stringify(codexHookHash(command))}\nenabled = ${enabled !== false}\n`
     : '';
   const rewritten = rewriteScroogeGroups(text, keySource, block);
   // Our command already runs from a mixed group: appending another would run it
   // twice per prompt. Leave the file alone; the caller warns.
   if (rewritten.mixed && rewritten.slot === -1) return String(text || '');
-  if (rewritten.slot !== -1) return `${rewritten.text.replace(/\s*$/, '')}\n${stateFor(rewritten.slot)}`;
+  if (rewritten.slot !== -1) return `${rewritten.text.replace(/\s*$/, '')}\n${stateFor(rewritten.slot, rewritten.enabled)}`;
 
-  const current = rewritten.text.replace(/\s*$/, '');
-  const stateIdx = current.search(/^\[hooks\.state/m);
-  const groupIndex = countUserPromptSubmitGroups(stateIdx === -1 ? current : current.slice(0, stateIdx));
-  if (stateIdx === -1) return `${current}${current ? '\n\n' : ''}${block}${stateFor(groupIndex)}`;
-  const before = current.slice(0, stateIdx).replace(/\s*$/, '');
-  const after = current.slice(stateIdx).replace(/^\s*/, '');
-  return `${before}${before ? '\n\n' : ''}${block}\n${after}${stateFor(groupIndex)}`;
+  // A new group goes after the LAST existing one, so it takes the next free index
+  // and no user group moves; with none yet, before the first trust table (or at
+  // EOF). Any orphaned trust block already at that index is not ours to inherit.
+  const groupIndex = countUserPromptSubmitGroups(rewritten.text);
+  const current = (keySource ? removeHookStateBlock(rewritten.text, stateKey(groupIndex)) : rewritten.text).replace(/\s*$/, '');
+  const lines = current.split('\n');
+  const lastGroup = lines.findLastIndex(isUserPromptSubmitHeader);
+  let at = lines.length;
+  if (lastGroup !== -1) at = collectUserPromptSubmitBlock(lines, lastGroup).next;
+  else {
+    const stateIdx = lines.findIndex((l) => /^\[hooks\.state/.test(l));
+    if (stateIdx !== -1) at = sectionBodyEnd(lines, 0, stateIdx);
+  }
+  const before = lines.slice(0, at).join('\n').replace(/\s*$/, '');
+  const after = lines.slice(at).join('\n').replace(/^\s*/, '');
+  return `${before}${before ? '\n\n' : ''}${block}${after ? `\n${after}\n` : ''}${stateFor(groupIndex)}`;
 }
 
 // Exported for tests: the copied payload is run end-to-end there.
@@ -747,16 +815,18 @@ function wireCodexHook(opts, results) {
   const cfg = codexDir();
   const payload = codexPayloadRoot();
   const configPath = path.join(cfg, 'config.toml');
-  const wrapper = installCodexPayload(root, payload, opts);
-  const command = codexHookCommand(wrapper);
 
   if (opts.dryRun) {
+    installCodexPayload(root, payload, opts);
     process.stdout.write(`  would merge Scrooge UserPromptSubmit hook into ${configPath}\n`);
     results.installed.push('codex-hook');
     return;
   }
 
   try {
+    // Inside the try: a payload dir that cannot be written (EACCES, ENOTDIR) is a
+    // failed host, not an uncaught crash that hides every other host's result.
+    const command = codexHookCommand(installCodexPayload(root, payload, opts));
     fs.mkdirSync(cfg, { recursive: true });
     const before = safeExists(configPath) ? fs.readFileSync(configPath, 'utf8') : '';
     const after = mergeCodexHookConfig(before, command, normalizedPath(configPath));
@@ -815,30 +885,40 @@ function uninstall(opts, results) {
   process.stdout.write('💰 scrooge uninstall\n');
   // Claude plugin + statusline
   if (hasCmd('claude')) {
-    const probe = capture('claude', ['plugin', 'list']);
+    const probe = capture('claude', ['plugin', 'list'], claudeEnv(opts));
     if (probe.status === 0 && /scrooge/i.test(probe.stdout || '')) {
-      run('claude', ['plugin', 'uninstall', `${PLUGIN}@${PLUGIN}`], opts.dryRun);
+      run('claude', ['plugin', 'uninstall', `${PLUGIN}@${PLUGIN}`], opts.dryRun, undefined, claudeEnv(opts));
       // Install added the marketplace too (installClaude); remove it so uninstall
       // reverses install instead of leaving a registered source behind.
-      run('claude', ['plugin', 'marketplace', 'remove', PLUGIN], opts.dryRun);
+      run('claude', ['plugin', 'marketplace', 'remove', PLUGIN], opts.dryRun, undefined, claudeEnv(opts));
       results.removed.push('claude');
     } else process.stdout.write('  claude plugin not installed — skipping\n');
   }
   const cfg = configDir(opts);
   const settingsPath = path.join(cfg, 'settings.json');
+  const statuslineScript = path.join(cfg, 'hooks', 'scrooge-statusline.sh');
+  let keptStatusLine = false;
   if (safeExists(settingsPath) && !opts.dryRun) {
     try {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      const cur = settings.statusLine && (typeof settings.statusLine === 'string' ? settings.statusLine : settings.statusLine.command || '');
-      if (cur && cur.includes('scrooge-statusline')) { delete settings.statusLine; safeReplaceFile(settingsPath, JSON.stringify(settings, null, 2) + '\n'); process.stdout.write('  removed scrooge statusline from settings.json\n'); }
+      const sl = settings.statusLine;
+      const cur = sl && (typeof sl === 'string' ? sl : sl.command || '');
+      // Delete only the exact entry wireStatusline writes; anything else is the
+      // user's edit around our script and stays theirs.
+      const ours = sl && typeof sl === 'object' && Object.keys(sl).length === 2 &&
+        sl.type === 'command' && sl.command === `bash "${statuslineScript}"`;
+      if (ours) { delete settings.statusLine; safeReplaceFile(settingsPath, JSON.stringify(settings, null, 2) + '\n'); process.stdout.write('  removed scrooge statusline from settings.json\n'); }
+      else if (cur && cur.includes('scrooge-statusline')) {
+        keptStatusLine = true;
+        process.stdout.write(`  NOTE: ${settingsPath} statusLine was customized — kept, along with ${statuslineScript} it calls; remove both by hand.\n`);
+      }
     } catch (_) {}
   }
   // Don't auto-delete the .bak: install only writes it when absent, so it may be
   // the user's pre-install snapshot. Point at it instead of risking data loss.
   const bakPath = settingsPath + '.bak';
   if (safeExists(bakPath)) process.stdout.write(`  NOTE: ${bakPath} kept (pre-install settings snapshot) — restore or delete it manually if unneeded.\n`);
-  const statuslineScript = path.join(cfg, 'hooks', 'scrooge-statusline.sh');
-  if (safeExists(statuslineScript) && !opts.dryRun) {
+  if (safeExists(statuslineScript) && !opts.dryRun && !keptStatusLine) {
     try { fs.unlinkSync(statuslineScript); } catch (_) {}
     process.stdout.write(`  removed ${statuslineScript}\n`);
   }
@@ -953,7 +1033,7 @@ Flags:
   --tag,--ref <r>  pin the install to a git ref (e.g. vX.Y.Z); npx git-ref is the
                    guaranteed pin, marketplace/skills channels best-effort
   --list           list supported agents
-  --uninstall,-u   remove scrooge from detected agents
+  --uninstall,-u   remove scrooge from every agent (cannot combine with --only)
   --dry-run        print actions without running them
   --force          reinstall even if already present
   --config-dir P   override Claude config dir (default $CLAUDE_CONFIG_DIR or ~/.claude)

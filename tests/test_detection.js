@@ -617,15 +617,266 @@ test('detectCompetingRegisters is total on junk input', () => {
 test('installed Codex payload: the wrapper runs the activate hook end-to-end', () => {
   // The wrapper imports the hook module, so the hook's own isMain gate never
   // fires there — this pins that the wrapper still drives the stdin handler.
-  const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codex-'));
+  // Nested like ~/.codex/scrooge: the wrapper keeps state in the payload's parent.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codex-'));
   const pluginRoot = path.join(path.dirname(INSTALL_JS), '..', 'plugin');
-  const wrapper = installCodexPayload(pluginRoot, dest, { dryRun: false });
+  const wrapper = installCodexPayload(pluginRoot, path.join(home, 'scrooge'), { dryRun: false });
   const r = spawnSync(process.execPath, [wrapper], {
     input: JSON.stringify({ session_id: 'codex-e2e', prompt: '/scrooge ko' }),
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: dest },
   });
+  fs.rmSync(home, { recursive: true, force: true });
   assert.equal(r.status, 0, r.stderr);
   const out = JSON.parse(r.stdout || '{}');
   assert.match(out.hookSpecificOutput?.additionalContext ?? '', /SCROOGE MODE ACTIVE — ko\/full/);
+});
+
+// ── Codex config.toml merge edge cases (S3-1, S3-13b/c/d) ─────────────────────
+// Codex keys trust by group position, so every one of these is a trust bug, not
+// a cosmetic one: a misplaced or miscounted group hands one hook's trust to another.
+
+// Every `[table]` header (not `[[array]]`) appears at most once — TOML rejects a
+// redefined table, and Codex then refuses the whole config.
+function duplicateTableHeaders(text) {
+  const seen = new Map();
+  for (const line of text.split('\n')) {
+    const h = line.replace(/#.*$/, '').trim();
+    if (!/^\[[^[]/.test(h)) continue;
+    seen.set(h, (seen.get(h) || 0) + 1);
+  }
+  return [...seen].filter(([, n]) => n > 1).map(([h]) => h);
+}
+
+test('mergeCodexHookConfig: a user group after hook state keeps its slot and trust', () => {
+  // Inserting before the first [hooks.state counted only the groups above it, so
+  // our block took index 0, the user's group slid to 1, and our trust block was
+  // written at the user's key — a second `[hooks.state."K:user_prompt_submit:0:0"]`.
+  const before = [
+    '[hooks.state]',
+    '',
+    '[hooks.state."K:post_tool_use:0:0"]',
+    'trusted_hash = "sha256:post"',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo user" }]',
+    '',
+    '[hooks.state."K:user_prompt_submit:0:0"]',
+    'trusted_hash = "sha256:user"',
+    'enabled = true',
+    '',
+  ].join('\n');
+  const command = 'node "/x/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, 'K');
+
+  assert.deepEqual(duplicateTableHeaders(after), []);
+  assert.ok(after.indexOf('echo user') < after.indexOf('codex-activate.mjs'), 'user group keeps index 0');
+  assert.match(after, /user_prompt_submit:0:0"\]\ntrusted_hash = "sha256:user"/);
+  assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
+  assert.equal(mergeCodexHookConfig(after, command, 'K'), after, 're-run must be a stable no-op');
+});
+
+test('mergeCodexHookConfig: an orphaned trust block at our new slot is replaced, not duplicated', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo user" }]',
+    '',
+    '[hooks.state."K:user_prompt_submit:1:0"]',
+    'trusted_hash = "sha256:stale"',
+    '',
+  ].join('\n');
+  const after = mergeCodexHookConfig(before, 'node "/x/codex-activate.mjs"', 'K');
+
+  assert.deepEqual(duplicateTableHeaders(after), []);
+  assert.doesNotMatch(after, /sha256:stale/);
+});
+
+test('mergeCodexHookConfig re-run keeps a user-disabled scrooge hook disabled', () => {
+  const key = (i) => `[hooks.state."K:user_prompt_submit:${i}:0"]`;
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /old/scrooge/codex-activate.mjs" }]',
+    '',
+    key(0),
+    'trusted_hash = "sha256:old"',
+    'enabled = false',
+    '',
+  ].join('\n');
+  const after = mergeCodexHookConfig(before, 'node "/new/scrooge/codex-activate.mjs"', 'K');
+
+  assert.match(after, /user_prompt_submit:0:0"\]\ntrusted_hash = "sha256:[0-9a-f]{64}"\nenabled = false\n/);
+  assert.doesNotMatch(after, /enabled = true/);
+});
+
+test('a header with a trailing comment is still a group header (slot count stays aligned)', () => {
+  // The group counter matched `[[hooks.UserPromptSubmit]]  # policy` but the group
+  // walker required an exact line, so the walker saw one group fewer and our
+  // rewrite took — and overwrote — the user's trust slot 0.
+  const before = [
+    '[[hooks.UserPromptSubmit]]  # policy',
+    'hooks = [{ type = "command", command = "policy.sh" }]',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /old/scrooge/codex-activate.mjs" }]',
+    '',
+    '[hooks.state."K:user_prompt_submit:0:0"]',
+    'trusted_hash = "sha256:user"',
+    'enabled = true',
+    '',
+    '[hooks.state."K:user_prompt_submit:1:0"]  # scrooge',
+    'trusted_hash = "sha256:old"',
+    'enabled = true',
+    '',
+  ].join('\n');
+  const command = 'node "/new/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, 'K');
+
+  assert.deepEqual(duplicateTableHeaders(after), []);
+  assert.match(after, /user_prompt_submit:0:0"\]\ntrusted_hash = "sha256:user"/);
+  assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
+  assert.doesNotMatch(after, /sha256:old/);
+});
+
+test('a trailing comment on a later trust header still shifts down on removal', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /x/scrooge/codex-activate.mjs" }]',
+    '',
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "echo user" }]',
+    '',
+    '[hooks.state."K:user_prompt_submit:0:0"]',
+    'trusted_hash = "sha256:ours"',
+    '',
+    '[hooks.state."K:user_prompt_submit:1:0"]  # mine',
+    'trusted_hash = "sha256:user"',
+    '',
+  ].join('\n');
+  const after = removeCodexHookConfig(before, 'K');
+
+  assert.match(after, /user_prompt_submit:0:0"\]  # mine\ntrusted_hash = "sha256:user"/);
+  assert.doesNotMatch(after, /sha256:ours/);
+});
+
+test('comment lines heading the next section survive a scrooge group rewrite or removal', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /old/scrooge/codex-activate.mjs" }]',
+    '',
+    '# --- notifications (mine) ---',
+    '[notify]',
+    'x = 1',
+    '',
+  ].join('\n');
+  assert.match(removeCodexHookConfig(before, 'K'), /# --- notifications \(mine\) ---\n\[notify\]/);
+  assert.match(
+    mergeCodexHookConfig(before, 'node "/new/scrooge/codex-activate.mjs"', 'K'),
+    /# --- notifications \(mine\) ---\n\[notify\]/
+  );
+});
+
+// ── Codex wrapper owns its state dir (S3-8) ───────────────────────────────────
+test('Codex wrapper keeps state under the Codex dir even when CLAUDE_CONFIG_DIR is set', () => {
+  // Codex inherits the shell env. Honouring an exported CLAUDE_CONFIG_DIR made
+  // Codex read and write a Claude profile — `/scrooge off` in Codex cleared
+  // Claude's global default.
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codexhome-'));
+  const claudeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-claudehome-'));
+  const pluginRoot = path.join(path.dirname(INSTALL_JS), '..', 'plugin');
+  const wrapper = installCodexPayload(pluginRoot, path.join(codexHome, 'scrooge'), { dryRun: false });
+  const r = spawnSync(process.execPath, [wrapper], {
+    input: JSON.stringify({ session_id: 'codex-iso', prompt: '/scrooge ko' }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: claudeHome },
+  });
+  const claudeTouched = fs.existsSync(path.join(claudeHome, '.scrooge'));
+  const codexWritten = fs.existsSync(path.join(codexHome, '.scrooge'));
+  fs.rmSync(codexHome, { recursive: true, force: true });
+  fs.rmSync(claudeHome, { recursive: true, force: true });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(claudeTouched, false, 'Codex wrote into the Claude config dir');
+  assert.equal(codexWritten, true, 'Codex state not under the Codex dir');
+});
+
+// ── Installer CLI: --config-dir, uninstall scope, payload failures ────────────
+const posixOnly = { skip: process.platform === 'win32' ? 'sh shim / PATH override are POSIX-only here' : false };
+
+function runInstaller(args, env) {
+  return spawnSync(process.execPath, [INSTALL_JS, ...args], {
+    encoding: 'utf8',
+    cwd: os.tmpdir(),
+    env: { ...process.env, ...env },
+  });
+}
+
+test('--config-dir reaches every `claude` subprocess as CLAUDE_CONFIG_DIR (S3-9)', posixOnly, () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-cfgdir-'));
+  const bin = path.join(tmp, 'bin');
+  const cfg = path.join(tmp, 'profile');
+  const log = path.join(tmp, 'claude.log');
+  fs.mkdirSync(bin);
+  fs.writeFileSync(path.join(bin, 'claude'), '#!/bin/sh\nprintf \'%s|%s\\n\' "$CLAUDE_CONFIG_DIR" "$*" >> "$SCROOGE_FAKE_LOG"\n');
+  fs.chmodSync(path.join(bin, 'claude'), 0o755);
+  const r = runInstaller(['--only', 'claude', '--config-dir', cfg], {
+    PATH: `${bin}:/usr/bin:/bin`,
+    CLAUDE_CONFIG_DIR: path.join(tmp, 'decoy'),
+    SCROOGE_FAKE_LOG: log,
+  });
+  const calls = fs.readFileSync(log, 'utf8').trim().split('\n');
+  fs.rmSync(tmp, { recursive: true, force: true });
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.ok(calls.some((c) => c.includes('plugin install')), calls.join('\n'));
+  for (const c of calls) assert.ok(c.startsWith(`${cfg}|`), `claude ran without --config-dir: ${c}`);
+});
+
+test('--uninstall refuses --only instead of silently uninstalling everything (S3-10)', () => {
+  const r = runInstaller(['-u', '--only', 'claude', '--dry-run'], {});
+  assert.equal(r.status, 2, r.stdout);
+  assert.match(r.stderr, /--uninstall.*--only|--only.*--uninstall/);
+  assert.doesNotMatch(r.stdout, /scrooge uninstall/);
+});
+
+function uninstallWithStatusLine(statusLine) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-uninst-'));
+  const cfg = path.join(tmp, 'claude');
+  const empty = path.join(tmp, 'empty');
+  fs.mkdirSync(cfg);
+  fs.mkdirSync(empty);
+  const script = path.join(cfg, 'hooks', 'scrooge-statusline.sh');
+  fs.mkdirSync(path.dirname(script));
+  fs.writeFileSync(script, '#!/bin/sh\n');
+  fs.writeFileSync(path.join(cfg, 'settings.json'), JSON.stringify({ statusLine: statusLine(script) }, null, 2));
+  const r = runInstaller(['-u', '--config-dir', cfg], { PATH: empty, CODEX_HOME: path.join(tmp, 'codex') });
+  const settings = JSON.parse(fs.readFileSync(path.join(cfg, 'settings.json'), 'utf8'));
+  const scriptKept = fs.existsSync(script);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  return { r, settings, scriptKept };
+}
+
+test('uninstall removes the statusLine it wrote, verbatim', posixOnly, () => {
+  const { r, settings, scriptKept } = uninstallWithStatusLine((s) => ({ type: 'command', command: `bash "${s}"` }));
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(settings.statusLine, undefined);
+  assert.equal(scriptKept, false);
+});
+
+test('uninstall keeps a customized statusLine that merely mentions scrooge-statusline', posixOnly, () => {
+  const custom = (s) => ({ type: 'command', command: `bash "${s}"; ~/bin/my-git-status.sh` });
+  const { r, settings, scriptKept } = uninstallWithStatusLine(custom);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(settings.statusLine?.type, 'command', 'customized statusLine was deleted');
+  assert.match(settings.statusLine.command, /my-git-status/);
+  assert.match(r.stdout, /NOTE: .*statusLine/);
+  assert.equal(scriptKept, true, 'the kept statusLine now calls a deleted script');
+});
+
+test('a Codex payload copy failure is recorded and the run still finishes (S3-11)', posixOnly, () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-payload-'));
+  const empty = path.join(tmp, 'empty');
+  fs.mkdirSync(empty);
+  fs.writeFileSync(path.join(tmp, 'scrooge'), 'not a directory'); // payload dir is a file
+  const r = runInstaller(['--only', 'codex'], { PATH: empty, CODEX_HOME: tmp });
+  fs.rmSync(tmp, { recursive: true, force: true });
+  assert.match(r.stdout, /Codex hook wiring failed/, r.stderr);
+  assert.match(r.stdout, /failed \[.*codex-hook.*\]/);
+  assert.equal(r.status, 1, r.stderr);
 });
