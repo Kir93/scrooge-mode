@@ -9,7 +9,7 @@ Scrooge ships through three paths: Claude Code plugin, skills ecosystem, and the
 - Node.js 18 or newer.
 - Git access to `github.com/Kir93/scrooge-mode`.
 - Target agent installed: Claude Code for the plugin path, Codex or another `skills`-supported agent for the skills path.
-- Run one-line installer commands from your home directory (`cd ~`) unless you want `skills` CLI project-scope files in the current repo.
+- Run the one-line installer from any directory: it installs skills at user scope (`-g`), so no project-scope `skills` files land in the current repo.
 
 ## Claude Code Plugin Path
 
@@ -105,12 +105,15 @@ Useful flags:
 ```bash
 npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
+npx -y github:Kir93/scrooge-mode -- --config-dir ~/.claude-work   # Claude config dir for the plugin + statusline (default $CLAUDE_CONFIG_DIR, else ~/.claude)
 ```
+
+`--config-dir` is also passed as `CLAUDE_CONFIG_DIR` to every `claude plugin` call, so the plugin lands in the same profile as the statusline.
 
 Pin a released version (reproducible installs — swap the tag for the release you want):
 
 ```bash
-# npx — pins directly via the npm git-ref (guaranteed; the curl|bash shim always installs main)|bash / npx — pins directly via the npm git-ref (guaranteed)
+# npx — pins directly via the npm git-ref (guaranteed; the curl|bash shim always installs main)
 npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # forward the tag to the marketplace / skills channels the installer drives
@@ -150,7 +153,7 @@ Installing and uninstalling edit two files you own:
 | File | Touched by |
 | ---- | ---------- |
 | `<claude-config>/settings.json` (default `~/.claude/settings.json`) | statusline wiring on install, statusline removal on uninstall |
-| `~/.codex/config.toml` | Codex hook wiring on install, hook removal on uninstall |
+| `$CODEX_HOME/config.toml` (default `~/.codex/config.toml`) | Codex hook wiring on install, hook removal on uninstall |
 
 Before the first edit to either file, the installer copies it to `<path>.bak`. That copy is written **once** — it is your pre-install snapshot, and no later install or uninstall overwrites it. Uninstall deliberately leaves the `.bak` in place; delete it yourself when you no longer want it.
 
@@ -158,11 +161,11 @@ Edits are written to a temp file in the same directory and then renamed over the
 
 If one of those paths is a symlink — a dotfiles setup pointing `~/.claude/settings.json` at a tracked repo — the installer follows it and edits the real file, leaving the symlink in place. The `.bak` is then created next to the **real** file, not next to the link, so restore from that location.
 
-To restore a file:
+To restore a file (if you installed with `--config-dir`, use that path for the first line):
 
 ```bash
-mv ~/.claude/settings.json.bak ~/.claude/settings.json
-mv ~/.codex/config.toml.bak ~/.codex/config.toml
+mv "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json.bak" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
+mv "${CODEX_HOME:-$HOME/.codex}/config.toml.bak" "${CODEX_HOME:-$HOME/.codex}/config.toml"
 ```
 
 ## Flags (lean on by default)
@@ -206,9 +209,9 @@ claude plugin update scrooge@scrooge
 
 `claude plugin update` applies on the next Claude Code restart, so restart your session afterward.
 
-After updating, the first new session shows a one-time reminder of how to re-activate — a version change can reset activation. Run `/scrooge ko full` once; the global default then keeps every later session active until `/scrooge off`.
+After updating, the first new session shows a one-time reminder of how to re-activate — a version change can reset activation. Run `/scrooge ko full` once; the global default then keeps every later session active until `/scrooge off`. A session you explicitly turned off with `/scrooge off` (e.g. one you resume) gets no re-activation reminder — it is off by your choice, not the upgrade's.
 
-For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
+For **Codex**, the re-run overwrites the hook payload (hooks, rules, lib, registry) and re-merges the `~/.codex/config.toml` hook idempotently — an `enabled = false` you set on the Scrooge trust entry stays disabled. The Codex hook keeps its state under the Codex dir (`$CODEX_HOME`, default `~/.codex` — the parent of the `scrooge` payload) and ignores an exported `CLAUDE_CONFIG_DIR`, so a Codex `/scrooge off` never clears Claude's global default. **Other skills agents** (Cursor, Windsurf, Cline, Continue, Gemini CLI) get their `scrooge` skill overwritten on re-run. Either way they pick up the latest automatically.
 
 > **Codex tier limit.** The Codex integration wires only the `UserPromptSubmit` hook, not `SessionStart` — so the in-session update notice and the `↑vX` statusline marker never surface on Codex. Because the Codex payload is a copy (no in-place `plugin update`) and carries no version marker, **upgrading means re-running the installer** — it is idempotent, so re-running it is also the manual update check.
 
@@ -239,6 +242,8 @@ Expected behavior:
 - Follow-up replies use compressed Korean register until `/scrooge off`.
 - Code blocks, error strings, and technical identifiers stay verbatim.
 - Security warnings and irreversible-action confirmations return to normal prose.
+
+`/scrooge-stats` shows the session and lifetime savings. Running `hooks/scrooge-stats.js` directly with `--since 7d` (whole days `d` or hours `h`, e.g. `24h`) scopes the lifetime ledger block to that window. A value in any other form falls back to lifetime totals, labelled `Lifetime`.
 
 Repository-side release verification:
 
@@ -275,6 +280,9 @@ The installer only writes `statusLine` when the key is absent, so it never
 overwrites an existing statusline (a `claude-hud`-style bar keeps working — but
 then the badge is yours to compose). On Windows the badge needs `bash` on PATH; see
 [Platform support](#platform-support).
+
+To keep the badge but drop its savings suffix, export `SCROOGE_STATUSLINE_SAVINGS=0`
+in your shell profile before launching Claude Code.
 
 ## Platform support
 
@@ -348,5 +356,7 @@ Windows PowerShell:
 ```powershell
 ./uninstall.ps1
 ```
+
+`--uninstall` always removes Scrooge from every host, so it cannot be combined with `--only` (the installer exits with status 2). It removes the `settings.json` `statusLine` only when it is exactly the entry the installer wrote — `{"type": "command", "command": "bash \"<config>/hooks/scrooge-statusline.sh\""}`. A customized `statusLine` that calls the script is kept, together with the script, and the uninstaller prints a NOTE so you can remove both by hand.
 
 For `skills` CLI installs, remove the `scrooge` skill through the target agent's skill manager or skills directory. The project uninstaller removes Claude plugin/statusline wiring and Codex hook payloads; it does not own every third-party skills manager's storage.

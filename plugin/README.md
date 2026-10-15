@@ -4,14 +4,14 @@
 
 Scrooge makes Claude answer in a compressed register: no filler, no hedging, no polite padding. Code, error strings, identifiers, and technical terms stay verbatim. Security warnings and irreversible-action steps are always written in normal prose.
 
-**`~70% KO · ~67% EN · ~65% JA · ~63% HI · ~67% ZH`** fewer output tokens on single-turn chat prose (`claude-opus-4-8`, paired median). This is not an agentic-session figure. The benchmark rows are published, and the cost of the per-turn injection is counted against the savings — see [Benchmarks](https://github.com/Kir93/scrooge-mode#benchmarks).
+**`~60% KO · ~55% EN · ~62% JA · ~63% HI · ~65% ZH`** fewer output tokens on single-turn chat prose (`claude-opus-5-5`, held-out, ratio of paired medians). This is not an agentic-session figure. The benchmark rows are published, and the cost of what Scrooge injects (the full register at each session start, a short reminder per prompt) is counted against the savings — see [Benchmarks](https://github.com/Kir93/scrooge-mode#benchmarks).
 
 ## Usage
 
 - `/scrooge ko` turns the Korean register on. `/scrooge en`, `/scrooge ja`, `/scrooge hi`, and `/scrooge zh` work the same way.
 - `/scrooge off` turns it off and returns to normal prose.
 - `/scrooge-stats` reports the measured output tokens and estimated savings for the session.
-- In Claude Code, plain language works too: "talk like scrooge" or "스크루지처럼 답해줘" turns it on, and "stop scrooge" turns it off.
+- In Claude Code, plain language works too, in a short standalone prompt: "talk like scrooge" or "스크루지처럼 답해줘" turns it on, and "stop scrooge" turns it off.
 
 The `lean` flag (minimal code output) is on by default. Turn it off for a session with `/scrooge … nolean`.
 

@@ -33,10 +33,10 @@
 
 AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA/HI/ZH) 출력 압축 skill. [Claude Code](https://docs.anthropic.com/en/docs/claude-code) full 지원, Codex는 hook+stats, Cursor·Windsurf·Cline·Continue·Gemini CLI는 skill-only([호스트 지원](#호스트-지원) 참고). 한국어 register는 한국어 문법 primitive(개조식 · 음슴체 · 존댓말 제거 · 반말 default) 기반 설계 — 영어 압축 규칙의 번역 **아님**.
 
-**`~70% KO · ~67% EN · ~65% JA · ~63% HI · ~67% ZH · 단일턴 chat prose · 출력만 압축`** — `claude-opus-4-8`; KO/EN N=21–24 paired median, JA/HI/ZH held-out N=10–11. **agentic 세션 수치 아님** — agentic 작업은 별도 측정(10 태스크 코퍼스에서 총 output 52% 절감, 실세션에서 register가 닿는 범위는 billed output의 ~14~30%). [측정 조건](#벤치마크).
+**`~60% KO · ~55% EN · ~62% JA · ~63% HI · ~65% ZH · 단일턴 chat prose · 출력만 압축`** — `claude-opus-5-5`, held-out 코퍼스, paired median 비율, N=10–19; `claude-opus-4-8`(held-out ~70/68/65/63/67%)보다 낮음. **agentic 세션 수치 아님** — agentic 작업은 별도 측정(10 태스크 코퍼스에서 총 output 52% 절감, 실세션에서 register가 닿는 범위는 billed output의 ~14~30%). [측정 조건](#벤치마크).
 
 <p align="center">
-  <a href="#벤치마크"><img src="https://raw.githubusercontent.com/Kir93/scrooge-mode/main/assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-4-8, paired median): 한국어 scrooge:ko/full 1042 vs normal 3413 (−70%); 영어 scrooge:en/full 773 vs normal 2344 (−67%)" width="760"></a>
+  <a href="#벤치마크"><img src="https://raw.githubusercontent.com/Kir93/scrooge-mode/main/assets/benchmark.svg" alt="턴당 대표 output tokens (claude-opus-5-5, held-out 코퍼스, paired median, N=19): 한국어 scrooge:ko/full 844 vs normal 2097 (−60%); 영어 scrooge:en/full 665 vs normal 1476 (−55%)" width="760"></a>
 </p>
 
 ## 데모
@@ -115,7 +115,7 @@ npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 상세 setup, Claude Code plugin 설치, Codex `skills` 설치, troubleshooting, uninstall 절차는 [INSTALL.ko.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.ko.md). English install guide는 [INSTALL.md](https://github.com/Kir93/scrooge-mode/blob/main/INSTALL.md).
 
-**활성화.** `/scrooge ko full` (또는 `/scrooge en`, `/scrooge ja` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `npx -y github:Kir93/scrooge-mode -- --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시.
+**활성화.** `/scrooge ko full` (또는 `/scrooge en`, `/scrooge ja` 등)로 register on. `/scrooge off`로 상태 해제. 전체 옵션은 `npx -y github:Kir93/scrooge-mode -- --help`. Claude Code hook에선 자연어도 동작 — "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문("스크루지처럼 말하지 마" / "don't talk like scrooge")은 무시. 긴 프롬프트 속 문구도 무시: 자연어는 80 code point 이하 짧은 단독 프롬프트에서만 동작 — "stop scrooge"가 섞인 로그를 붙여넣어도 토글 안 됨. 명사형 "스크루지 모드" / "scrooge mode"는 프롬프트 (거의) 전체일 때만 활성화 — 요청 속 주제 언급("README의 스크루지 모드 섹션 다듬어줘")은 무시. 동사형("스크루지 모드로 답해줘", "enable scrooge")은 어디서든 동작.
 
 ### 호스트 지원
 
@@ -147,13 +147,13 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 | ------------------------ | ----------------------------------------------------------------------------------------- |
 | `/scrooge [lang] [dial]` | register 활성화. 언어 축 — `ko`/`en`/`ja`/`hi`/`zh`, dial은 `full`. 세션 단위 지속 + 글로벌 기본값으로 저장돼 새 세션 자동 활성. dial은 `full` 하나뿐: `lite`는 v0.22.1까지 출하됐으나 측정 결과 **두 축 모두** 열위 — `full`보다 덜 압축하고 보존도 낮음 — 이라 자체 벤치마크가 기각한 dial을 계속 출하하는 대신 v0.23.0에서 제거함([측정](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lite-dial--measured-then-removed)). `lite`로 저장된 상태는 `full`로 마이그레이션됨. |
 | `/scrooge … [flag]`      | dial과 직교인 행동 플래그: `lean`(코드 산출물 최소주의)은 **기본 on**(`full` 위에서 KO·EN 모두 ~+18%, est — 근거·재현 명령은 [`benchmarks/README.md`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). `nolean`(세션) 또는 `SCROOGE_DEFAULT_FLAGS`(전역)로 토글. |
-| `/scrooge off`           | 상태 + 글로벌 기본값 해제(전역 off), 일반 prose 복귀.                                     |
-| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 부정문 무시, slash 우선. 언어는 구문 기준, dial `full`. |
+| `/scrooge off`           | 상태 + 글로벌 기본값 해제(전역 off), 일반 prose 복귀. 세션에 off marker가 남아, 다른 세션이 기본값을 다시 켜도 해당 세션은 off 유지(resume 포함, 최대 14일). 그 세션에서 다시 활성화하면 재활성. |
+| 자연어 (hook)            | "스크루지처럼 답해줘" / "talk like scrooge" / "スクルージみたいに答えて" / "स्क्रूज की तरह जवाब दो" / "像斯克鲁奇一样回答"로 활성화, "스크루지 꺼" / "stop scrooge"로 해제. 짧은 단독 프롬프트(80 code point 이하)만, 명사형 "스크루지 모드" / "scrooge mode"는 프롬프트 (거의) 전체일 때만 활성화(요청 속 주제 언급은 무시), 부정문 무시, slash 우선. dial `full`; 언어는 저장된 상태가 없을 때만 구문 기준 — 세션 상태나 글로벌 기본값이 있으면 그 언어 유지(변경은 `/scrooge <lang>`). |
 | `UserPromptSubmit` hook  | 매 turn마다 register 재주입으로 dial drift 차단.                                          |
 | Safety auto-clarity      | 보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차에서는 압축 해제. 전 언어. **측정:** 잘못된 전제 질문에서 `claude-opus-5-5` 기준 KO 20/20·EN 10/10 반박(비압축 baseline도 20/20·10/10) — 단 이전 KO 실패 1건은 그 문항을 원래 judge로 재채점하면 그대로 재현되므로 안전 주장은 하지 않음([상세](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#re-run-on-claude-opus-5-5-2026-10-07)). |
 | Boundaries               | 압축 적용 범위. 코드·커밋 메시지·PR 설명은 영구 제외 — 압축이 문법을 깨뜨림. 모델이 생성하는 Docs·prose 산출물(README·명세·보고서, 그리고 외부로 보낼 초안 — Slack·DM·메일)은 압축 **적용**: 군더더기만 제거하고 정보·어조는 무손실. **측정:** 20턴 hook 세션에서 compaction을 한 번 지난 뒤에도 제외 클래스가 유지됨 — 산출물 7건 중 압축된 것 0건, liveness 대조 턴 전부에서 register 활성 확인 ([상세](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#register-persistence-boundary-survival), 행: [`results-ko-persistence.jsonl`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/published/results-ko-persistence.jsonl)). |
 | `plugin/registry.json`   | `언어 × dial → 규칙 파일 경로` 1:1 매핑이자 `VALID_LANGS`가 derive하는 키 목록의 원천. 언어 추가 = 규칙 파일 2개(`full` + `lean` fragment) + 레지스트리 항목 2줄 + `plugin/hooks/lang-meta.js` 1행. |
-| `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. |
+| `scrooge-stats` skill    | Claude/Codex에서 발견 가능한 stats 표면. session JSONL의 측정된 input + output 토큰 표시, 모델 추정 금지. 절감 추정치(ledger 기록 포함)는 활성화 이후 prose만 대상 — `since activation` 줄로 표시. 자체 overhead는 `SessionStart` 주입마다 full register 1회 + 사용자 프롬프트마다 reminder 1회로 계산. 세션 중간 활성화 후엔 활성화 이후 주입만 계산 — 활성화 프롬프트의 full register 1회, 이후 `SessionStart`·register 변경 `/scrooge` set마다 full 1회, 그 외 이후 프롬프트마다 reminder 1회. |
 | 토큰 절감 statusline     | Claude Code 세션 JSONL의 실제 output 토큰 — tokenizer 추정 아님.                          |
 | CLI 벤치마크 하네스      | 재현 가능한 runner (`benchmarks/run.py`) — [`benchmarks/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks) 참조.           |
 
@@ -161,21 +161,37 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 
 ## 벤치마크
 
-**`claude-opus-4-8`** 측정. 전체 방법론·재현 명령은 [`benchmarks/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks). 아래 모든 headline 수치는 [`benchmarks/published/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/published)의 scrubbed raw rows로 뒷받침되어 median을 직접 재계산할 수 있음. 파일별 model·register 버전·측정일은 [provenance manifest](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/published/README.md).
+헤드라인은 **`claude-opus-5-5`** 측정(`opus` alias, held-out 코퍼스, register v0.27.0, 2026-09-28) — [아래 표](#헤드라인-claude-opus-5-5-held-out). 그 뒤 언어별 표는 이전 pin **`claude-opus-4-8`** 측정치이며, caveman 비교가 그 pin에만 있어 유지함. 전체 방법론·재현 명령은 [`benchmarks/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks). 아래 모든 headline 수치는 [`benchmarks/published/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/published)의 scrubbed raw rows로 뒷받침되어 median을 직접 재계산할 수 있음. 파일별 model·register 버전·측정일은 [provenance manifest](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/published/README.md).
 
 **측정 조건**(숫자 인용 전 필독):
 
 - **chat-prose workload 전용 — 여기서 가장 큰 한계.** 공개된 모든 행이 `tool_use_output_tokens: 0`·`turns: 1`임 — 코퍼스가 tool 호출 없는 단일턴 대화형 Q&A. 실제 agentic 세션에서 register가 닿는 건 billed output 중 prose 부분뿐이고, 그 비율이 작음 — 유지보수자 자신의 scrooge 활성 세션 930개 실측 기준 prose는 **billed output token의 pooled 13.8%(35.3M 중 4.87M), 세션 중앙값 29.5%**([`session-evidence/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/session-evidence), [`results.json`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/session-evidence/results.json)의 `reach.*`로 커밋). 나머지는 diff·파일 쓰기·정확한 error 문자열 등 register가 설계상 원문 그대로 두는 tool 호출 payload. *당신의* 세션 전체 절감은 여전히 주장하지 않음 — 실세션엔 verbose counterfactual이 없음(ADR-003). 측정한 것은 **별도의 agentic 벤치마크**임: 고정 scratch repo 위 held-out 10 태스크에서 `scrooge:en/full`이 총 billed output을 **52%** 절감(paired median, 95% CI +38.7~+55.8, 10/10에서 더 작음, p=0.002), 그러면서 턴은 baseline보다 *더* 썼고, 작업이 실제로 완료됐음을 spot check로 확인함. 그 코퍼스의 prose share는 18.7%로 위 실세션 pooled·median 사이에 있으므로 더 무거운 세션은 구조상 천장이 더 낮음. 대조로 JetBrains는 SkillsBench 87개 중 86개 태스크(~240 billed trial, 품질 통계적 무변, 2026-07)에서 `caveman`을 **8.5%**로 측정함 — 훨씬 크고 무거운 코퍼스. 두 수치와 차이의 이유: [Agentic workload](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#agentic-workload--measured).
-- **N=21–24 프롬프트 × 1회 실행, paired median.** 헤드라인은 1 유효숫자 추정(`~70%`이지 "69.5%"가 아님). 단 각 헤드라인 arm은 paired 프롬프트 **전부**에서 더 작았고(exact sign test p ≤ 1e-3) 95% bootstrap CI 하한도 56% 위에 머묾 — 1 유효숫자라는 단서는 둘째 자리에 대한 것이지 효과의 실재 여부가 아님. `report.py --paired`가 공개된 어느 파일에 대해서든 구간·sign test·해상 가능 최소 효과를 출력함.
-- **tool을 사용한 행은 전 arm에서 제외됨(v0.23.0 변경).** 일부 행이 인라인 답변 대신 tool 호출로 응답 — 한 건은 prose 119 토큰 옆에 tool 7,645 토큰. 이런 행을 prose 기준으로 인라인 답변과 비교하면 동등 비교가 아니므로, `--drop-tool-rows`가 해당 prompt/run 키를 전 arm에서 함께 버림. 기존에는 ZH에만 적용된 수동 예외였고 산문으로만 설명돼 인쇄된 재현 명령에는 빠져 있었음 — 그 명령이 바로 위 표와 다른 수치를 내던 원인. **공개: 제외된 행이 주로 `normal` baseline 쪽이라 규칙 적용으로 헤드라인 둘이 올라감 — EN 66%→67%, JA 64%→65%, 반대로 KO held-out은 71%→70%.** 규칙은 양방향 동일하며 결과적으로 두 번 우리에게 유리했을 뿐임.
+- **N=10–19 프롬프트 × 1회 실행, paired median.** 헤드라인은 1 유효숫자 추정(`~60%`이지 "59.8%"가 아님). 단 각 헤드라인 arm은 paired 프롬프트 **전부**에서 더 작았고(exact sign test p ≤ 0.002) 95% bootstrap CI 하한도 50% 위에 머묾 — 1 유효숫자라는 단서는 둘째 자리에 대한 것이지 효과의 실재 여부가 아님. `report.py --paired`가 공개된 어느 파일에 대해서든 구간·sign test·해상 가능 최소 효과를 출력함.
+- **tool을 사용한 행은 전 arm에서 제외됨(v0.23.0 변경).** 일부 행이 인라인 답변 대신 tool 호출로 응답 — 한 건은 prose 119 토큰 옆에 tool 7,645 토큰. 이런 행을 prose 기준으로 인라인 답변과 비교하면 동등 비교가 아니므로, `--drop-tool-rows`가 해당 prompt/run 키를 전 arm에서 함께 버림. 기존에는 ZH에만 적용된 수동 예외였고 산문으로만 설명돼 인쇄된 재현 명령에는 빠져 있었음 — 그 명령이 바로 위 표와 다른 수치를 내던 원인. **공개: 제외된 행이 주로 `normal` baseline 쪽이라 규칙 적용으로 헤드라인 둘이 올라감 — EN 66%→67%, JA 64%→65%, 반대로 KO held-out은 71%→70%.** 규칙은 양방향 동일하며 결과적으로 두 번 우리에게 유리했을 뿐임. `claude-opus-5-5` 파일에서는 ZH 키 1개를 버려(N 11→10) ZH가 +62.5%→+65.4%로 움직임 — 세 번째로 우리에게 유리함.
 - **Register-clean run.** register hook 둘(scrooge·caveman)을 중립화해 baseline에 주입되지 않게 함. 토큰은 `message.id` dedup(prose-only).
-- **Held-out cross-check.** 겹치지 않는 프롬프트셋(각 N=10–11)에서 KO ~70%, EN ~68%, JA ~65%, HI ~63%, ZH ~67% — 위 headline과 일치하므로 튜닝셋 overfit 아님. 산출 방식·per-prompt 중앙값: [`benchmarks/README.md`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#reproducing-a-published-number).
+- **Held-out 헤드라인.** 헤드라인은 규칙 튜닝 코퍼스와 겹치지 않는 held-out 프롬프트셋(`prompts/{lang}-report.txt`) 기준. 이전 pin `claude-opus-4-8`에서 같은 held-out셋은 KO ~70%, EN ~68%, JA ~65%, HI ~63%, ZH ~67%. KO·EN은 아래 그 pin의 튜닝 코퍼스 표와 일치하므로 overfit 아니었음. JA/HI/ZH는 튜닝 표가 없고, 아래 표 자체가 그 held-out 측정임. 산출 방식·per-prompt 중앙값: [`benchmarks/README.md`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#reproducing-a-published-number).
 - **Register-only isolation.** 각 arm은 `claude --print --system-prompt <rule>`로 실행하며 Claude Code 기본 system prompt를 **대체**함. register 효과는 깔끔히 분리되지만 실제 세션은 전체 system prompt 위에 register가 얹히므로 실측 절감이 헤드라인과 다를 수 있음. register **유지**는 실세션 근거가 있음: dogfood 세션 drift 분석(scrooge 활성 930개 중 conclusive 188개, 2026-08-05, [`benchmarks/session-evidence/`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/session-evidence))에서 후반부 prose output이 초반 대비 평탄 — 후반/전반 median ratio 0.83, conclusive의 77% retained. 집계는 [`results.json`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/session-evidence/results.json)으로 커밋되어 위 네 개 수치를 파일과 대조 가능함. 다만 입력이 사설 세션 로그라 제3자 재현은 불가. 유지 축만 — 실세션 _절감_은 여전히 측정 불가(verbose counterfactual 부재, ADR-003). 전체 caveat: [`benchmarks/README.md`](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md).
 - **실측 `output_tokens`.** 숫자는 세션 JSONL의 `output_tokens` 필드 — tokenizer 추정이 아니라 API가 실제 청구한 값.
 - **safety register를 잘못된 전제로 시험했고, 재현되는 실패 1건이 있음.** 간결성 강조 지시가 hallucination 저항을 깎는다는 건 알려진 사실이라(Giskard Phare, 2025-04-30: 최대 20%), 올바른 답이 질문의 가정 자체를 거부하는 것인 문항으로 시험함. `claude-opus-5-5` 기준 EN 10/10·KO 20/20(judge N=3, 만장일치), 비압축 baseline도 10/10·20/20. `claude-opus-4-8`로 한 첫 측정은 KO **19/20**, baseline 19/19(Fisher exact p=1.000)였고, 그 miss 1건은 만장일치이며 같은 문항을 일반 `terse` 통제군이 통과했으므로 짧음이 아니라 이 register에 귀속됨. **그 miss는 지금도 재현됨**: 재실행 답변을 원래 judge로 재채점하면 다시 실패하므로, 20/20은 실패가 고쳐진 게 아니라 judge가 관대해진 결과임([재실행](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#re-run-on-claude-opus-5-5-2026-10-07)). 여기서 안전 주장을 하지 않으며 규칙도 고치지 않음 — 실패 문항·메커니즘·그 판단 근거: [False premises](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#false-premises--one-demonstrated-failure-no-measurable-deficit).
-- **`claude-opus-4-8` 고정이며 이후 재측정하지 않음.** Claude Code 기본 모델은 2026-07-24(v2.1.219)에 Opus 5로 바뀜. Anthropic 자체 Opus 5 프롬프팅 가이드가 기본 응답이 이전 Opus보다 길어졌다고 기록하므로 비압축 baseline이 움직였을 가능성이 큼 — **다만 절감률이 어느 방향으로 움직이는지는 미측정이며 주장하지 않음.**
+- **`claude-opus-5-5`로 재측정했고 절감률은 내려감.** Claude Code 기본 모델은 2026-07-24(v2.1.219)에 Opus 5로 바뀜. 헤드라인은 held-out 코퍼스를 `claude-opus-5-5`로 재실행(2026-09-28, register v0.27.0)하기 전까지 `claude-opus-4-8`에 머물렀음. `claude-opus-4-8` held-out 대비 절감률은 ~70/68/65/63/67%에서 ~60/55/62/63/65%로 내려감(KO/EN/JA/HI/ZH, HI는 보합). 비압축 `normal` baseline이 모든 언어에서 **짧아졌고**(median 토큰 KO 2782→2097, EN 2546→1476, JA 2399→1529, HI 2436→1889, ZH 2703→1772) 그 감소 비율이 `scrooge` 출력보다 컸음. 두 측정 사이에 모델·register 버전(≈v0.7–v0.15 → v0.27.0)·호스트 격리가 모두 바뀌었으므로 하락을 어느 하나에 귀속하지 않음.
+
+### 헤드라인: `claude-opus-5-5` held-out
+
+held-out 코퍼스(`prompts/{lang}-report.txt`), register v0.27.0, 2026-09-28. 각 파일엔 같은 실행의 `@v0.26.0` arm도 있으며 헤드라인은 접미사 없는 v0.27.0 arm. 절감은 median 비율이고, per-prompt 열은 CI·sign test가 붙는 paired 통계량임.
+
+| Register | `normal` | `scrooge` | normal 대비 절감 | per-prompt median (95% CI) | N |
+| -------- | -------: | --------: | ---------------: | -------------------------: | -: |
+| `scrooge:ko/full` | 2097 | **844** | **~60%** | 63.7% (56.1–66.6%) | 19 |
+| `scrooge:en/full` | 1476 | **665** | **~55%** | 59.8% (50.2–63.0%) | 19 |
+| `scrooge:ja/full` | 1529 | **587** | **~62%** | 60.0% (57.0–73.1%) | 11 |
+| `scrooge:hi/full` | 1889 | **705** | **~63%** | 61.8% (52.9–64.4%) | 11 |
+| `scrooge:zh/full` | 1771.5 | **613** | **~65%** | 65.1% (57.1–72.2%) | 10 |
+
+재현: `python3 benchmarks/report.py --input benchmarks/published/results-{lang}-report-v027.jsonl --paired --drop-tool-rows`. Raw rows: [`results-{lang}-report-v027.jsonl`](https://github.com/Kir93/scrooge-mode/tree/main/benchmarks/published). 이 pin에서는 caveman arm을 돌리지 않음.
 
 ### 한국어
+
+이전 pin: `claude-opus-4-8`, 튜닝 코퍼스 — `caveman:full` arm이 있는 유일한 pin.
 
 `normal`은 모델 기본 답변, `terse`는 "간결하게 답해" control, `caveman:full`은 비교 baseline — Scrooge 모드 아님.
 
@@ -190,6 +206,8 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 
 ### 영어
 
+이전 pin: `claude-opus-4-8`, 튜닝 코퍼스.
+
 | Mode                  | 대표 output tokens (N=24) | normal 대비 절감 |
 | --------------------- | ------------------------: | ---------------: |
 | `normal`              |                      2344 |       (baseline) |
@@ -201,7 +219,7 @@ tier의 의미: skill-only 호스트는 register를 로드하지만 활성화가
 
 ### 일본어 · 힌디어 · 중국어
 
-셋 다 held-out 전용(N=10–11)이라 별도 튜닝 표가 없음. JA·HI는 한국어 메커니즘을 각 언어 문법에 사상, ZH는 zh-native 신설계임(중국어엔 제거할 경어 형태소·격조사가 없음).
+이전 pin: `claude-opus-4-8`. 셋 다 held-out 전용(N=10–11)이라 별도 튜닝 표가 없음. JA·HI는 한국어 메커니즘을 각 언어 문법에 사상, ZH는 zh-native 신설계임(중국어엔 제거할 경어 형태소·격조사가 없음).
 
 | Register | `normal` | `scrooge` | normal 대비 절감 | fidelity (judge N=3) |
 | -------- | -------: | --------: | ---------------: | -------------------: |
@@ -233,7 +251,7 @@ scrooge가 **모든** 프롬프트에서 baseline보다 작았고 `terse` contro
 | 1차 목표          | 공격적 영어 압축                   | Korean-native 이중언어 압축                            |
 | 언어              | EN (+ wenyan 한문)                 | KO, EN, JA, HI, ZH; `registry.json` 기반 i18n          |
 | 한국어 register   | 없음                               | native — 개조식 · 음슴체 · 존댓말 제거 · 반말 default  |
-| 이번 영어 결과    | `649` median tokens (telegraphic)  | `773` median tokens — 약간 많고 주장 보존 점수가 소폭 높음 |
+| 영어 결과 (`claude-opus-4-8`) | `649` median tokens (telegraphic)  | `773` median tokens — 약간 많고 주장 보존 점수가 소폭 높음 |
 | 정면 비교 fidelity (`claude-opus-4-8`) | 0.60 KO · 0.69 EN                  | 0.68 KO · 0.72 EN — 단 **paired**로는 KO 무승부(+0.01, CI가 0 포함), EN만 분리됨(+0.09, 11개 중 9개). 같은 코퍼스·judge N=3, safety는 양쪽 동률. `claude-opus-5`에서는 정면 비교 미실시 — scrooge arm만 재측정했으므로 현재 pin의 caveman 대조군은 없음 |
 | 여기서의 벤치마크 | 비교 arm (`caveman:full`)          | 실측 `output_tokens` runner, paired reports            |
 | 입력측 압축       | `caveman-shrink`(npm MCP 미들웨어) | 없음 — 출력 register 전용. v0.22.1까지 있던 opt-in `memory-compress` CLI는 자체 측정(floor 7.7%, 실현 가능 ~3~4%)과 prompt cache 요금 구조상 표면 값어치가 없어 제거 |
@@ -247,7 +265,7 @@ Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨.
 3. 이후 매 turn마다 경량 reminder 재주입으로 register drift 방지.
 4. `/scrooge off`로 상태 + 글로벌 기본값 삭제(전역 off, 아래 참조). 규칙 자체의 auto-clarity가 안전 컨텍스트(보안 경고, 되돌릴 수 없는 동작 확인, 다단계 절차)에서는 압축 해제 — 사용자가 opt-out할 필요 없음.
 
-**글로벌 기본값.** 아무 세션에서 활성화하면 그 선택이 글로벌 기본값(`~/.claude/.scrooge/default`)으로 저장됨. 모든 새 세션이 같은 lang/dial/flags로 자동 활성 — 한 번만, 어디서든. `SessionStart` hook이 새 세션을 기본값으로 seed하고 full rule을 재주입. `/scrooge off`는 기본값도 삭제(전역 off); 이미 떠 있는 세션은 재시작 전까지 register 유지 — 한 worktree의 off가 동시 세션을 끊지 않음.
+**글로벌 기본값.** 아무 세션에서 활성화하면 그 선택이 글로벌 기본값(`~/.claude/.scrooge/default`)으로 저장됨. 모든 새 세션이 같은 lang/dial/flags로 자동 활성 — 한 번만, 어디서든. `SessionStart` hook이 새 세션을 기본값으로 seed하고 full rule을 재주입. `SessionStart` 없는 host(Codex)는 기본값으로 seed된 첫 프롬프트에 full rule 주입. `/scrooge off`는 기본값도 삭제(전역 off); 이미 떠 있는 세션은 재시작 전까지 register 유지 — 한 worktree의 off가 동시 세션을 끊지 않음. 반대 방향도 동일: off한 세션은 off marker가 남아, 다른 세션이 기본값을 다시 켜도 그 세션에서 다시 활성화하기 전까지 off 유지(resume 포함, 최대 14일).
 
 **플래그.** lang/dial 외에 행동 플래그가 직교 조합. `lean`(코드 산출물 최소주의)은 **기본 on** — `/scrooge`가 과설계·해설을 덜되 정확성은 절대 안 건드림(fragment가 안전 바닥 고정). `full` 위에서 같은 register의 flag 없는 arm과 paired 측정: **KO +17.6%**(95% CI 10.2–43.7%), **EN +18.1%**(95% CI 10.7–28.3%), est·prose-only·`claude-opus-4-8`, 각 8 prompt × 3 run. 두 CI 모두 0을 제외. CI와 같은 단위(prompt별 중앙값)로 센 sign test는 KO 8/8(p=0.0078), EN 7/8(p=0.07) — KO는 방향 확정, EN은 일관되나 유의하지 않음. 다만 구간이 넓으므로 `lean`은 정밀 수치가 아니라 "대략 5분의 1 절감"으로 읽어야 함. 재현: `python3 benchmarks/report.py --input results-lean2-{ko,en}.jsonl --baseline scrooge:{ko,en}/full --paired --drop-tool-rows`. 이 수치는 v0.22.1까지 발표한 KO +34.6% / EN +10.3%를 대체 — 기존 수치는 corpus 구조를 오독했고 양쪽에 tool 사용 행이 섞여 있었음([근거](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#the-lean-flag-numbers)). 세션 단위 `/scrooge … nolean` 또는 전역 `SCROOGE_DEFAULT_FLAGS`(쉼표 구분 집합, 또는 빈 값으로 전체 해제)로 토글. 활성 플래그는 각자의 register fragment(`plugin/rules/{lang}/fragments/{flag}.md`)를 주입 규칙에 덧붙임.
 

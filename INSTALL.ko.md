@@ -9,7 +9,7 @@ Scrooge 설치 경로 3개: Claude Code plugin, skills ecosystem, 멀티 에이�
 - Node.js 18 이상.
 - `github.com/Kir93/scrooge-mode` 접근 가능.
 - 대상 에이전트 설치됨: plugin 경로는 Claude Code, skills 경로는 Codex 또는 `skills` 지원 에이전트.
-- 원라이너는 홈 디렉토리(`cd ~`)에서 실행 권장. 현재 repo에 `skills` CLI project-scope 파일 생기는 것 방지.
+- 원라이너는 어느 디렉토리에서 실행해도 됨: skills를 user scope(`-g`)로 설치하므로 현재 repo에 `skills` project-scope 파일이 생기지 않음.
 
 ## Claude Code Plugin Path
 
@@ -104,12 +104,15 @@ irm https://raw.githubusercontent.com/Kir93/scrooge-mode/main/install.ps1 | iex
 ```bash
 npx -y github:Kir93/scrooge-mode -- --dry-run
 npx -y github:Kir93/scrooge-mode -- --only claude
+npx -y github:Kir93/scrooge-mode -- --config-dir ~/.claude-work   # plugin·statusline 대상 Claude config dir (기본값 $CLAUDE_CONFIG_DIR, 없으면 ~/.claude)
 ```
+
+`--config-dir`는 모든 `claude plugin` 호출에도 `CLAUDE_CONFIG_DIR`로 전달됨 — plugin이 statusline과 같은 profile에 설치됨.
 
 release 버전 핀(재현 가능한 설치 — 원하는 release tag로 교체):
 
 ```bash
-# npx — npm git-ref로 직접 핀(보장; curl|bash shim은 항상 main 설치)|bash / npx — npm git-ref로 직접 핀(보장)
+# npx — npm git-ref로 직접 핀(보장; curl|bash shim은 항상 main 설치)
 npx -y github:Kir93/scrooge-mode#vX.Y.Z
 
 # installer가 구동하는 marketplace / skills 채널에도 tag 전달
@@ -149,7 +152,7 @@ Windows PowerShell:
 | 파일 | 수정 시점 |
 | ---- | --------- |
 | `<claude-config>/settings.json` (기본값 `~/.claude/settings.json`) | 설치 시 statusline 연결, 제거 시 statusline 해제 |
-| `~/.codex/config.toml` | 설치 시 Codex hook 연결, 제거 시 hook 해제 |
+| `$CODEX_HOME/config.toml` (기본값 `~/.codex/config.toml`) | 설치 시 Codex hook 연결, 제거 시 hook 해제 |
 
 두 파일 중 하나를 처음 수정하기 전에 설치 프로그램이 `<path>.bak`으로 복사합니다. 이 복사본은 **한 번만** 만들어집니다 — 설치 이전 상태의 스냅샷이며, 이후의 설치나 제거가 덮어쓰지 않습니다. 제거 시에도 `.bak`은 일부러 남겨두므로, 더 이상 필요 없으면 직접 삭제하세요.
 
@@ -157,11 +160,11 @@ Windows PowerShell:
 
 두 경로 중 하나가 심볼릭 링크인 경우 — dotfiles 저장소를 `~/.claude/settings.json`으로 연결한 구성 — 설치 프로그램은 링크를 따라가 실체 파일을 수정하고 링크 자체는 그대로 둡니다. 이때 `.bak`은 링크가 아니라 **실체 파일** 옆에 생성되므로 복구도 그 위치에서 하세요.
 
-복구 방법:
+복구 방법(`--config-dir`로 설치했다면 첫 줄은 그 경로 사용):
 
 ```bash
-mv ~/.claude/settings.json.bak ~/.claude/settings.json
-mv ~/.codex/config.toml.bak ~/.codex/config.toml
+mv "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json.bak" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
+mv "${CODEX_HOME:-$HOME/.codex}/config.toml.bak" "${CODEX_HOME:-$HOME/.codex}/config.toml"
 ```
 
 ## 플래그 (lean 기본 on)
@@ -203,9 +206,9 @@ claude plugin update scrooge@scrooge
 
 `claude plugin update`는 다음 Claude Code 재시작 때 적용되므로 이후 세션을 재시작.
 
-업데이트 후 첫 새 세션에서 재활성화 방법을 1회 안내함 — 버전 변경이 활성화를 리셋할 수 있기 때문. `/scrooge ko full`를 한 번 실행하면 글로벌 기본값이 이후 모든 세션을 `/scrooge off` 전까지 활성 유지.
+업데이트 후 첫 새 세션에서 재활성화 방법을 1회 안내함 — 버전 변경이 활성화를 리셋할 수 있기 때문. `/scrooge ko full`를 한 번 실행하면 글로벌 기본값이 이후 모든 세션을 `/scrooge off` 전까지 활성 유지. `/scrooge off`로 명시적으로 끈 세션(예: resume한 세션)엔 재활성화 안내 없음 — 업그레이드가 아니라 사용자 선택으로 꺼진 상태이기 때문.
 
-**Codex**는 재실행 시 hook payload(hooks, rules, lib, registry)를 overwrite하고 `~/.codex/config.toml` hook을 멱등 재머지함. **다른 skills 에이전트**(Cursor, Windsurf, Cline, Continue, Gemini CLI)는 재실행 시 `scrooge` skill이 overwrite됨. 어느 쪽이든 자동으로 최신을 받음.
+**Codex**는 재실행 시 hook payload(hooks, rules, lib, registry)를 overwrite하고 `~/.codex/config.toml` hook을 멱등 재머지함 — Scrooge trust 항목에 직접 설정한 `enabled = false`는 비활성 유지. Codex hook은 상태를 Codex dir(`$CODEX_HOME`, 기본값 `~/.codex` — `scrooge` payload의 상위 dir) 아래에 두고 export된 `CLAUDE_CONFIG_DIR`는 무시함 — Codex의 `/scrooge off`가 Claude 글로벌 기본값을 지우지 않음. **다른 skills 에이전트**(Cursor, Windsurf, Cline, Continue, Gemini CLI)는 재실행 시 `scrooge` skill이 overwrite됨. 어느 쪽이든 자동으로 최신을 받음.
 
 > **Codex tier 한계.** Codex 통합은 `UserPromptSubmit` hook만 배선하고 `SessionStart`는 미배선 — 세션 내 업데이트 알림과 `↑vX` statusline 마커가 Codex에는 뜨지 않음. Codex payload는 copy 방식(in-place `plugin update` 없음)이고 버전 마커도 없어서 **업그레이드 = installer 재실행** — 멱등이라 재실행이 곧 수동 업데이트 확인.
 
@@ -236,6 +239,8 @@ Claude Code hook에선 자연어로도 활성화 — "스크루지처럼 답해�
 - 후속 답변은 `/scrooge off` 전까지 압축 한국어 register 사용.
 - code block, error string, technical identifier 원문 유지.
 - 보안 경고와 되돌릴 수 없는 동작 확인은 normal prose로 복귀.
+
+`/scrooge-stats`는 세션·누적 절감을 보여줌. `hooks/scrooge-stats.js`를 직접 `--since 7d`(일 `d` 또는 시간 `h` 정수, 예: `24h`)로 실행하면 누적 ledger 블록을 그 기간으로 한정함. 다른 형식의 값은 누적 전체로 fallback하며 `Lifetime`으로 표기됨.
 
 Repo-side release 검증:
 
@@ -271,6 +276,9 @@ markdownlint 줄은 Node.js 22 이상 필요 — `markdownlint-cli2@0.23.2`의 `
 installer는 `statusLine` 키가 없을 때만 기록하므로 기존 statusline을 덮어쓰지
 않습니다(`claude-hud` 같은 바가 그대로 동작 — 대신 배지 합성은 사용자 몫).
 Windows에서는 `bash`가 PATH에 있어야 합니다 — [플랫폼 지원](#platform-support) 참고.
+
+배지는 두고 절감 suffix만 빼려면 Claude Code 실행 전 shell profile에서
+`SCROOGE_STATUSLINE_SAVINGS=0`을 export하세요.
 
 ## Platform support
 
@@ -344,5 +352,7 @@ Windows PowerShell:
 ```powershell
 ./uninstall.ps1
 ```
+
+`--uninstall`은 항상 모든 host에서 Scrooge를 제거하므로 `--only`와 함께 쓸 수 없음(installer가 status 2로 종료). `settings.json`의 `statusLine`은 installer가 쓴 항목과 정확히 같을 때만 제거 — `{"type": "command", "command": "bash \"<config>/hooks/scrooge-statusline.sh\""}`. script를 호출하도록 직접 수정한 `statusLine`은 script와 함께 유지되고, uninstaller가 NOTE를 출력하므로 둘 다 직접 제거.
 
 `skills` CLI install은 대상 agent skill manager 또는 skills directory에서 `scrooge` skill 제거. project uninstaller는 Claude plugin/statusline wiring과 Codex hook payload를 제거함. 모든 third-party skills manager 저장소까지 소유하지는 않음.

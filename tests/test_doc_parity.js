@@ -164,14 +164,15 @@ test('every benchmarked savings ratio carries results + n + model provenance', (
 // number without updating LANG_META fails here rather than shipping.
 function readmeMedians(body, lang) {
   // Number-only cells, in order. A savings cell like `~64% (per-prompt 69.6%)`
-  // is not number-only, so it never masquerades as a median.
+  // is not number-only, so it never masquerades as a median. A median may be a
+  // half-integer (an even-N arm averages its two middle rows, e.g. ZH 1771.5).
   const numbers = (line) =>
     line
       .replace(/\*\*/g, '')
       .split('|')
       .slice(1, -1)
       .map((c) => c.trim())
-      .filter((c) => /^\d[\d,]*$/.test(c))
+      .filter((c) => /^\d[\d,]*(?:\.\d+)?$/.test(c))
       .map((c) => Number(c.replace(/,/g, '')));
 
   const lines = body.split('\n');

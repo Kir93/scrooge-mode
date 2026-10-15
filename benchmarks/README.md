@@ -145,7 +145,10 @@ over another.
   comparison, and — because they were run just before this rule was written — the
   [agentic workload](#agentic-workload--measured) and
   [false premises](#false-premises--one-demonstrated-failure-no-measurable-deficit)
-  sections. All are `claude-opus-4-8`.
+  sections. All are `claude-opus-4-8`. The README **headline** is no longer among
+  them: it moved to the `claude-opus-5-5` held-out rows
+  (`published/results-{lang}-report-v027.jsonl`, register v0.27.0, 2026-09-28),
+  and `LANG_META` savings ratios moved with it.
 
 ## How to run
 
@@ -214,7 +217,8 @@ per-prompt median is a different statistic, and the README quotes both for JA/HI
 
 | Published number | Statistic | How |
 | ---------------- | --------- | --- |
-| Every language table (KO ~70%, EN ~66%, JA ~64%, HI ~63%, ZH ~67%) and the KO/EN held-out cross-check | ratio of medians, paired | `report.py --input <file> --baseline normal --paired` |
+| README headline (`claude-opus-5-5`: KO ~60%, EN ~55%, JA ~62%, HI ~63%, ZH ~65%) and `LANG_META` ratios | ratio of medians, paired, unsuffixed `scrooge:{lang}/full` arm | `report.py --input published/results-{lang}-report-v027.jsonl --baseline normal --paired --drop-tool-rows` |
+| Every `claude-opus-4-8` language table (KO ~70%, EN ~67%, JA ~65%, HI ~63%, ZH ~67%) and the KO/EN held-out cross-check (KO ~70%, EN ~68%) | ratio of medians, paired | `report.py --input <file> --baseline normal --paired --drop-tool-rows` |
 | JA/HI/ZH per-prompt medians (69.6% / 66.6% / 62.9%) | median of per-prompt ratios | `report.py … --paired` → **Paired statistics** table, "Median savings" column |
 | `lean` flag (KO +17.6%, EN +18.1%) | median of per-prompt ratios, baseline = the register without the flag | `report.py --input <file> --baseline scrooge:{lang}/full --paired --drop-tool-rows` |
 
@@ -389,13 +393,15 @@ cancels most of the per-prompt difficulty variance, which is why a +18% paired
 effect can still be significant against a 20–29% within-cell CV. What it does rule
 out is reading an unpaired single-cell difference of that size as a result.
 
-Everything else here is single-run, N=11–25. Re-running shifts any single cell by a
+Everything else here is single-run, N=10–24. Re-running shifts any single cell by a
 few percentage points, so treat headline percentages as
-**one-significant-figure estimates** (`~70%`, not "69.5% exactly"). `normal` has the
-widest spread (its stdev is near its median). Every headline arm is smaller on
-**every** paired prompt (sign test p ≤ 1e-3) with a 95% CI whose lower bound stays
-above 56%, so the one-significant-figure hedge is about the second digit, not about
-whether the effect is real.
+**one-significant-figure estimates** (`~60%`, not "59.8% exactly"). `normal` has the
+widest spread (its stdev is near its median). Every README headline arm
+(`claude-opus-5-5` held-out, `published/results-{lang}-report-v027.jsonl`,
+`--paired --drop-tool-rows`) is smaller on **every** paired prompt (sign test
+p ≤ 0.002 — KO/EN N=19 3.8e-6, JA/HI N=11 0.00098, ZH N=10 0.002) with a 95% CI
+whose lower bound stays above 50% (lowest: EN 50.2%), so the one-significant-figure
+hedge is about the second digit, not about whether the effect is real.
 
 ### Foreground only
 
@@ -729,13 +735,13 @@ Tradeoff: add indexes for hot selective reads; avoid redundant indexes on write-
 
 `scrooge:ja/full` maps the Korean mechanism onto Japanese — keigo stripping, 体言止め (noun-stop endings), 助詞 (particle) drop — while keeping kanji as normal orthography (the inverse of KO's Hangul-only rule).
 
-| Mode                  | Median output tokens (held-out N=11) | Savings vs `normal` |
+| Mode                  | Median output tokens (held-out N=10) | Savings vs `normal` |
 | --------------------- | -----------------------------------: | ------------------: |
-| `normal`              |                                 2477 |          (baseline) |
-| `terse`               |                                 1629 |                ~34% |
-| **`scrooge:ja/full`** |                              **880** |            **~64%** |
+| `normal`              |                                 2399 |          (baseline) |
+| `terse`               |                                 1619 |                ~32% |
+| **`scrooge:ja/full`** |                              **833** |            **~65%** |
 
-`scrooge:ja/full` cuts Japanese output by **~64%** vs the verbose default (per-prompt median 69.6%), and beats the `terse` "answer concisely" control by **+46%** (11/11 prompt wins) — so the gain is the register, not generic brevity. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-ja-report.jsonl`](./published/results-ja-report.jsonl) · [`results-ja-fidelity.jsonl`](./published/results-ja-fidelity.jsonl).
+N=10: `--drop-tool-rows` drops one tool-using prompt of the 11. `scrooge:ja/full` cuts Japanese output by **~65%** vs the verbose default (per-prompt median 69.6%), and beats the `terse` "answer concisely" control by **+49%** (10/10 prompt wins) — so the gain is the register, not generic brevity. Fidelity (held-out, judge N=3): **0.60 median claim-preservation, 0 corruption, safety preserved 11/11** — the loss is breadth (secondary detail dropped under heavier compression), not wrong information; the core technical answer and safety prose are preserved. Raw rows: [`results-ja-report.jsonl`](./published/results-ja-report.jsonl) · [`results-ja-fidelity.jsonl`](./published/results-ja-fidelity.jsonl).
 
 > **Corpus note**: this table is the held-out corpus (`prompts/ja-report.txt`), the only JA measurement published. An earlier tuning-corpus table (N=15, ~70%) was removed — its rows are gitignored, so no reader could recompute it, and its quoted "15/15 prompt wins" was itself wrong (the corpus gives 14/0/1).
 >
