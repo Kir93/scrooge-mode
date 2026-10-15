@@ -17,6 +17,9 @@ import {
   readState,
   writeOffTombstone,
   isOffTombstone,
+  touchMarker,
+  sweepIfDue,
+  getSweepPath,
 } from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
@@ -149,5 +152,82 @@ test('a symlink in the sessions dir is never followed or deleted', () => {
     sweepStaleState(now);
     assert.equal(fs.lstatSync(linkPath).isSymbolicLink(), true); // untouched
     assert.equal(fs.readFileSync(secret, 'utf8'), 'keep');
+  });
+});
+
+// ── Live-marker refresh + Codex daily sweep (audit-followups task 1) ──────────
+// A reminder turn rewrites no state, so the hook touches the marker instead; a
+// session open past a day must then survive another session's sweep.
+test('a touched marker survives the 1-day redundancy rule; an untouched twin is swept', () => {
+  withConfigDir(freshConfig(), () => {
+    const now = Date.now();
+    writeState(DEFAULT, getDefaultPath());
+    writeMarkerAgedDays('live', DEFAULT, 2, now);
+    writeMarkerAgedDays('idle', DEFAULT, 2, now);
+    assert.equal(touchMarker(getStatePath('live'), now), true);
+    sweepStaleState(now);
+    assert.deepEqual(readState(getStatePath('live')), DEFAULT);
+    assert.equal(fs.existsSync(getStatePath('idle')), false);
+  });
+});
+
+test('touchMarker refuses a symlink and leaves its target untouched', () => {
+  const cfg = freshConfig();
+  withConfigDir(cfg, () => {
+    const now = Date.now();
+    const target = path.join(cfg, 'target.txt');
+    fs.writeFileSync(target, 'keep');
+    const old = new Date(now - 30 * DAY);
+    fs.utimesSync(target, old, old);
+    const linkPath = getStatePath('linky');
+    fs.mkdirSync(path.dirname(linkPath), { recursive: true });
+    fs.symlinkSync(target, linkPath);
+    assert.equal(touchMarker(linkPath, now), false);
+    assert.equal(Math.round(fs.statSync(target).mtimeMs), old.getTime());
+  });
+});
+
+function sweepFixture(now) {
+  writeState(DEFAULT, getDefaultPath());
+  writeMarkerAgedDays('idle', DEFAULT, 2, now); // swept whenever a sweep runs
+}
+
+test('sweepIfDue sweeps once, then not again within a day', () => {
+  withConfigDir(freshConfig(), () => {
+    const now = Date.now();
+    sweepFixture(now);
+    assert.equal(sweepIfDue(now), true);
+    assert.equal(fs.existsSync(getStatePath('idle')), false);
+    assert.equal(fs.readFileSync(getSweepPath(), 'utf8'), String(now));
+    sweepFixture(now);
+    assert.equal(sweepIfDue(now + DAY / 2), false);
+    assert.equal(fs.existsSync(getStatePath('idle')), true);
+    assert.equal(sweepIfDue(now + DAY + 1), true);
+    assert.equal(fs.existsSync(getStatePath('idle')), false);
+  });
+});
+
+test('sweepIfDue skips on a corrupt record, then resumes the next day', () => {
+  withConfigDir(freshConfig(), () => {
+    const now = Date.now();
+    sweepFixture(now);
+    fs.writeFileSync(getSweepPath(), 'garbage');
+    assert.equal(sweepIfDue(now), false);
+    assert.equal(fs.existsSync(getStatePath('idle')), true);
+    assert.equal(sweepIfDue(now + DAY + 1), true);
+  });
+});
+
+test('sweepIfDue never sweeps through a symlinked record', () => {
+  const cfg = freshConfig();
+  withConfigDir(cfg, () => {
+    const now = Date.now();
+    sweepFixture(now);
+    const target = path.join(cfg, 'elsewhere');
+    fs.writeFileSync(target, '0');
+    fs.symlinkSync(target, getSweepPath());
+    assert.equal(sweepIfDue(now), false);
+    assert.equal(fs.existsSync(getStatePath('idle')), true);
+    assert.equal(fs.readFileSync(target, 'utf8'), '0');
   });
 });

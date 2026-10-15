@@ -308,7 +308,7 @@ function repoSpec(opts) {
 // remove a symlink itself rather than following it.
 function removeStateFiles(dir, opts) {
   const sub = path.join(dir, '.scrooge');
-  const subTargets = [path.join(sub, 'sessions'), path.join(sub, 'global'), path.join(sub, 'suffix'), path.join(sub, 'update')];
+  const subTargets = [path.join(sub, 'sessions'), path.join(sub, 'global'), path.join(sub, 'suffix'), path.join(sub, 'update'), path.join(sub, 'last-sweep')];
   for (const p of subTargets) {
     if (!safeExists(p)) continue;
     if (opts.dryRun) { process.stdout.write(`  would remove ${p}\n`); continue; }

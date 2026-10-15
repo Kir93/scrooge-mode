@@ -41,6 +41,8 @@ import {
   readSuffix,
   writeSuffix,
   migrateLegacyState,
+  touchMarker,
+  sweepIfDue,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
 import { buildReminder, buildCountermand } from './lang-meta.js';
@@ -339,6 +341,10 @@ function handlePayload(data) {
     // mid-session (another session ran /scrooge); on Codex (no SessionStart) it is
     // the first prompt, where "now" equals the whole session.
     if (!own) writeState({ ...state, activatedAt: Date.now() }, statePath);
+    // A reminder turn rewrites nothing, so refresh the marker's age: the sweep
+    // must see a live session as live. Sessionless hosts use the global path,
+    // which the sweep never reaches.
+    else if (sessionKey) touchMarker(statePath);
     const body = own ? null : assembleRuleBody(resolveRepoRoot(), state.lang, state.dial, state.flags);
     emit(
       body
@@ -347,6 +353,10 @@ function handlePayload(data) {
     );
   } catch (e) {
     // Silent fail — never break prompt submission.
+  } finally {
+    // Codex wires no SessionStart, so its markers are swept here, at most once a
+    // day. After the turn, so this session's own marker is already refreshed.
+    if (isCodexAgent()) sweepIfDue(Date.now());
   }
 }
 

@@ -482,3 +482,92 @@ test('off in a keyed session leaves a tombstone; a sessionless off deletes the g
   runHook(cfg, '/scrooge off');
   assert.equal(fs.existsSync(statePathFor(cfg, null)), false);
 });
+
+// ── live-marker refresh + Codex daily sweep (audit-followups task 1) ────────
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+function ageFile(p, days) {
+  const t = new Date(Date.now() - days * DAY_MS);
+  fs.utimesSync(p, t, t);
+}
+const isFresh = (p) => Date.now() - fs.statSync(p).mtimeMs < 60 * 1000;
+
+test('a reminder turn refreshes the active marker mtime, keeping its content', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessLive' });
+  const sp = statePathFor(cfg, 'sessLive');
+  const before = fs.readFileSync(sp, 'utf8');
+  ageFile(sp, 2);
+  const { ctx } = runHook(cfg, '이 코드 설명해줘', { session_id: 'sessLive' });
+  assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/);
+  assert.equal(isFresh(sp), true);
+  assert.equal(fs.readFileSync(sp, 'utf8'), before); // activatedAt kept
+});
+
+test('a plain turn never refreshes an off tombstone or the sessionless global file', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessOff' });
+  runHook(cfg, '/scrooge off', { session_id: 'sessOff' });
+  const tomb = statePathFor(cfg, 'sessOff');
+  ageFile(tomb, 2);
+  runHook(cfg, 'hello', { session_id: 'sessOff' });
+  assert.equal(isFresh(tomb), false);
+
+  runHook(cfg, '/scrooge ko'); // sessionless → global
+  const global = statePathFor(cfg, null);
+  ageFile(global, 2);
+  runHook(cfg, 'hello');
+  assert.equal(isFresh(global), false);
+});
+
+// An idle peer whose marker equals the default is swept after a day.
+function idlePeer(cfg) {
+  const p = statePathFor(cfg, 'idlePeer');
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full', flags: [] }));
+  ageFile(p, 2);
+  return p;
+}
+
+test('Codex: a plain turn sweeps stale markers at most once a day', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: [] });
+  let peer = idlePeer(cfg);
+  runHook(cfg, 'hello', { session_id: 'codexSweep' }, CODEX_ENV);
+  assert.equal(fs.existsSync(peer), false);
+  assert.equal(fs.existsSync(path.join(cfg, '.scrooge', 'last-sweep')), true);
+  peer = idlePeer(cfg);
+  runHook(cfg, 'hello', { session_id: 'codexSweep' }, CODEX_ENV);
+  assert.equal(fs.existsSync(peer), true); // within the day: no second sweep
+});
+
+test('Codex: the sweep never takes the current session’s own idle marker', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: [] });
+  const own = statePathFor(cfg, 'codexOwn');
+  fs.mkdirSync(path.dirname(own), { recursive: true });
+  fs.writeFileSync(own, JSON.stringify({ lang: 'ko', dial: 'full', flags: [] })); // redundant, no activatedAt
+  ageFile(own, 2);
+  const { ctx } = runHook(cfg, 'hello', { session_id: 'codexOwn' }, CODEX_ENV);
+  assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/); // reminder: the marker was not re-seeded
+  assert.equal(readState(own).activatedAt, undefined);
+});
+
+test('Codex: a corrupt sweep record skips the sweep and leaves the hook output intact', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: [] });
+  const peer = idlePeer(cfg);
+  fs.writeFileSync(path.join(cfg, '.scrooge', 'last-sweep'), 'garbage');
+  const { ctx } = runHook(cfg, 'hello', { session_id: 'codexCorrupt' }, CODEX_ENV);
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/); // first turn seeds → full rule
+  assert.equal(fs.existsSync(peer), true);
+});
+
+test('Claude: a plain turn never sweeps (SessionStart owns the sweep there)', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: [] });
+  const peer = idlePeer(cfg);
+  runHook(cfg, 'hello', { session_id: 'claudeNoSweep' }, { SCROOGE_AGENT: '' });
+  assert.equal(fs.existsSync(peer), true);
+  assert.equal(fs.existsSync(path.join(cfg, '.scrooge', 'last-sweep')), false);
+});
