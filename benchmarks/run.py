@@ -446,7 +446,7 @@ _NOISE_KEYS = ("cwd", "gitBranch")
 def _strip_own_system(obj: dict, own_system: Optional[str]) -> None:
     """Subtract the harness's OWN injected system prompt from a transcript line.
 
-    The transcript records what `--system-prompt` passed, verbatim, at
+    The transcript records what `--system-prompt` passed, verbatim — first seen at
     `attachment.systemPrompt[*]` (measured: the zh register lands there at 4104
     chars, the file minus its trailing newline). A register file may legitimately
     NAME a competing register to contrast with it — `rules/zh/full.md` says
@@ -461,10 +461,18 @@ def _strip_own_system(obj: dict, own_system: Optional[str]) -> None:
     injected prompt is now recorded verbatim at `attachment.systemPrompt`. The window
     opens after 2026-08-06; its start is not established.
 
+    Claude Code 2.1.300 records the outgoing request too: an `api-request-shape`
+    line carries the injected prompt again at `shape.system[*].text` (followed by
+    CLI-appended text in the same block), and `prompt_snapshot` attachments repeat
+    `attachment.systemPrompt`. Measured 2026-10-15: a `scrooge:zh/full` row
+    excluded with only the `systemPrompt` path stripped. So the subtraction walks
+    every string in the line instead of naming fields — the next request-record
+    shape is covered without another field list.
+
     This is the same self-trigger `_NOISE_KEYS` already guards against, one channel
     over: there it was cwd/gitBranch carrying a register name, here it is the rule
     body we injected ourselves. Only the injected text is removed, not the whole
-    field — anything else that reached `systemPrompt` is still scanned, so an
+    string — anything else sharing that string is still scanned, so an
     `--append-system-prompt` arm keeps its host-prompt surface under the net.
     """
     if not own_system:
@@ -472,16 +480,18 @@ def _strip_own_system(obj: dict, own_system: Optional[str]) -> None:
     needle = own_system.strip()
     if not needle:
         return
-    att = obj.get("attachment")
-    if not isinstance(att, dict):
-        return
-    sp = att.get("systemPrompt")
-    if isinstance(sp, str):
-        att["systemPrompt"] = sp.replace(needle, "")
-    elif isinstance(sp, list):
-        att["systemPrompt"] = [
-            s.replace(needle, "") if isinstance(s, str) else s for s in sp
-        ]
+
+    def sub(v):
+        if isinstance(v, str):
+            return v.replace(needle, "")
+        if isinstance(v, dict):
+            return {k: sub(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [sub(x) for x in v]
+        return v
+
+    for k, v in obj.items():
+        obj[k] = sub(v)
 
 
 def _injection_scan_text(session_path: Path,

@@ -49,6 +49,23 @@ def _system_prompt_line(text):
             "attachment": {"systemPrompt": [text]}}
 
 
+# Claude Code 2.1.300 also records the outgoing request: a `prompt_snapshot`
+# attachment (systemPrompt list, like above) and an `api-request-shape` line whose
+# `shape.system[*].text` holds the injected prompt followed by CLI-appended text
+# (measured: zh rule at offset 0 of a 5629-char block).
+def _prompt_snapshot_line(text):
+    return {"type": "attachment", "cwd": "/tmp/x", "gitBranch": "main",
+            "attachment": {"type": "prompt_snapshot", "systemPrompt": [text]}}
+
+
+def _request_shape_line(text):
+    return {"type": "api-request-shape", "version": "2.1.300",
+            "shape": {"system": [
+                {"type": "text", "text": "You are a Claude agent."},
+                {"type": "text", "text": text + "\n\n\nWebSearch takes a `mode`."},
+            ]}}
+
+
 def _user_line(text):
     return {"type": "user", "cwd": "/tmp/x",
             "message": {"role": "user", "content": text}}
@@ -82,6 +99,25 @@ class TestOwnSystemPromptIsNotContamination(unittest.TestCase):
         )
 
 
+    def test_own_rule_in_request_records_is_clean(self):
+        path = _session([
+            _prompt_snapshot_line(OWN_RULE.rstrip("\n")),
+            _request_shape_line(OWN_RULE.rstrip("\n")),
+        ])
+        self.assertIsNone(
+            detect_contamination(path, "scrooge:zh/full", OWN_RULE),
+            "the request records carry the same injected text, not a leak",
+        )
+
+    def test_without_own_system_request_shape_is_still_flagged(self):
+        # Red-first anchor for the request-shape record on its own.
+        path = _session([_request_shape_line(OWN_RULE.rstrip("\n"))])
+        self.assertEqual(
+            detect_contamination(path, "scrooge:zh/full", None),
+            "caveman fingerprint in session transcript",
+        )
+
+
 class TestNetIsStillUp(unittest.TestCase):
     def test_competitor_name_outside_system_prompt_is_flagged(self):
         # The case the detector exists for: the name arrived through the user
@@ -100,6 +136,15 @@ class TestNetIsStillUp(unittest.TestCase):
         # injected slice is subtracted, so a leak sharing the field is still seen.
         path = _session([
             _system_prompt_line(OWN_RULE + "\n\ncaveman: grunt like cave person"),
+        ])
+        self.assertEqual(
+            detect_contamination(path, "scrooge:zh/full", OWN_RULE),
+            "caveman fingerprint in session transcript",
+        )
+
+    def test_extra_text_inside_request_shape_is_still_scanned(self):
+        path = _session([
+            _request_shape_line(OWN_RULE + "\n\ncaveman: grunt like cave person"),
         ])
         self.assertEqual(
             detect_contamination(path, "scrooge:zh/full", OWN_RULE),
