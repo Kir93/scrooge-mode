@@ -774,6 +774,75 @@ test('comment lines heading the next section survive a scrooge group rewrite or 
   );
 });
 
+// TOML allows whitespace inside header brackets and around the dots. A matcher
+// that compares the exact `[[hooks.UserPromptSubmit]]` text misses the spaced
+// form, so the group count runs short and our slot lands on the user's trust key.
+test('a header with spaces inside the brackets is still a group header (slot count stays aligned)', () => {
+  const before = [
+    '[[ hooks.UserPromptSubmit ]]',
+    'hooks = [{ type = "command", command = "policy.sh" }]',
+    '',
+    '[[ hooks . UserPromptSubmit ]]',
+    'hooks = [{ type = "command", command = "node /old/scrooge/codex-activate.mjs" }]',
+    '',
+    '[ hooks.state."K:user_prompt_submit:0:0" ]',
+    'trusted_hash = "sha256:user"',
+    'enabled = true',
+    '',
+    '[ hooks.state."K:user_prompt_submit:1:0" ]',
+    'trusted_hash = "sha256:old"',
+    'enabled = true',
+    '',
+  ].join('\n');
+  const command = 'node "/new/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, 'K');
+
+  assert.equal(after.match(/user_prompt_submit:1:0"\s*\]/g).length, 1, 'one trust table at our slot');
+  assert.match(after, /user_prompt_submit:0:0" \]\ntrusted_hash = "sha256:user"/);
+  assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
+  assert.doesNotMatch(after, /sha256:old|\/old\/scrooge/);
+  assert.equal(mergeCodexHookConfig(after, command, 'K'), after, 're-run must be a stable no-op');
+});
+
+test('a spaced user group counts toward the slot of a newly appended scrooge group', () => {
+  const before = [
+    '[[ hooks.UserPromptSubmit ]]',
+    'hooks = [{ type = "command", command = "policy.sh" }]',
+    '',
+    '[ hooks.state."K:user_prompt_submit:0:0" ]',
+    'trusted_hash = "sha256:user"',
+    '',
+  ].join('\n');
+  const command = 'node "/new/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig(before, command, 'K');
+
+  assert.ok(after.indexOf('policy.sh') < after.indexOf('codex-activate.mjs'), 'user group keeps index 0');
+  assert.match(after, /user_prompt_submit:0:0" \]\ntrusted_hash = "sha256:user"/);
+  assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
+  assert.equal(mergeCodexHookConfig(after, command, 'K'), after, 're-run must be a stable no-op');
+});
+
+test('a spaced trust header still shifts down on removal, keeping its comment', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [{ type = "command", command = "node /x/scrooge/codex-activate.mjs" }]',
+    '',
+    '[[ hooks.UserPromptSubmit ]]',
+    'hooks = [{ type = "command", command = "echo user" }]',
+    '',
+    '[ hooks.state."K:user_prompt_submit:0:0" ]',
+    'trusted_hash = "sha256:ours"',
+    '',
+    '[ hooks.state."K:user_prompt_submit:1:0" ]  # mine',
+    'trusted_hash = "sha256:user"',
+    '',
+  ].join('\n');
+  const after = removeCodexHookConfig(before, 'K');
+
+  assert.match(after, /user_prompt_submit:0:0"\]  # mine\ntrusted_hash = "sha256:user"/);
+  assert.doesNotMatch(after, /sha256:ours|codex-activate/);
+});
+
 // ── Codex wrapper owns its state dir (S3-8) ───────────────────────────────────
 test('Codex wrapper keeps state under the Codex dir even when CLAUDE_CONFIG_DIR is set', () => {
   // Codex inherits the shell env. Honouring an exported CLAUDE_CONFIG_DIR made

@@ -574,6 +574,29 @@ function stripTomlComment(line) {
   return s.trim();
 }
 
+// A table header in canonical form: comment cut, and the whitespace TOML allows
+// inside the brackets and around dots dropped (`[[ hooks . UserPromptSubmit ]]`
+// → `[[hooks.UserPromptSubmit]]`). Quoted keys keep their spaces. Header matchers
+// compare this form, so a spaced header counts the same as a tight one.
+function normalizeTomlHeader(line) {
+  const s = stripTomlComment(line);
+  if (!s.startsWith('[')) return s;
+  let out = '';
+  let quote = null;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quote) {
+      out += c;
+      if (c === '\\' && quote === '"' && i + 1 < s.length) out += s[++i];
+      else if (c === quote) quote = null;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+      out += c;
+    } else if (c !== ' ' && c !== '\t') out += c;
+  }
+  return out;
+}
+
 function countUserPromptSubmitGroups(text) {
   return String(text || '').split(/\n/).filter(isUserPromptSubmitHeader).length;
 }
@@ -598,7 +621,7 @@ function removeHookStateBlock(text, stateKey) {
   const header = `[hooks.state.${JSON.stringify(stateKey)}]`;
   const out = [];
   for (let i = 0; i < lines.length;) {
-    if (stripTomlComment(lines[i]) !== header) {
+    if (normalizeTomlHeader(lines[i]) !== header) {
       out.push(lines[i++]);
       continue;
     }
@@ -611,7 +634,7 @@ function removeHookStateBlock(text, stateKey) {
 function readHookStateEnabled(text, stateKey) {
   const lines = String(text || '').split(/\n/);
   const header = `[hooks.state.${JSON.stringify(stateKey)}]`;
-  const i = lines.findIndex((l) => stripTomlComment(l) === header);
+  const i = lines.findIndex((l) => normalizeTomlHeader(l) === header);
   if (i === -1) return null;
   for (const line of lines.slice(i + 1, hookStateBlockEnd(lines, i))) {
     const m = /^enabled\s*=\s*(true|false)$/.exec(stripTomlComment(line));
@@ -621,11 +644,11 @@ function readHookStateEnabled(text, stateKey) {
 }
 
 function isUserPromptSubmitHeader(line) {
-  return stripTomlComment(line) === '[[hooks.UserPromptSubmit]]';
+  return normalizeTomlHeader(line) === '[[hooks.UserPromptSubmit]]';
 }
 
 function isUserPromptSubmitHooksHeader(line) {
-  return stripTomlComment(line) === '[[hooks.UserPromptSubmit.hooks]]';
+  return normalizeTomlHeader(line) === '[[hooks.UserPromptSubmit.hooks]]';
 }
 
 function isTableHeader(line) {
@@ -676,10 +699,10 @@ function renumberHookStateKeys(text, keySource, removedIndices) {
   if (!keySource || !removedIndices.length) return text;
   const prefix = `${keySource}:user_prompt_submit:`;
   return String(text || '').split(/\n/).map((line) => {
-    const header = stripTomlComment(line);
-    const m = /^\[hooks\.state\.(".*")\]$/.exec(header);
+    const raw = stripTomlComment(line);
+    const m = /^\[hooks\.state\.(".*")\]$/.exec(normalizeTomlHeader(line));
     if (!m) return line;
-    const comment = line.slice(line.indexOf(header) + header.length);
+    const comment = line.slice(line.indexOf(raw) + raw.length);
     let key;
     try { key = JSON.parse(m[1]); } catch (_) { return line; }
     if (typeof key !== 'string' || !key.startsWith(prefix)) return line;
@@ -766,7 +789,7 @@ export function mergeCodexHookConfig(text, command, keySource = null) {
   let at = lines.length;
   if (lastGroup !== -1) at = collectUserPromptSubmitBlock(lines, lastGroup).next;
   else {
-    const stateIdx = lines.findIndex((l) => /^\[hooks\.state/.test(l));
+    const stateIdx = lines.findIndex((l) => normalizeTomlHeader(l).startsWith('[hooks.state'));
     if (stateIdx !== -1) at = sectionBodyEnd(lines, 0, stateIdx);
   }
   const before = lines.slice(0, at).join('\n').replace(/\s*$/, '');
