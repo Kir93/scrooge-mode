@@ -62,10 +62,16 @@ async function main() {
   const installed = root ? readInstalledVersion(root) : null;
   if (!installed) return;
   const latest = await fetchLatest();
-  if (!latest) return;
   // Preserve notifiedVersion so the SessionStart hook keeps its once-per-version
   // gate: this probe owns latest/checkedAt/behind, the hook owns notifiedVersion.
   const prev = readUpdateCache();
+  if (!latest) {
+    // A failed probe (offline, 403 rate limit, 404) still stamps checkedAt, or the
+    // once-a-day throttle never engages and every session start respawns it. The
+    // last known latest/behind stand until a probe succeeds.
+    writeUpdateCache({ ...prev, checkedAt: Date.now() });
+    return;
+  }
   writeUpdateCache({
     latest,
     checkedAt: Date.now(),

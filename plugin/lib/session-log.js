@@ -41,7 +41,45 @@ export const EMPTY_SUMMARY = Object.freeze({
   cacheReadTokens: 0,
   turns: 0,
   model: null,
+  userPrompts: 0,
+  sessionStarts: 0,
+  proseTimeline: Object.freeze([]),
+  promptTimeline: Object.freeze([]),
+  sessionStartTimeline: Object.freeze([]),
+  fullPromptTimeline: Object.freeze([]),
 });
+
+// Prefix of the full register Scrooge injects (scrooge-activate.js
+// buildFullInjection). A SessionStart or UserPromptSubmit hook context carrying it
+// is transcript evidence of one full-register injection; tests pin the two in step.
+export const FULL_INJECTION_PREFIX = 'SCROOGE MODE ACTIVE';
+
+// Text Claude writes as a user line when the user interrupts a response. It is
+// host-written (no UserPromptSubmit fires), so it is not a prompt.
+const INTERRUPT_MARKER = '[Request interrupted by user';
+
+// A Claude user line is a submitted prompt when its content is a plain string,
+// or an array — IDE prompts, IDE file context, pasted images — holding a text or
+// image block and no tool_result (tool results are user lines too). Verified
+// locally 2026-10: image-only and image+text prompts fire UserPromptSubmit.
+function isPromptContent(content) {
+  if (typeof content === 'string') return true;
+  if (!Array.isArray(content)) return false;
+  let prompt = false;
+  for (const block of content) {
+    if (!block) continue;
+    if (block.type === 'tool_result') return false;
+    if (block.type === 'image') prompt = true;
+    else if (block.type === 'text' && !String(block.text || '').startsWith(INTERRUPT_MARKER)) prompt = true;
+  }
+  return prompt;
+}
+
+// Epoch ms of an entry's ISO `timestamp`, or null when absent / unparseable.
+function entryTime(entry) {
+  const t = typeof entry.timestamp === 'string' ? Date.parse(entry.timestamp) : NaN;
+  return Number.isFinite(t) ? t : null;
+}
 
 function claudeProjectsDir(claudeDir) {
   const base = claudeDir || process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
@@ -143,6 +181,21 @@ export function findRecentCodexSession(codexDir) {
 // responses that happen to share an identical usage, which under-counts real
 // usage. Conservative over-distinctness is the safer failure for an off-schema
 // transcript.
+//
+// `turns` counts API responses, not prompts: one prompt can drive dozens of
+// tool-loop responses. The hooks inject once per prompt, so `userPrompts` counts
+// what fires UserPromptSubmit — a user line isPromptContent accepts (isMeta
+// skill bodies and the isCompactSummary are host-written) plus a
+// `queued_command` attachment (a prompt queued mid-turn, never re-recorded as a
+// user line; verified locally 2026-10). `sessionStarts` counts SessionStart hook
+// contexts carrying Scrooge's full register. `proseTimeline` is the prose
+// responses in stream order with their first timestamp, and `promptTimeline` /
+// `sessionStartTimeline` the timestamp (or null) of each counted prompt / start,
+// so a caller can window the estimate basis and the overhead to activation.
+// `fullPromptTimeline` holds the timestamp of each prompt whose UserPromptSubmit
+// context carried the full register instead of the reminder (a /scrooge set or a
+// seed); the host records that context right after its prompt, so it is placed at
+// the prompt's own time (null when no prompt precedes it).
 export function parseClaudeSession(filePath) {
   let raw;
   try {
@@ -153,6 +206,12 @@ export function parseClaudeSession(filePath) {
 
   const byId = new Map();
   let model = null;
+  const promptTimeline = [];
+  const sessionStartTimeline = [];
+  const fullPromptTimeline = [];
+  const isFullInjection = (att) =>
+    Array.isArray(att.content) &&
+    att.content.some((c) => typeof c === 'string' && c.startsWith(FULL_INJECTION_PREFIX));
   let lineIndex = -1;
   for (const line of raw.split('\n')) {
     lineIndex++;
@@ -163,14 +222,32 @@ export function parseClaudeSession(filePath) {
     } catch (e) {
       continue;
     }
+    if (entry.type === 'user') {
+      if (entry.message && isPromptContent(entry.message.content) && !entry.isMeta && !entry.isCompactSummary) {
+        promptTimeline.push(entryTime(entry));
+      }
+      continue;
+    }
+    if (entry.type === 'attachment' && entry.attachment) {
+      const att = entry.attachment;
+      if (att.type === 'queued_command') promptTimeline.push(entryTime(entry));
+      else if (att.type === 'hook_additional_context' && isFullInjection(att)) {
+        if (att.hookEvent === 'SessionStart') sessionStartTimeline.push(entryTime(entry));
+        else if (att.hookEvent === 'UserPromptSubmit') {
+          fullPromptTimeline.push(promptTimeline.length ? promptTimeline[promptTimeline.length - 1] : null);
+        }
+      }
+      continue;
+    }
     if (entry.type !== 'assistant' || !entry.message) continue;
     const msg = entry.message;
     const id = msg.id || entry.requestId || `__line_${lineIndex}`;
     let rec = byId.get(id);
     if (!rec) {
-      rec = { input: 0, output: 0, reasoning: 0, cacheRead: 0, hasUsage: false, hasToolUse: false };
+      rec = { input: 0, output: 0, reasoning: 0, cacheRead: 0, hasUsage: false, hasToolUse: false, ts: null };
       byId.set(id, rec);
     }
+    if (rec.ts === null) rec.ts = entryTime(entry);
     if (msg.usage) {
       // Repeated lines carry an identical usage; last-wins is idempotent for
       // repeats and prefers the final value if a streaming partial ever differs.
@@ -201,6 +278,7 @@ export function parseClaudeSession(filePath) {
   let reasoningOutputTokens = 0;
   let cacheReadTokens = 0;
   let turns = 0;
+  const proseTimeline = [];
   for (const rec of byId.values()) {
     if (!rec.hasUsage) continue;
     inputTokens += rec.input;
@@ -208,7 +286,10 @@ export function parseClaudeSession(filePath) {
     reasoningOutputTokens += rec.reasoning;
     cacheReadTokens += rec.cacheRead;
     if (rec.hasToolUse) toolUseOutputTokens += rec.output;
-    else proseOutputTokens += rec.output;
+    else {
+      proseOutputTokens += rec.output;
+      proseTimeline.push({ ts: rec.ts, outputTokens: rec.output });
+    }
     turns++;
   }
   return {
@@ -220,6 +301,12 @@ export function parseClaudeSession(filePath) {
     cacheReadTokens,
     turns,
     model,
+    userPrompts: promptTimeline.length,
+    sessionStarts: sessionStartTimeline.length,
+    proseTimeline,
+    promptTimeline,
+    sessionStartTimeline,
+    fullPromptTimeline,
   };
 }
 
@@ -338,6 +425,13 @@ function codexUsageSignature(usage) {
 
 // Parse a Codex transcript JSONL into a token summary. Never throws; unreadable
 // or malformed input degrades to EMPTY_SUMMARY or a partial sum.
+//
+// `userPrompts`: one `task_started` event per submitted turn (verified locally
+// 2026-10); older rollouts carry a `user_message` event instead, so the larger
+// count wins, and `promptTimeline` holds that event's timestamps. `proseTimeline`
+// holds each token_count's visible-output increment with its event timestamp.
+// `sessionStarts` stays 0 — Codex wires no SessionStart — and `fullPromptTimeline`
+// stays empty (no hook-context record is parsed), so the overhead keeps its fallback.
 export function parseCodexSession(filePath) {
   let raw;
   try {
@@ -357,6 +451,10 @@ export function parseCodexSession(filePath) {
   let totalCacheReadTokens = 0;
   let totalTurns = 0;
   let model = null;
+  const taskStarts = [];
+  const userMessages = [];
+  const fallbackTimeline = [];
+  const totalTimeline = [];
   const seenTotals = new Set();
   for (const line of raw.split('\n')) {
     if (!line.trim()) continue;
@@ -370,7 +468,10 @@ export function parseCodexSession(filePath) {
       model = entry.payload && entry.payload.model ? entry.payload.model : null;
       continue;
     }
-    if (entry.type !== 'event_msg' || !entry.payload || entry.payload.type !== 'token_count') continue;
+    if (entry.type !== 'event_msg' || !entry.payload) continue;
+    if (entry.payload.type === 'task_started') taskStarts.push(entryTime(entry));
+    if (entry.payload.type === 'user_message') userMessages.push(entryTime(entry));
+    if (entry.payload.type !== 'token_count') continue;
     const info = entry.payload.info || {};
     const totalUsage = info.total_token_usage;
     if (totalUsage) {
@@ -378,7 +479,9 @@ export function parseCodexSession(filePath) {
       if (seenTotals.has(sig)) continue;
       seenTotals.add(sig);
       totalInputTokens = tokenNumber(totalUsage.input_tokens);
-      totalOutputTokens = visibleOutputTokens(totalUsage);
+      const visible = visibleOutputTokens(totalUsage);
+      totalTimeline.push({ ts: entryTime(entry), outputTokens: visible - totalOutputTokens });
+      totalOutputTokens = visible;
       // Reasoning is subtracted from visible output above; surface it separately
       // (cumulative, so last-wins) for the honest bill's uncompressed line.
       totalReasoningTokens = tokenNumber(totalUsage.reasoning_output_tokens);
@@ -391,10 +494,12 @@ export function parseCodexSession(filePath) {
     if (!usage) continue;
     fallbackInputTokens += tokenNumber(usage.input_tokens);
     fallbackOutputTokens += visibleOutputTokens(usage);
+    fallbackTimeline.push({ ts: entryTime(entry), outputTokens: visibleOutputTokens(usage) });
     fallbackReasoningTokens += tokenNumber(usage.reasoning_output_tokens);
     fallbackCacheReadTokens += tokenNumber(usage.cached_input_tokens);
     fallbackTurns++;
   }
+  const promptTimeline = taskStarts.length >= userMessages.length ? taskStarts : userMessages;
   // Codex transcripts carry no per-block tool_use marker, so all visible output
   // is treated as prose for the estimate basis (parity with the prior behaviour
   // of applying the ratio to the whole figure).
@@ -408,6 +513,12 @@ export function parseCodexSession(filePath) {
       cacheReadTokens: totalCacheReadTokens,
       turns: totalTurns,
       model,
+      userPrompts: promptTimeline.length,
+      sessionStarts: 0,
+      proseTimeline: totalTimeline,
+      promptTimeline,
+      sessionStartTimeline: [],
+      fullPromptTimeline: [],
     };
   }
   return {
@@ -419,6 +530,12 @@ export function parseCodexSession(filePath) {
     cacheReadTokens: fallbackCacheReadTokens,
     turns: fallbackTurns,
     model,
+    userPrompts: promptTimeline.length,
+    sessionStarts: 0,
+    proseTimeline: fallbackTimeline,
+    promptTimeline,
+    sessionStartTimeline: [],
+    fullPromptTimeline: [],
   };
 }
 

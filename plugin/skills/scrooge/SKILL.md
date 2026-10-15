@@ -23,7 +23,9 @@ Mode persists across turns until changed or the session ends. Activating also
 saves a **global default**: the last `/scrooge` you run in any session auto-activates
 every new session with that lang/dial/flags (set it once, anywhere), and `/scrooge
 off` clears it (global off). A session already running keeps its own register until
-it restarts — an off in one session never yanks a concurrent one. On hosts with the
+it restarts — an off in one session never yanks a concurrent one. That holds after
+an explicit off too: the offed session stays off, even when another session turns
+the default back on, until `/scrooge` is run in it. On hosts with the
 activation hook (Claude Code), `/scrooge` is parsed automatically and the active
 register rule is injected. On skill-only hosts, apply the matching register below.
 
@@ -36,7 +38,15 @@ toggles the mode — no slash required:
   "स्क्रूज जैसे" → `hi`; "像斯克鲁奇一样 …", "斯克鲁奇模式", "斯克鲁奇风格" → `zh`.
   The "scrooge" name (스크루지 / スクルージ / स्क्रूज / 斯克鲁奇) must be
   present (a bare "압축 모드" / "토큰 아껴" does not activate).
-  Dial is always `full`. Language follows the phrase.
+  The bare mode noun ("scrooge mode" / "스크루지 모드" / "スクルージモード" /
+  "स्क्रूज मोड" / "斯克鲁奇模式") activates only as (nearly) the whole prompt,
+  optionally with an on/please word; inside a request it is a topic, not a
+  command ("update the scrooge mode section" does not activate). Verb forms
+  ("talk like scrooge", "enable scrooge", "스크루지 모드로 답해") match anywhere.
+  Dial is always `full`. Language follows the phrase only when no state is
+  saved; otherwise the saved language is kept (change it with `/scrooge <lang>`).
+- Short prompts only: NL fires on a standalone prompt of at most 80 code points,
+  so a long pasted text that merely contains a cue never toggles the mode.
 - Deactivate: "stop scrooge" / "스크루지 꺼".
 - Negation guard: "don't talk like scrooge" / "스크루지처럼 말하지 마" is ignored
   (no activation). A valid `/scrooge` command always wins over NL in the same turn.

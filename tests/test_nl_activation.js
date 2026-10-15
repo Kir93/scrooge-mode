@@ -15,12 +15,20 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseNaturalActivation } from '../plugin/hooks/nl-activation.js';
+import { parseNaturalActivation, NL_MAX_CODEPOINTS } from '../plugin/hooks/nl-activation.js';
 import { readState } from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
+
+// Hook-written session state now carries activatedAt (epoch ms, S3-4); register
+// assertions compare lang/dial/flags only, and activatedAt is pinned separately.
+function reg(s) {
+  if (!s) return s;
+  const { activatedAt: _at, ...rest } = s;
+  return rest;
+}
 
 // ---- Layer 1: pure parser ----
 
@@ -99,6 +107,64 @@ test('(d) "압축 모드" / "토큰 아껴" without the name do not activate (W1
   }
 });
 
+// S3-2 residual: the bare name+mode noun is a topic as often as a request, so it
+// activates only as (essentially) the whole prompt. Before the fix each of these
+// short work requests turned an inactive user's session on.
+test('(i) a bare mode noun used as a topic in a work request does not activate', () => {
+  for (const p of [
+    'README의 scrooge mode 섹션 다듬어줘',
+    'update the scrooge mode section in the README',
+    'README의 스크루지 모드 섹션 다듬어줘',
+    'READMEのスクルージモードの節を直して',
+    'README में स्क्रूज मोड वाला हिस्सा सुधारो',
+    '帮我改一下README里的斯克鲁奇模式部分',
+    'rename the switch to scrooge toggle in settings',
+    '스크루지 모드로 전환 기능 문서 업데이트해줘',
+  ]) {
+    assert.equal(parseNaturalActivation(p), null, p);
+  }
+});
+
+test('(i) the bare mode noun alone (optionally + on/please) still activates', () => {
+  const cases = [
+    ['scrooge mode', 'en'], ['scrooge mode on', 'en'], ['please scrooge mode', 'en'], ['Scrooge mode, please!', 'en'],
+    ['스크루지 모드', 'ko'], ['스크루지 모드 켜줘', 'ko'], ['스크루지 모드 on', 'ko'],
+    ['スクルージモード', 'ja'], ['スクルージモードをオンにして', 'ja'], ['スクルージモードでお願いします', 'ja'],
+    ['स्क्रूज मोड', 'hi'], ['स्क्रूज मोड चालू करो', 'hi'],
+    ['斯克鲁奇模式', 'zh'], ['开启斯克鲁奇模式', 'zh'], ['请斯克鲁奇模式', 'zh'],
+  ];
+  for (const [p, lang] of cases) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang, dial: 'full' }, p);
+  }
+});
+
+// The anchored bare form dropped common command phrasings that activated before
+// it (spaced 켜 줘, 모드로 해줘/전환, 써줘, switch to / use … mode, … now, モードで, …吧).
+test('(i) common command phrasings of the mode activate', () => {
+  const cases = [
+    ['스크루지 모드 켜 줘', 'ko'], ['스크루지 모드로 해줘', 'ko'], ['스크루지 모드로 전환', 'ko'], ['스크루지 모드 써줘', 'ko'],
+    ['switch to scrooge mode', 'en'], ['use scrooge mode', 'en'], ['scrooge mode now', 'en'],
+    ['スクルージモードで', 'ja'],
+    ['打开斯克鲁奇模式吧', 'zh'],
+  ];
+  for (const [p, lang] of cases) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang, dial: 'full' }, p);
+  }
+});
+
+test('(i) mode + explicit verb forms activate anywhere in the prompt', () => {
+  const cases = [
+    ['이 함수 스크루지 모드로 답해줘', 'ko'],
+    ['please enable scrooge mode for this repo', 'en'],
+    ['このコードをスクルージモードで答えて', 'ja'],
+    ['यह कोड स्क्रूज मोड में जवाब दो', 'hi'],
+    ['这段代码用斯克鲁奇模式回答', 'zh'],
+  ];
+  for (const [p, lang] of cases) {
+    assert.deepEqual(parseNaturalActivation(p), { action: 'set', lang, dial: 'full' }, p);
+  }
+});
+
 test('language is inferred from the matched phrase', () => {
   assert.equal(parseNaturalActivation('스크루지처럼').lang, 'ko');
   assert.equal(parseNaturalActivation('scrooge mode').lang, 'en');
@@ -111,6 +177,25 @@ test('parser is pure — same input, same output, empty/garbage → null', () =>
   assert.equal(parseNaturalActivation(''), null);
   assert.equal(parseNaturalActivation(null), null);
   assert.equal(parseNaturalActivation('hello world'), null);
+});
+
+// S3-2: NL only fires on a short standalone request. A long prompt that merely
+// carries a cue — a pasted CI log, a doc edit quoting the mode name — is content.
+test('length guard: a cue inside a long prompt does not toggle', () => {
+  const log = 'CI 로그: ' + 'step 12 failed: exit code 1 at build/compile.js:88\n'.repeat(3) +
+    'note: turn off scrooge before rerun\n' + '이 로그 원인 분석해줘';
+  assert.ok(Array.from(log).length > NL_MAX_CODEPOINTS);
+  assert.equal(parseNaturalActivation(log), null);
+  const longOn = '스크루지처럼 답해줘 ' + '그리고 이 함수가 왜 느린지 프로파일 결과를 보고 원인을 단계별로 정리해줘 '.repeat(3);
+  assert.equal(parseNaturalActivation(longOn), null);
+});
+
+test('length guard counts code points, inclusive at the cap', () => {
+  const pad = (base, n) => base + ' ' + '\u{1D4B3}'.repeat(n - Array.from(base).length - 1);
+  const atCap = pad('stop scrooge', NL_MAX_CODEPOINTS); // astral pad: 2 UTF-16 units each
+  assert.ok(atCap.length > NL_MAX_CODEPOINTS); // over the cap in UTF-16 units…
+  assert.deepEqual(parseNaturalActivation(atCap), { action: 'off' }); // …but not in code points
+  assert.equal(parseNaturalActivation(pad('stop scrooge', NL_MAX_CODEPOINTS + 1)), null);
 });
 
 // ---- Layer 1b: Japanese fixtures (ja-register) ----
@@ -229,9 +314,9 @@ after(() => {
   for (const d of tmpDirs) fs.rmSync(d, { recursive: true, force: true });
 });
 
-function runHook(configDir, prompt) {
+function runHook(configDir, prompt, sid) {
   const r = spawnSync(process.execPath, [HOOK], {
-    input: JSON.stringify({ prompt }),
+    input: JSON.stringify(sid ? { prompt, session_id: sid } : { prompt }),
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_CONFIG_DIR: configDir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '' },
   });
@@ -241,7 +326,7 @@ function runHook(configDir, prompt) {
     const j = JSON.parse(r.stdout);
     ctx = j.hookSpecificOutput ? j.hookSpecificOutput.additionalContext : null;
   }
-  return { state: readState(path.join(configDir, '.scrooge', 'global')), ctx };
+  return { state: reg(readState(path.join(configDir, '.scrooge', 'global'))), ctx };
 }
 
 test('NL activation through the hook persists state + injects the full rule', () => {
@@ -311,9 +396,55 @@ test('(f) inactive session + plain prompt injects nothing', () => {
   assert.equal(ctx, null);
 });
 
+test('(i) an inactive session stays inactive on a topic mention of the mode', () => {
+  const cfg = freshConfig();
+  const { state, ctx } = runHook(cfg, 'README의 scrooge mode 섹션 다듬어줘');
+  assert.equal(state, null);
+  assert.equal(ctx, null);
+});
+
 test('NL off is a no-op while inactive (negated off does not error)', () => {
   const cfg = freshConfig();
   const { state, ctx } = runHook(cfg, '스크루지 끄지 마');
   assert.equal(state, null);
   assert.equal(ctx, null);
+});
+
+// S3-2: NL infers lang from whichever phrase matched (an EN cue picks en), so an NL
+// set may pick the lang only for a FRESH state. Reproduced before the fix: an EN
+// phrase rewrote a saved ko session AND the global default to en.
+test('an NL set keeps the lang of an existing session state and default', () => {
+  const cfg = freshConfig();
+  const sp = path.join(cfg, '.scrooge', 'sessions', 'nlA');
+  const dp = path.join(cfg, '.scrooge', 'default');
+  runHook(cfg, '/scrooge ko', 'nlA');
+  const { ctx } = runHook(cfg, 'talk like scrooge', 'nlA');
+  assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/);
+  assert.equal(readState(sp).lang, 'ko');
+  assert.equal(readState(dp).lang, 'ko');
+});
+
+test('an NL set in a fresh session keeps the global default lang (seeds, does not flip)', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', 'nlB'); // default = ko
+  runHook(cfg, 'enable scrooge mode', 'nlC'); // new session, EN phrase
+  assert.equal(readState(path.join(cfg, '.scrooge', 'sessions', 'nlC')).lang, 'ko');
+  assert.equal(readState(path.join(cfg, '.scrooge', 'default')).lang, 'ko');
+});
+
+test('a slash lang token still changes the lang of an existing state', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', 'nlD');
+  runHook(cfg, '/scrooge en', 'nlD');
+  assert.equal(readState(path.join(cfg, '.scrooge', 'sessions', 'nlD')).lang, 'en');
+});
+
+test('a pasted log carrying an off cue does not deactivate through the hook', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', 'nlE');
+  const log = 'CI 로그:\n' + 'error: step failed (exit 1) at scripts/build.js:42\n'.repeat(3) +
+    'hint: turn off scrooge and retry\n분석해줘';
+  const { ctx } = runHook(cfg, log, 'nlE');
+  assert.doesNotMatch(ctx, /SCROOGE OFF/);
+  assert.equal(readState(path.join(cfg, '.scrooge', 'sessions', 'nlE')).lang, 'ko');
 });

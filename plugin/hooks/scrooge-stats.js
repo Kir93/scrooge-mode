@@ -86,13 +86,30 @@ function estimateTokens(text) {
 // STATIC measure of injected context — never a runtime counterfactual (ADR-003 /
 // lean-flags SC9).
 //
-// Billed as the full register once plus the per-turn reminder on every turn after
-// it, which is what the hooks actually inject. Through v0.22.1 only the full
-// register was counted and the reminder was dismissed as "not separately billed" —
-// in a 50-turn session that silently omitted ~49 reminders from our own cost side,
-// making the net bill flatter than reality. Returns 0 when inactive or the rule
-// body cannot be read (degrades to no overhead rather than a fabricated number).
-function selfOverheadTokens(state, turns = 1) {
+// Billed per hook firing, which is what the hooks actually inject: the full
+// register at each SessionStart that carried it, plus one reminder per user
+// prompt (UserPromptSubmit). Through v0.22.1 the reminder was omitted; through
+// v0.29.1 it was multiplied by API responses (`turns`), and one prompt can drive
+// dozens of tool-loop responses (one real session: 36 responses, 1 prompt). With
+// no SessionStart evidence (mid-session /scrooge, Codex, an older transcript) the
+// activation prompt itself carried the full register, hence one reminder fewer.
+// A mid-session activation (`activatedAt`) bills only what fired after it: the
+// activating prompt's full register, a reminder per later prompt, and the full
+// register per later SessionStart. The transcript stamps a prompt at submit,
+// before the UserPromptSubmit hook stamps activatedAt (verified locally 2026-10:
+// user line ~35 ms ahead of the hook context; Codex task_started likewise), so
+// the activating prompt sits before the stamp and later prompts strictly after.
+// A prompt whose UserPromptSubmit context the transcript records as the full
+// register (`fullPromptTimeline`: a /scrooge set on an already-active session)
+// bills full instead of a reminder. A SessionStart-seeded session carries no
+// stamp and an untimestamped prompt or start cannot be placed — both keep the
+// whole-session bill.
+// Returns 0 when inactive or the rule body cannot be read (degrades to no
+// overhead rather than a fabricated number).
+function selfOverheadTokens(
+  state,
+  { userPrompts = 0, sessionStarts = 0, promptTimeline, sessionStartTimeline, fullPromptTimeline = [] } = {}
+) {
   if (!state) return 0;
   try {
     const root = resolveRepoRoot();
@@ -100,11 +117,48 @@ function selfOverheadTokens(state, turns = 1) {
     if (!body) return 0;
     const full = estimateTokens(buildFullInjection(state.lang, state.dial, body, state.flags));
     const reminder = estimateTokens(buildReminder(state.lang, state.dial, state.flags));
-    const extraTurns = Math.max(0, (Number(turns) || 0) - 1);
-    return full + reminder * extraTurns;
+    const prompts = Number(userPrompts) || 0;
+    const starts = Number(sessionStarts) || 0;
+    const fulls = Array.isArray(fullPromptTimeline) ? fullPromptTimeline : [];
+    const at = state.activatedAt;
+    const placeable = (times, n) =>
+      Array.isArray(times) && times.length === n && times.every((t) => Number.isFinite(t));
+    if (
+      Number.isFinite(at) &&
+      placeable(promptTimeline, prompts) &&
+      placeable(sessionStartTimeline, starts) &&
+      placeable(fulls, fulls.length)
+    ) {
+      const remindersAfter = promptTimeline.filter((t) => t > at).length;
+      const startsAfter = sessionStartTimeline.filter((t) => t >= at).length;
+      const fullsAfter = fulls.filter((t) => t > at).length;
+      return full * (1 + startsAfter + fullsAfter) + reminder * Math.max(0, remindersAfter - fullsAfter);
+    }
+    // Recorded full-register prompts (a /scrooge set on an active session, a
+    // UserPromptSubmit seed) replace the assumed activation prompt; without that
+    // evidence the activation prompt is assumed when no SessionStart fired.
+    if (fulls.length > 0) return full * (starts + fulls.length) + reminder * Math.max(0, prompts - fulls.length);
+    const reminders = starts > 0 ? prompts : Math.max(0, prompts - 1);
+    return full * Math.max(1, starts) + reminder * reminders;
   } catch (e) {
     return 0;
   }
+}
+
+// Prose output the register actually shaped: responses at/after `activatedAt`
+// (epoch ms the activation hook stamps on state). Turns before activation were
+// never compressed, so pricing them at the savings ratio over-claims. A legacy
+// state without the stamp — or a timeline entry with no timestamp — keeps the
+// whole-session basis rather than guessing.
+function estimateBasis(sess, activatedAt) {
+  const whole = sess.proseOutputTokens || 0;
+  if (!Number.isFinite(activatedAt) || !Array.isArray(sess.proseTimeline)) return whole;
+  let sum = 0;
+  for (const p of sess.proseTimeline) {
+    if (p.ts == null) return whole;
+    if (p.ts >= activatedAt) sum += p.outputTokens;
+  }
+  return sum;
 }
 
 // Lifetime ledger block — accumulated savings across sessions, or a `--since`
@@ -145,6 +199,7 @@ function formatStats({
   inputTokens = 0,
   outputTokens,
   proseOutputTokens = 0,
+  estimateProseTokens = proseOutputTokens,
   toolUseOutputTokens = 0,
   reasoningOutputTokens = 0,
   inputOverheadTokens = 0,
@@ -168,7 +223,7 @@ function formatStats({
 
   const modeLabel = state ? `${state.lang}/${state.dial}` : 'inactive';
   const est = state
-    ? deriveEstimate(proseOutputTokens, state.lang, state.dial)
+    ? deriveEstimate(estimateProseTokens, state.lang, state.dial)
     : null;
 
   let savings;
@@ -203,6 +258,9 @@ function formatStats({
     `Input tokens:          ${inputTokens.toLocaleString()} (measured)\n` +
     `Output tokens:         ${outputTokens.toLocaleString()}\n` +
     `  prose:               ${proseOutputTokens.toLocaleString()}\n` +
+    (state && estimateProseTokens !== proseOutputTokens
+      ? `    since activation:  ${estimateProseTokens.toLocaleString()} (estimate basis)\n`
+      : '') +
     `  tool_use:            ${toolUseOutputTokens.toLocaleString()}\n` +
     (reasoningOutputTokens > 0
       ? `  reasoning:           ${reasoningOutputTokens.toLocaleString()} (uncompressed)\n`
@@ -215,10 +273,10 @@ function formatStats({
   );
 }
 
-function formatShare({ outputTokens, proseOutputTokens = 0, turns, state }) {
+function formatShare({ outputTokens, proseOutputTokens = 0, estimateProseTokens = proseOutputTokens, turns, state }) {
   if (turns === 0) return '💰 scrooge armed, no turns yet';
   const est = state
-    ? deriveEstimate(proseOutputTokens, state.lang, state.dial)
+    ? deriveEstimate(estimateProseTokens, state.lang, state.dial)
     : null;
   if (est) {
     return `💰 saved ~${est.saved.toLocaleString()} prose output tokens (est) across ${turns} turns this session`;
@@ -228,9 +286,9 @@ function formatShare({ outputTokens, proseOutputTokens = 0, turns, state }) {
 
 // Pre-rendered statusline suffix: saved estimate when available, else raw output
 // tokens while active, else empty (clears the badge suffix when inactive).
-function suffixFor({ outputTokens, proseOutputTokens = 0, turns, state }) {
+function suffixFor({ outputTokens, proseOutputTokens = 0, estimateProseTokens = proseOutputTokens, turns, state }) {
   if (!state || turns === 0) return '';
-  const est = deriveEstimate(proseOutputTokens, state.lang, state.dial);
+  const est = deriveEstimate(estimateProseTokens, state.lang, state.dial);
   if (est) return `⛏ ~${humanizeTokens(est.saved)} saved (est)`;
   return `⛏ ${humanizeTokens(outputTokens)} tok`;
 }
@@ -283,8 +341,9 @@ function main() {
   // total includes the current run. Upsert (not append) is keyed on sessionKey:
   // running /scrooge-stats N times in one session overwrites the one entry, never
   // double-counts. Skipped when sessionless or no turns yet.
-  const est = state ? deriveEstimate(sess.proseOutputTokens, state.lang, state.dial) : null;
-  const inputOverheadTokens = selfOverheadTokens(state, sess.turns);
+  const estimateProseTokens = state ? estimateBasis(sess, state.activatedAt) : sess.proseOutputTokens;
+  const est = state ? deriveEstimate(estimateProseTokens, state.lang, state.dial) : null;
+  const inputOverheadTokens = selfOverheadTokens(state, sess);
   if (sessionKey && sess.turns > 0) {
     upsertSession({
       sessionId: sessionKey,
@@ -299,7 +358,16 @@ function main() {
   }
   const since = sinceArg ? sinceToEpoch(sinceArg, Date.now()) : null;
   const ledger = aggregateLedger({ since });
-  const view = { ...sess, state, ledger, since: sinceArg, inputOverheadTokens };
+  // Label the window only when it parsed: a malformed --since aggregates all-time,
+  // so a "Since <arg>" header over lifetime totals would mislabel them.
+  const view = {
+    ...sess,
+    state,
+    ledger,
+    since: since != null ? sinceArg : null,
+    inputOverheadTokens,
+    estimateProseTokens,
+  };
 
   // Refresh the statusline suffix on every run, tagged "<sessionKey>:<text>" so a
   // statusline in a different (or fresh) session does not render a stale number.
@@ -323,4 +391,6 @@ export {
   humanizeTokens,
   estimateTokens,
   suffixFor,
+  selfOverheadTokens,
+  estimateBasis,
 };

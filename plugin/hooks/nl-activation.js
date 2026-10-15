@@ -22,6 +22,10 @@
 //   { action: 'set', lang, dial: 'full' } | { action: 'off' } | null
 // null = no natural-language intent this turn (leave state untouched).
 //
+// The inferred lang only seeds a FRESH state: scrooge-activate.js keeps the lang of
+// an existing session state or global default on an NL set, so a phrase that
+// happens to be English inside a Korean prompt can't flip a saved ko register.
+//
 // The lean flag is slash-only — NL never sets it. An NL activation therefore
 // keeps the session's existing flags, or seeds SCROOGE_DEFAULT_FLAGS on
 // a fresh session, via the set-merge default path in scrooge-activate.js.
@@ -35,10 +39,18 @@
 
 import { LANG_META, metaLangs } from './lang-meta.js';
 
+// Length guard: NL toggling is meant for a short standalone request ("스크루지 꺼줘").
+// A long prompt that merely mentions the mode — a pasted CI log containing
+// "turn off scrooge", a doc-editing request quoting "scrooge mode" — is content,
+// not a command, so beyond this many code points NL never fires (slash commands
+// are unaffected). Code points, not UTF-16 units, so the cap is script-neutral.
+export const NL_MAX_CODEPOINTS = 80;
+
 // Parse natural-language activation intent from a plain prompt.
 export function parseNaturalActivation(prompt) {
-  const text = String(prompt || '');
+  const text = String(prompt || '').trim();
   if (!text) return null;
+  if (Array.from(text).length > NL_MAX_CODEPOINTS) return null;
 
   const langs = metaLangs();
   const anyCue = (sel) => langs.some((l) => LANG_META[l].nlCue[sel].test(text));
@@ -50,7 +62,7 @@ export function parseNaturalActivation(prompt) {
     return null;
   }
 
-  // Negation guard: a negation anywhere in a short prompt cancels an activation or
+  // Negation guard: a negation anywhere in the (length-capped) prompt cancels an activation or
   // deactivation request. Conservative — when negation is present, prefer a no-op.
   const negated = anyCue('negate');
 

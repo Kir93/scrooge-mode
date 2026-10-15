@@ -132,5 +132,11 @@ test('aggregate parseClaudeSession return is unchanged (byte-invariance pin)', (
     cacheReadTokens: 50,
     turns: 2,
     model: 'claude-opus-4-7',
+    userPrompts: 1,
+    sessionStarts: 0,
+    proseTimeline: [{ ts: null, outputTokens: 120 }],
+    promptTimeline: [null],
+    sessionStartTimeline: [],
+    fullPromptTimeline: [],
   });
 });

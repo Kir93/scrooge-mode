@@ -141,6 +141,114 @@ test('parseClaudeSession degrades to EMPTY_SUMMARY for a missing file', () => {
   assert.deepEqual(s, { ...EMPTY_SUMMARY });
 });
 
+// prompts-session.jsonl encodes the hook-firing evidence verified locally
+// 2026-10: string-content user lines and queued_command attachments are prompts
+// (UserPromptSubmit); isMeta / isCompactSummary / tool_result user lines are not;
+// a SessionStart hook context counts only when it carries Scrooge's full register.
+const PROMPTS_FIXTURE = path.join(HERE, 'fixtures', 'prompts-session.jsonl');
+
+test('parseClaudeSession counts user prompts, not API responses', () => {
+  const s = parseClaudeSession(PROMPTS_FIXTURE);
+  assert.equal(s.turns, 4);
+  assert.equal(s.userPrompts, 3); // "first", the queued command, "second"
+  // turns-session.jsonl: one prompt driving three responses.
+  const t = parseClaudeSession(path.join(HERE, 'fixtures', 'turns-session.jsonl'));
+  assert.equal(t.turns, 3);
+  assert.equal(t.userPrompts, 1);
+});
+
+// array-prompts-session.jsonl: the array-content prompt shapes Claude writes
+// (IDE prompt, IDE file context, pasted images, image-only) beside array user
+// lines that are not prompts (tool_result alone or with text, isMeta,
+// isCompactSummary, the interruption marker).
+test('parseClaudeSession counts array-content prompts and skips host-written array lines', () => {
+  const s = parseClaudeSession(path.join(HERE, 'fixtures', 'array-prompts-session.jsonl'));
+  assert.equal(s.userPrompts, 4);
+  assert.deepEqual(s.promptTimeline, [
+    Date.parse('2026-10-02T00:00:01.000Z'),
+    Date.parse('2026-10-02T00:01:00.000Z'),
+    Date.parse('2026-10-02T00:02:00.000Z'),
+    Date.parse('2026-10-02T00:03:00.000Z'),
+  ]);
+});
+
+test('parseClaudeSession timestamps each counted prompt and SessionStart', () => {
+  const s = parseClaudeSession(PROMPTS_FIXTURE);
+  assert.deepEqual(s.promptTimeline, [
+    Date.parse('2026-10-01T00:00:00.500Z'),
+    Date.parse('2026-10-01T00:05:00.000Z'), // queued_command attachment
+    Date.parse('2026-10-01T00:15:00.000Z'),
+  ]);
+  assert.deepEqual(s.sessionStartTimeline, [
+    Date.parse('2026-10-01T00:00:00.000Z'),
+    Date.parse('2026-10-01T00:06:00.100Z'),
+  ]);
+  // Untimestamped transcript: one null per prompt, never a guessed time.
+  assert.deepEqual(parseClaudeSession(path.join(HERE, 'fixtures', 'turns-session.jsonl')).promptTimeline, [null]);
+});
+
+test('parseClaudeSession counts SessionStart full-register injections only', () => {
+  // startup + post-compact re-injection; the other plugin's SessionStart context is not ours.
+  assert.equal(parseClaudeSession(PROMPTS_FIXTURE).sessionStarts, 2);
+  assert.equal(parseClaudeSession(FIXTURE).sessionStarts, 0);
+});
+
+// A /scrooge set on an already-active session injects the FULL register through
+// UserPromptSubmit; the transcript records that hook context right after the
+// prompt. ups-full-session.jsonl: reminder, full ("/scrooge en"), reminder, plus
+// another plugin's UPS context that is not ours.
+test('parseClaudeSession records prompts whose UserPromptSubmit context carried the full register', () => {
+  const s = parseClaudeSession(path.join(HERE, 'fixtures', 'ups-full-session.jsonl'));
+  assert.equal(s.userPrompts, 3);
+  assert.equal(s.sessionStarts, 1);
+  assert.deepEqual(s.fullPromptTimeline, [Date.parse('2026-10-03T00:01:00.000Z')]); // the prompt's own time
+  assert.deepEqual(parseClaudeSession(PROMPTS_FIXTURE).fullPromptTimeline, []);
+});
+
+test('parseClaudeSession timestamps each prose response once (first line wins)', () => {
+  const s = parseClaudeSession(PROMPTS_FIXTURE);
+  assert.deepEqual(s.proseTimeline, [
+    { ts: Date.parse('2026-10-01T00:00:01.000Z'), outputTokens: 100 },
+    { ts: Date.parse('2026-10-01T00:10:00.000Z'), outputTokens: 200 },
+    { ts: Date.parse('2026-10-01T00:20:00.000Z'), outputTokens: 50 },
+  ]);
+  // Timeline sums to the prose bucket; tool_use responses stay out of it.
+  assert.equal(s.proseTimeline.reduce((a, p) => a + p.outputTokens, 0), s.proseOutputTokens);
+  // A transcript without timestamps keeps null, never a guessed time.
+  assert.deepEqual(parseClaudeSession(FIXTURE).proseTimeline.map((p) => p.ts), [null, null]);
+});
+
+test('parseCodexSession counts task_started turns and timestamps output increments', (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-codex-prompts-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'prompts-codex-session.jsonl');
+  const total = (output) => ({ input_tokens: 10, cached_input_tokens: 0, output_tokens: output, reasoning_output_tokens: 0, total_tokens: 10 + output });
+  const lines = [
+    { timestamp: '2026-10-01T00:00:00.000Z', type: 'event_msg', payload: { type: 'task_started' } },
+    { timestamp: '2026-10-01T00:00:01.000Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: total(100) } } },
+    { timestamp: '2026-10-01T00:00:02.000Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: total(130) } } },
+    { timestamp: '2026-10-01T00:01:00.000Z', type: 'event_msg', payload: { type: 'task_started' } },
+    { timestamp: '2026-10-01T00:01:01.000Z', type: 'event_msg', payload: { type: 'token_count', info: { total_token_usage: total(200) } } },
+  ];
+  fs.writeFileSync(file, lines.map((line) => JSON.stringify(line)).join('\n'));
+  const s = parseCodexSession(file);
+  assert.equal(s.turns, 3);
+  assert.equal(s.userPrompts, 2);
+  assert.equal(s.sessionStarts, 0);
+  assert.deepEqual(s.promptTimeline, [Date.parse('2026-10-01T00:00:00.000Z'), Date.parse('2026-10-01T00:01:00.000Z')]);
+  assert.deepEqual(s.sessionStartTimeline, []);
+  assert.deepEqual(s.proseTimeline, [
+    { ts: Date.parse('2026-10-01T00:00:01.000Z'), outputTokens: 100 },
+    { ts: Date.parse('2026-10-01T00:00:02.000Z'), outputTokens: 30 },
+    { ts: Date.parse('2026-10-01T00:01:01.000Z'), outputTokens: 70 },
+  ]);
+  // Older rollouts carry user_message events instead of task_started.
+  const old = path.join(dir, 'user-message-codex-session.jsonl');
+  fs.writeFileSync(old, JSON.stringify({ type: 'event_msg', payload: { type: 'user_message', message: 'hi' } }));
+  assert.equal(parseCodexSession(old).userPrompts, 1);
+  assert.deepEqual(parseCodexSession(old).promptTimeline, [null]);
+});
+
 test('parseCodexSession reads visible output/cache tokens from cumulative totals', (t) => {
   const s = parseCodexSession(makeCodexSession(t));
   // Two token_count events: final cumulative visible output is 420-40.

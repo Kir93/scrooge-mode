@@ -28,6 +28,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(HERE, '..');
 const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
 
+// Hook-written session state now carries activatedAt (epoch ms, S3-4); register
+// assertions compare lang/dial/flags only, and activatedAt is pinned separately.
+function reg(s) {
+  if (!s) return s;
+  const { activatedAt: _at, ...rest } = s;
+  return rest;
+}
+
 const tmpDirs = [];
 function freshConfig() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-flags-'));
@@ -49,7 +57,7 @@ function runHook(configDir, prompt, env = {}) {
   const ctx = r.stdout.trim()
     ? JSON.parse(r.stdout).hookSpecificOutput?.additionalContext ?? null
     : null;
-  return { state: readState(path.join(configDir, '.scrooge', 'sessions', 'flags')), ctx };
+  return { state: reg(readState(path.join(configDir, '.scrooge', 'sessions', 'flags'))), ctx };
 }
 
 // ── Unit: parseFlagList / defaultFlags ──────────────────────────────────────
@@ -91,7 +99,7 @@ test('a fresh activation with no SCROOGE_DEFAULT_FLAGS turns lean ON', () => {
     env,
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
-  assert.deepEqual(readState(path.join(cfg, '.scrooge', 'sessions', 'flags')), {
+  assert.deepEqual(reg(readState(path.join(cfg, '.scrooge', 'sessions', 'flags'))), {
     lang: 'ko',
     dial: 'full',
     flags: ['lean'],

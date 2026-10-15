@@ -12,7 +12,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { handlePayload } from '../plugin/hooks/scrooge-session-end.js';
-import { getStatePath, getDefaultPath, writeState, readState } from '../plugin/hooks/scrooge-config.js';
+import {
+  getStatePath,
+  getDefaultPath,
+  writeState,
+  readState,
+  writeOffTombstone,
+  isOffTombstone,
+} from '../plugin/hooks/scrooge-config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HOOK = path.join(HERE, '..', 'plugin', 'hooks', 'scrooge-session-end.js');
@@ -55,6 +62,28 @@ test('marker differing from the default (override) is KEPT for resume', () => {
     writeState({ lang: 'en', dial: 'full', flags: [] }, getStatePath('sessB'));
     handlePayload({ session_id: 'sessB' });
     assert.deepEqual(readState(getStatePath('sessB')), { lang: 'en', dial: 'full', flags: [] });
+  });
+});
+
+// S3-6: the off tombstone is a session-local off — an override — so session end
+// must keep it, or resuming the session would re-seed from the default.
+test('an off tombstone is KEPT at session end', () => {
+  withConfigDir(freshConfig(), () => {
+    writeState(DEFAULT, getDefaultPath());
+    writeOffTombstone(getStatePath('sessOff'));
+    handlePayload({ session_id: 'sessOff' });
+    assert.equal(isOffTombstone(getStatePath('sessOff')), true);
+  });
+});
+
+// A marker carrying activatedAt records a mid-session activation; a re-seed from the
+// default would carry no stamp, so stats would lose the boundary — keep it.
+test('a default-equal marker carrying activatedAt is KEPT at session end', () => {
+  withConfigDir(freshConfig(), () => {
+    writeState(DEFAULT, getDefaultPath());
+    writeState({ ...DEFAULT, activatedAt: 1000 }, getStatePath('sessAt'));
+    handlePayload({ session_id: 'sessAt' });
+    assert.equal(readState(getStatePath('sessAt'))?.activatedAt, 1000);
   });
 });
 

@@ -89,8 +89,11 @@ function injectionFor(prompt, expected) {
     env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '' },
   });
   assert.equal(r.status, 0, `hook exited ${r.status}: ${r.stderr}`);
-  // The full rule body should reach the model, and state should be active.
-  assert.deepEqual(readState(path.join(cfg, '.scrooge', 'global')), expected);
+  // The full rule body should reach the model, and state should be active — with
+  // the inactive→active transition stamped as a finite activatedAt.
+  const { activatedAt, ...state } = readState(path.join(cfg, '.scrooge', 'global'));
+  assert.deepEqual(state, expected);
+  assert.ok(Number.isFinite(activatedAt), `activatedAt not finite: ${activatedAt}`);
   const j = JSON.parse(r.stdout);
   return j.hookSpecificOutput ? j.hookSpecificOutput.additionalContext : null;
 }

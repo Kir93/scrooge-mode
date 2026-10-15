@@ -18,6 +18,7 @@ import {
   resolveActiveState,
   readVersionMarker,
   writeVersionMarker,
+  writeOffTombstone,
   VALID_LANGS,
   VALID_DIALS,
 } from '../plugin/hooks/scrooge-config.js';
@@ -43,6 +44,14 @@ after(() => {
 const defaultFile = (cfg) => path.join(cfg, '.scrooge', 'default');
 const stateFile = (cfg, sid) => path.join(cfg, '.scrooge', 'sessions', sid);
 const versionFile = (cfg) => path.join(cfg, '.scrooge', 'version');
+
+// Hook-written session state now carries activatedAt (epoch ms, S3-4); register
+// assertions compare lang/dial/flags only, and activatedAt is pinned separately.
+function reg(s) {
+  if (!s) return s;
+  const { activatedAt: _at, ...rest } = s;
+  return rest;
+}
 
 // The installed version the SessionStart hook reads from package.json — kept
 // dynamic so a version bump never breaks these assertions.
@@ -84,8 +93,32 @@ test('resolveActiveState: seeds the session file from the global default when ab
   const dp = defaultFile(cfg);
   writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, dp);
   assert.equal(readState(sp), null); // not seeded yet
-  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'ko', dial: 'full', flags: ['lean'] });
-  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: ['lean'] }); // seeded
+  assert.deepEqual(reg(resolveActiveState(sp, dp)), { lang: 'ko', dial: 'full', flags: ['lean'] });
+  assert.deepEqual(reg(readState(sp)), { lang: 'ko', dial: 'full', flags: ['lean'] }); // seeded
+});
+
+// A seeded session was active from its start, so it carries no activatedAt (absent =
+// whole-session stats basis). Stamping the seed made every resume/sweep re-seed a
+// NEW boundary, and stats dropped all earlier compressed turns.
+test('resolveActiveState: a seeded session carries no activatedAt', () => {
+  const cfg = freshConfig();
+  const sp = stateFile(cfg, 'seedAt');
+  const dp = defaultFile(cfg);
+  // Even a stray stamp on the default is not copied into the seed.
+  fs.mkdirSync(path.dirname(dp), { recursive: true });
+  fs.writeFileSync(dp, JSON.stringify({ lang: 'ko', dial: 'full', flags: [], activatedAt: 1000 }));
+  assert.deepEqual(resolveActiveState(sp, dp), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: [] }); // persisted unstamped
+});
+
+test('resolveActiveState: an off-tombstoned session is inactive and never re-seeded', () => {
+  const cfg = freshConfig();
+  const sp = stateFile(cfg, 'tomb');
+  const dp = defaultFile(cfg);
+  writeState({ lang: 'ko', dial: 'full', flags: [] }, dp);
+  writeOffTombstone(sp);
+  assert.equal(resolveActiveState(sp, dp), null);
+  assert.equal(readState(sp), null); // still the tombstone, not a seed
 });
 
 test('resolveActiveState: null when neither per-session state nor default exists', () => {
@@ -106,7 +139,7 @@ test('a brand-new session auto-activates from the global default (SessionStart s
   runActivate(cfg, '/scrooge ko full', 'sessA'); // sets global default
   const ctx = runSessionStart(cfg, 'sessB'); // sessB never activated explicitly
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full/); // full rule injected
-  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessB'))), { lang: 'ko', dial: 'full', flags: [] });
 });
 
 test('/scrooge off is a GLOBAL off — clears the default so new sessions stay inactive', () => {
@@ -123,10 +156,10 @@ test('off does not yank a concurrent peer: the peer keeps its seeded state this 
   const cfg = freshConfig();
   runActivate(cfg, '/scrooge ko full', 'sessA'); // default = ko/full
   runSessionStart(cfg, 'sessB'); // sessB seeds ko/full from the default
-  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessB'))), { lang: 'ko', dial: 'full', flags: [] });
   runActivate(cfg, '/scrooge off', 'sessA'); // global off + clears sessA only
   // peer sessB's per-session file is untouched (not clobbered mid-run)…
-  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessB'))), { lang: 'ko', dial: 'full', flags: [] });
   // …but the shared default is gone, so sessB won't re-activate on its next restart.
   assert.equal(readState(defaultFile(cfg)), null);
 });
@@ -136,7 +169,57 @@ test('default-aware activation: a change in a default-seeded session inherits th
   runActivate(cfg, '/scrooge ko full lean', 'sessA'); // default = ko/full+lean
   // fresh sessB changes only the lang; dial(full) + flags(lean) come from the default.
   runActivate(cfg, '/scrooge en', 'sessB');
-  assert.deepEqual(readState(stateFile(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: ['lean'] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessB'))), { lang: 'en', dial: 'full', flags: ['lean'] });
+});
+
+// S3-6: off used to delete the session file, making "explicitly off" look like
+// "never activated" — so the next activation anywhere (which rewrites the default)
+// re-seeded the offed session. SKILL.md: a running session keeps its own register.
+test('an offed session stays off when another session re-activates the default', () => {
+  const cfg = freshConfig();
+  runActivate(cfg, '/scrooge ko full', 'sessA');
+  runActivate(cfg, '/scrooge off', 'sessA');
+  runActivate(cfg, '/scrooge en', 'sessB'); // new global default = en
+  assert.equal(runActivate(cfg, 'explain this function', 'sessA'), null); // no reminder, no seed
+  assert.equal(readState(stateFile(cfg, 'sessA')), null);
+  assert.equal(runSessionStart(cfg, 'sessA'), null); // resume of sessA stays off too
+  assert.equal(readState(stateFile(cfg, 'sessA')), null);
+  // An explicit set in that session clears the tombstone.
+  assert.match(runActivate(cfg, '/scrooge ko', 'sessA'), /SCROOGE MODE ACTIVE — ko\/full/);
+  assert.equal(reg(readState(stateFile(cfg, 'sessA'))).lang, 'ko');
+  assert.match(runActivate(cfg, 'explain this function', 'sessA'), /SCROOGE 활성 \(ko\/full\)/);
+});
+
+test('activation writes the global default without an activatedAt stamp', () => {
+  const cfg = freshConfig();
+  runActivate(cfg, '/scrooge ko', 'sessA');
+  assert.equal(fs.readFileSync(defaultFile(cfg), 'utf8').includes('activatedAt'), false);
+  assert.equal(typeof readState(stateFile(cfg, 'sessA')).activatedAt, 'number');
+});
+
+// On Claude, SessionStart seeds any session whose default existed at start, so a
+// seed in the UserPromptSubmit no-command branch means the default appeared
+// MID-session (another session ran /scrooge): inactive→active partway, stamped.
+// Codex wires no SessionStart, so there the UPS seed is the first prompt and the
+// stamp is equivalent to the whole session.
+test('a UserPromptSubmit seed stamps activatedAt; a SessionStart seed does not', () => {
+  const cfg = freshConfig();
+  assert.equal(runSessionStart(cfg, 'sessA'), null); // no default yet: inactive
+  assert.equal(runActivate(cfg, 'hello', 'sessA'), null);
+  runActivate(cfg, '/scrooge ko', 'sessB'); // default appears mid-session for sessA
+  const before = Date.now();
+  assert.match(runActivate(cfg, 'hello', 'sessA'), /SCROOGE MODE ACTIVE — ko\/full/);
+  const after = Date.now();
+  const { activatedAt, ...state } = readState(stateFile(cfg, 'sessA'));
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
+  assert.ok(Number.isFinite(activatedAt) && activatedAt >= before && activatedAt <= after, `activatedAt ${activatedAt}`);
+  // A later prompt keeps the stamp (reminder turn, no re-seed).
+  assert.match(runActivate(cfg, 'hello', 'sessA'), /SCROOGE 활성 \(ko\/full\)/);
+  assert.equal(readState(stateFile(cfg, 'sessA')).activatedAt, activatedAt);
+  // A SessionStart seed stays unstamped, and the default never carries one.
+  runSessionStart(cfg, 'sessC');
+  assert.equal('activatedAt' in readState(stateFile(cfg, 'sessC')), false);
+  assert.equal(fs.readFileSync(defaultFile(cfg), 'utf8').includes('activatedAt'), false);
 });
 
 test('no global default → a fresh session stays inactive (baseline unchanged)', () => {
@@ -196,6 +279,18 @@ test('upgrade but the session auto-activates from the default → full rule, not
   assert.equal(readVersionMarker(versionFile(cfg)), PKG_VERSION);
 });
 
+// An off-tombstoned session is off by the user's choice, not stranded by the
+// upgrade — the "re-activate" nudge would contradict the explicit off.
+test('upgrade + off-tombstoned session → NO re-activation notice', () => {
+  const cfg = freshConfig();
+  runActivate(cfg, '/scrooge ko full', 'sessA');
+  runActivate(cfg, '/scrooge off', 'sessA'); // sessA tombstoned
+  runActivate(cfg, '/scrooge en', 'sessB'); // default present again — activation artifact
+  writeVersionMarker('0.0.0-old', versionFile(cfg));
+  assert.equal(runSessionStart(cfg, 'sessA'), null);
+  assert.equal(readVersionMarker(versionFile(cfg)), PKG_VERSION); // marker still advanced
+});
+
 test('SessionStart injection header surfaces active flags (ko/full + lean)', () => {
   const cfg = freshConfig();
   writeState({ lang: 'ko', dial: 'full', flags: ['lean'] }, defaultFile(cfg));
@@ -220,7 +315,7 @@ test('upgrade + active session missing a now-default flag → auto-applied + FYI
   assert.match(ctx, /SCROOGE MODE ACTIVE — ko\/full \+ lean/); // lean auto-applied to the injection
   assert.match(ctx, /lean is now ON by default and applied/); // FYI note (not "re-run")
   // …and persisted to BOTH the session state and the saved default:
-  assert.deepEqual(readState(stateFile(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: ['lean'] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessA'))), { lang: 'ko', dial: 'full', flags: ['lean'] });
   assert.deepEqual(readState(defaultFile(cfg)), { lang: 'ko', dial: 'full', flags: ['lean'] });
 });
 
@@ -242,5 +337,5 @@ test('upgrade from a post-lean release keeps an explicit nolean opt-out', () => 
   const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
   assert.doesNotMatch(ctx, /now ON by default/);
   assert.deepEqual(readState(defaultFile(cfg)), { lang: 'ko', dial: 'full', flags: [] });
-  assert.deepEqual(readState(stateFile(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(stateFile(cfg, 'sessA'))), { lang: 'ko', dial: 'full', flags: [] });
 });

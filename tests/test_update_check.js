@@ -170,3 +170,47 @@ test('session start keeps behind while a newer release is still pending', () => 
   runSessionStart(dir, 'resume');
   assert.equal(readUpdateCache(path.join(dir, '.scrooge', 'update')).behind, true);
 });
+
+// ── black-box: the detached probe itself ─────────────────────────────────────
+// fetch is stubbed through a data: preload so the probe never touches the network.
+const PROBE = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-update-check.js');
+function runProbe(dir, fetchStub) {
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: dir, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin') };
+  delete env.CI;
+  delete env.SCROOGE_NO_UPDATE_CHECK;
+  const preload = 'data:text/javascript,' + encodeURIComponent(`globalThis.fetch = ${fetchStub};`);
+  const r = spawnSync(process.execPath, ['--import', preload, PROBE], { encoding: 'utf8', env });
+  assert.equal(r.status, 0, `probe exited ${r.status}: ${r.stderr}`);
+  return readUpdateCache(path.join(dir, '.scrooge', 'update'));
+}
+const OFFLINE = "async () => { throw new Error('offline'); }";
+const FORBIDDEN = 'async () => ({ ok: false, status: 403, json: async () => ({}) })';
+
+// A failed probe that skips checkedAt leaves the once-a-day throttle disengaged,
+// so every session start respawns it for as long as the failure lasts.
+test('a failed probe stamps checkedAt and keeps the last known result', () => {
+  const dir = freshConfig();
+  const cachePath = path.join(dir, '.scrooge', 'update');
+  writeUpdateCache({ latest: '99.0.0', checkedAt: 1, behind: true, notifiedVersion: '99.0.0' }, cachePath);
+  const before = Date.now();
+  const c = runProbe(dir, FORBIDDEN);
+  assert.ok(c.checkedAt >= before, `checkedAt not refreshed: ${c.checkedAt}`);
+  assert.deepEqual({ ...c, checkedAt: 0 }, { latest: '99.0.0', checkedAt: 0, behind: true, notifiedVersion: '99.0.0' });
+});
+
+test('a failed first probe (no prior cache) still writes checkedAt', () => {
+  const dir = freshConfig();
+  const before = Date.now();
+  const c = runProbe(dir, OFFLINE);
+  assert.ok(c && c.checkedAt >= before, 'no cache written on a failed first probe');
+  assert.deepEqual({ ...c, checkedAt: 0 }, { latest: null, checkedAt: 0, behind: false, notifiedVersion: null });
+});
+
+test('a successful probe records latest/behind and keeps notifiedVersion', () => {
+  const dir = freshConfig();
+  writeUpdateCache({ latest: '1.0.0', checkedAt: 1, behind: false, notifiedVersion: '1.0.0' }, path.join(dir, '.scrooge', 'update'));
+  const c = runProbe(dir, "async () => ({ ok: true, json: async () => ({ tag_name: 'v99.0.0' }) })");
+  assert.equal(c.latest, '99.0.0');
+  assert.equal(c.behind, true);
+  assert.equal(c.notifiedVersion, '1.0.0');
+});

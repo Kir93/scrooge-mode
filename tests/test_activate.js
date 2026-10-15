@@ -20,6 +20,14 @@ const REPO_ROOT = path.join(HERE, '..');
 const HOOK = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-activate.js');
 const SESSION_FIXTURE = path.join(HERE, 'fixtures', 'sample-session.jsonl');
 
+// Hook-written session state now carries activatedAt (epoch ms, S3-4); register
+// assertions compare lang/dial/flags only, and activatedAt is pinned separately.
+function reg(s) {
+  if (!s) return s;
+  const { activatedAt: _at, ...rest } = s;
+  return rest;
+}
+
 const tmpDirs = [];
 function freshConfig() {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), 'scrooge-cfg-'));
@@ -77,7 +85,7 @@ function runHook(configDir, prompt, extra = {}, envOverrides = {}) {
     result = JSON.parse(r.stdout);
     ctx = result.hookSpecificOutput ? result.hookSpecificOutput.additionalContext : null;
   }
-  return { state: readState(path.join(configDir, '.scrooge', 'global')), ctx, result };
+  return { state: reg(readState(path.join(configDir, '.scrooge', 'global'))), ctx, result };
 }
 
 test('bare /scrooge on a fresh session activates en/full (G5 default)', () => {
@@ -314,11 +322,11 @@ test('session-scope: /scrooge off in one session does not clear another', () => 
   const cfg = freshConfig();
   runHook(cfg, '/scrooge ko', { session_id: 'sessA' });
   runHook(cfg, '/scrooge en', { session_id: 'sessB' });
-  assert.deepEqual(readState(statePathFor(cfg, 'sessA')), { lang: 'ko', dial: 'full', flags: [] });
-  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(statePathFor(cfg, 'sessA'))), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(statePathFor(cfg, 'sessB'))), { lang: 'en', dial: 'full', flags: [] });
   runHook(cfg, '/scrooge off', { session_id: 'sessA' });
   assert.equal(readState(statePathFor(cfg, 'sessA')), null);
-  assert.deepEqual(readState(statePathFor(cfg, 'sessB')), { lang: 'en', dial: 'full', flags: [] }); // untouched
+  assert.deepEqual(reg(readState(statePathFor(cfg, 'sessB'))), { lang: 'en', dial: 'full', flags: [] }); // untouched
 });
 
 test('session-scope: off on an active session injects a localized countermand', () => {
@@ -363,5 +371,114 @@ test('session-scope: off on an inactive session injects nothing', () => {
 test('session-scope: a sessionless payload falls back to the global state path', () => {
   const cfg = freshConfig();
   runHook(cfg, '/scrooge ko'); // no session_id → global
-  assert.deepEqual(readState(statePathFor(cfg, null)), { lang: 'ko', dial: 'full', flags: [] });
+  assert.deepEqual(reg(readState(statePathFor(cfg, null))), { lang: 'ko', dial: 'full', flags: [] });
+});
+
+// ── activatedAt stamping (S3-4 write side) ──────────────────────────────────
+
+// Stamped only on the inactive→active transition; a set on an already-active
+// session keeps it. Restamping on a lang/flag change made stats drop every
+// compressed turn before e.g. `/scrooge nolean`.
+test('activatedAt: stamped when a set turns the mode on, kept on any set while active', () => {
+  const cfg = freshConfig();
+  const sp = statePathFor(cfg, 'sessAt');
+  const before = Date.now();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessAt' });
+  const on = readState(sp).activatedAt;
+  assert.ok(on >= before && on <= Date.now(), String(on));
+  // Pin a sentinel so "kept" vs "restamped" is observable without timing.
+  fs.writeFileSync(sp, JSON.stringify({ lang: 'ko', dial: 'full', flags: [], activatedAt: 1000 }));
+  for (const p of ['/scrooge ko', '/scrooge en', '/scrooge lean', '/scrooge nolean', 'talk like scrooge']) {
+    runHook(cfg, p, { session_id: 'sessAt' });
+    assert.equal(readState(sp).activatedAt, 1000, p);
+  }
+  assert.equal(readState(sp).lang, 'en'); // the sets did apply
+  // off → set is a fresh inactive→active transition: restamped.
+  runHook(cfg, '/scrooge off', { session_id: 'sessAt' });
+  runHook(cfg, '/scrooge ko', { session_id: 'sessAt' });
+  assert.ok(readState(sp).activatedAt > 1000);
+});
+
+// A SessionStart seed was active from the session's start: unstamped, and a later
+// set keeps it absent. A UserPromptSubmit seed is an in-session transition (the
+// default appeared mid-session, or Codex's first prompt): stamped, and kept.
+test('activatedAt: a set on a SessionStart-seeded session keeps it absent (whole-session basis)', () => {
+  const cfg = freshConfig();
+  const sp = statePathFor(cfg, 'sessSeeded');
+  fs.mkdirSync(path.join(cfg, '.scrooge'), { recursive: true });
+  fs.writeFileSync(path.join(cfg, '.scrooge', 'default'), JSON.stringify({ lang: 'ko', dial: 'full', flags: ['lean'] }));
+  const r = spawnSync(process.execPath, [path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-session-start.js')], {
+    input: JSON.stringify({ session_id: 'sessSeeded', source: 'startup' }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '', SCROOGE_NO_UPDATE_CHECK: '1' },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal('activatedAt' in readState(sp), false);
+  runHook(cfg, '/scrooge nolean', { session_id: 'sessSeeded' });
+  assert.deepEqual(readState(sp), { lang: 'ko', dial: 'full', flags: [] });
+  // UPS seed: stamped, and a later set keeps that stamp.
+  const up = statePathFor(cfg, 'sessUpsSeeded');
+  runHook(cfg, '이 코드 설명해줘', { session_id: 'sessUpsSeeded' });
+  const at = readState(up).activatedAt;
+  assert.ok(Number.isFinite(at), `activatedAt ${at}`);
+  runHook(cfg, '/scrooge en', { session_id: 'sessUpsSeeded' });
+  assert.equal(readState(up).activatedAt, at);
+});
+
+test('activatedAt: an NL set that turns the mode on stamps it too', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '스크루지처럼 답해줘', { session_id: 'sessNlAt' });
+  assert.equal(typeof readState(statePathFor(cfg, 'sessNlAt')).activatedAt, 'number');
+});
+
+// ── default-seeded first turn (S3-7) ────────────────────────────────────────
+// Codex wires only UserPromptSubmit, so the turn that seeds a session from the
+// global default must carry the full rule itself; on Claude, SessionStart already
+// seeded + injected it, so the first prompt must NOT inject it a second time.
+
+const SESSION_START = path.join(REPO_ROOT, 'plugin', 'hooks', 'scrooge-session-start.js');
+
+function seedDefault(cfg, state) {
+  fs.mkdirSync(path.join(cfg, '.scrooge'), { recursive: true });
+  fs.writeFileSync(path.join(cfg, '.scrooge', 'default'), JSON.stringify(state));
+}
+
+test('a turn that seeds the session from the default injects the full rule (Codex: no SessionStart)', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: ['lean'] });
+  const first = runHook(cfg, '이 코드 설명해줘', { session_id: 'codexSeed' });
+  assert.match(first.ctx, /SCROOGE MODE ACTIVE — ko\/full \+ lean/);
+  assert.match(first.ctx, /Auto-Clarity/); // the full rule, not the reminder
+  const second = runHook(cfg, '이 코드 설명해줘', { session_id: 'codexSeed' });
+  assert.match(second.ctx, /SCROOGE 활성 \(ko\/full\)/); // seeded now → reminder only
+  assert.doesNotMatch(second.ctx, /SCROOGE MODE ACTIVE/);
+});
+
+test('Claude: SessionStart seeds + injects, so the first prompt stays reminder-only (no double full rule)', () => {
+  const cfg = freshConfig();
+  seedDefault(cfg, { lang: 'ko', dial: 'full', flags: [] });
+  const r = spawnSync(process.execPath, [SESSION_START], {
+    input: JSON.stringify({ session_id: 'claudeSeed', source: 'startup' }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(REPO_ROOT, 'plugin'), SCROOGE_DEFAULT_FLAGS: '', SCROOGE_NO_UPDATE_CHECK: '1' },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, /SCROOGE MODE ACTIVE — ko\/full/);
+  const { ctx } = runHook(cfg, '이 코드 설명해줘', { session_id: 'claudeSeed' });
+  assert.match(ctx, /SCROOGE 활성 \(ko\/full\)/);
+  assert.doesNotMatch(ctx, /SCROOGE MODE ACTIVE/);
+});
+
+// ── off tombstone (S3-6) ────────────────────────────────────────────────────
+
+test('off in a keyed session leaves a tombstone; a sessionless off deletes the global file', () => {
+  const cfg = freshConfig();
+  runHook(cfg, '/scrooge ko', { session_id: 'sessTomb' });
+  runHook(cfg, '/scrooge off', { session_id: 'sessTomb' });
+  const sp = statePathFor(cfg, 'sessTomb');
+  assert.equal(fs.existsSync(sp), true); // kept as an explicit-off marker
+  assert.equal(readState(sp), null); // …that reads as inactive
+  runHook(cfg, '/scrooge ko'); // sessionless → global
+  runHook(cfg, '/scrooge off');
+  assert.equal(fs.existsSync(statePathFor(cfg, null)), false);
 });

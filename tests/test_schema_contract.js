@@ -104,8 +104,10 @@ test('activate: the documented payload activates and routes state to the derived
   runHook(ACTIVATE_HOOK, ACTIVATE_PAYLOAD, cfg);
   // `data.prompt` (/scrooge en full) was parsed AND the key was derived from the
   // stdin fields — so the state lands at sessions/<derived key> with en/full.
-  const state = readState(sessionStateFile(cfg, EXPECTED_KEY));
+  const { activatedAt, ...state } = readState(sessionStateFile(cfg, EXPECTED_KEY));
   assert.deepEqual(state, { lang: 'en', dial: 'full', flags: [] });
+  // An inactive→active set stamps the transition time.
+  assert.ok(Number.isFinite(activatedAt), `activatedAt not finite: ${activatedAt}`);
 });
 
 test('activate: a sessionless payload degrades to the global state file without throwing', () => {
@@ -113,7 +115,9 @@ test('activate: a sessionless payload degrades to the global state file without 
   // No session_id / transcript_path → null key → global fallback, no crash.
   runHook(ACTIVATE_HOOK, { prompt: '/scrooge ko full' }, cfg);
   assert.equal(readState(sessionStateFile(cfg, EXPECTED_KEY)), null);
-  assert.deepEqual(readState(globalStateFile(cfg)), { lang: 'ko', dial: 'full', flags: [] });
+  const { activatedAt, ...state } = readState(globalStateFile(cfg));
+  assert.deepEqual(state, { lang: 'ko', dial: 'full', flags: [] });
+  assert.ok(Number.isFinite(activatedAt), `activatedAt not finite: ${activatedAt}`);
 });
 
 // ── session-start hook (black-box): source + key field contract ──────────────

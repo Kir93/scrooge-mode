@@ -20,6 +20,8 @@ import {
   deriveSessionKey,
   getStatePath,
   readVersionMarker,
+  writeOffTombstone,
+  isOffTombstone,
 } from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
@@ -166,4 +168,51 @@ test('readVersionMarker strips control/escape bytes from a tampered marker', () 
   assert.match(v, /^[0-9A-Za-z.\-+]*$/); // only semver-safe chars survive
   assert.equal(v.includes(String.fromCharCode(27)), false); // ESC stripped
   assert.equal(v.includes(String.fromCharCode(7)), false); // BEL stripped
+});
+
+// activatedAt (S3-4): optional epoch-ms field the activation hook stamps and the
+// stats hook reads. A legacy file stays valid with no key; a present value must be
+// a finite number, else the whole state fails closed like a tampered flag.
+test('readState preserves a finite activatedAt; a legacy file carries no key', () => {
+  const p = path.join(tmpDir(), 'state');
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full', flags: [], activatedAt: 1760000000000 }));
+  assert.deepEqual(readState(p), { lang: 'ko', dial: 'full', flags: [], activatedAt: 1760000000000 });
+  fs.writeFileSync(p, JSON.stringify({ lang: 'ko', dial: 'full', flags: [] }));
+  assert.equal('activatedAt' in readState(p), false);
+});
+
+test('readState rejects a present non-number / non-finite activatedAt (tamper)', () => {
+  const p = path.join(tmpDir(), 'state');
+  // 1e999 parses to Infinity; null and a numeric string are not numbers.
+  for (const raw of ['1e999', 'null', '"1760000000000"']) {
+    fs.writeFileSync(p, `{"lang":"ko","dial":"full","flags":[],"activatedAt":${raw}}`);
+    assert.equal(readState(p), null, raw);
+  }
+  assert.equal(isValidState({ lang: 'ko', dial: 'full', activatedAt: NaN }), false);
+  assert.equal(isValidState({ lang: 'ko', dial: 'full', activatedAt: 1 }), true);
+});
+
+test('writeState round-trips activatedAt within MAX_STATE_BYTES', () => {
+  const p = path.join(tmpDir(), 'state');
+  const widest = { lang: 'ko', dial: 'full', flags: ['lean'], activatedAt: Number.MAX_SAFE_INTEGER };
+  assert.equal(writeState(widest, p), true);
+  assert.ok(fs.statSync(p).size <= 256);
+  assert.deepEqual(readState(p), widest);
+  // Without the field the written file stays legacy-shaped.
+  writeState({ lang: 'ko', dial: 'full', flags: [] }, p);
+  assert.equal(fs.readFileSync(p, 'utf8').includes('activatedAt'), false);
+});
+
+// Off tombstone (S3-6): an explicit off is kept as a marker, not a deleted file, so
+// it is distinguishable from "never activated" — yet every state reader sees it as
+// inactive, and a later write over the same path clears it.
+test('off tombstone reads as no state and is cleared by a later writeState', () => {
+  const p = path.join(tmpDir(), 'state');
+  assert.equal(isOffTombstone(p), false); // missing ≠ tombstoned
+  assert.equal(writeOffTombstone(p), true);
+  assert.equal(isOffTombstone(p), true);
+  assert.equal(readState(p), null);
+  writeState({ lang: 'ko', dial: 'full' }, p);
+  assert.equal(isOffTombstone(p), false);
+  assert.deepEqual(readState(p), { lang: 'ko', dial: 'full', flags: [] });
 });

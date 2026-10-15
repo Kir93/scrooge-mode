@@ -34,7 +34,8 @@ import {
   isUpdateCheckDisabled,
   defaultFlags,
   DEFAULT_ON_SINCE,
-  sameState,
+  isRedundantMarker,
+  isOffTombstone,
   migrateLegacyState,
 } from './scrooge-config.js';
 import {
@@ -51,7 +52,10 @@ import {
 //   - a marker equal to the saved default is pure redundancy (resume re-seeds
 //     from the default), so it only needs to outlive an active session: 1 day;
 //   - a marker that DIFFERS from the default carries a session override worth
-//     keeping for resume: 14 days;
+//     keeping for resume: 14 days. An off tombstone (`/scrooge off`) reads as no
+//     state, never equals the default, and so lands here too — the session stays
+//     off on resume until it ages out. So does a marker carrying activatedAt (a
+//     mid-session activation): a re-seed would drop the stamp stats relies on;
 //   - a hard count cap evicts oldest-first as a burst backstop (claude-hud's
 //     TTL + cap pattern).
 const STALE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -76,7 +80,7 @@ function sweepStaleState(now) {
           fs.unlinkSync(p);
           continue;
         }
-        if (age > REDUNDANT_MS && sameState(readState(p), def)) {
+        if (age > REDUNDANT_MS && isRedundantMarker(readState(p), def)) {
           fs.unlinkSync(p);
           continue;
         }
@@ -162,7 +166,7 @@ function applyNewDefaultFlags(statePath, state, from) {
   state.flags = VALID_FLAGS.filter((f) => state.flags.includes(f) || added.includes(f));
   writeState(state, statePath);
   const def = readState(getDefaultPath());
-  if (def) writeState({ ...def, flags: state.flags }, getDefaultPath());
+  if (def) writeState({ lang: def.lang, dial: def.dial, flags: state.flags }, getDefaultPath()); // never an activatedAt
   return added;
 }
 
@@ -277,8 +281,11 @@ function handlePayload(data) {
       // when prior-activation evidence exists that the upgrade may have stranded —
       // never to a user who installed Scrooge but never activated it. An update
       // notice piggybacks here for a stranded prior user.
+      // An off-tombstoned session is inactive by the user's own choice, not by the
+      // upgrade, so it gets no "re-activate" nudge.
       const parts = [];
-      if (upgraded && hasActivationArtifact()) parts.push(buildUpgradeNotice(upgraded));
+      const tombstoned = isOffTombstone(getStatePath(sessionKey));
+      if (upgraded && !tombstoned && hasActivationArtifact()) parts.push(buildUpgradeNotice(upgraded));
       if (updateNotice) parts.push(updateNotice);
       if (parts.length) emit(parts.join('\n\n'));
       return;

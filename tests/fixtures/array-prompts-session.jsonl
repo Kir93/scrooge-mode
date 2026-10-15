@@ -1,0 +1,11 @@
+{"type":"user","timestamp":"2026-10-02T00:00:01.000Z","message":{"role":"user","content":[{"type":"text","text":"IDE prompt"}]}}
+{"type":"assistant","timestamp":"2026-10-02T00:00:02.000Z","message":{"id":"msg_A1","model":"claude-opus-4-8","content":[{"type":"tool_use","id":"toolu_A","name":"Read","input":{}}],"usage":{"input_tokens":100,"output_tokens":10,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}
+{"type":"user","timestamp":"2026-10-02T00:00:03.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_A","content":"file body"}]}}
+{"type":"user","timestamp":"2026-10-02T00:00:04.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_A","content":"ok"},{"type":"text","text":"hook feedback beside a tool result"}]}}
+{"type":"user","timestamp":"2026-10-02T00:01:00.000Z","message":{"role":"user","content":[{"type":"text","text":"<ide_opened_file>src/a.js</ide_opened_file>"},{"type":"text","text":"IDE prompt with file context"}]}}
+{"type":"user","timestamp":"2026-10-02T00:02:00.000Z","message":{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"iVBORw0KGgo="}},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"iVBORw0KGgo="}},{"type":"text","text":"what is this?"}]}}
+{"type":"user","timestamp":"2026-10-02T00:02:00.001Z","isMeta":true,"message":{"role":"user","content":[{"type":"text","text":"[Image: source: /tmp/a.png]"}]}}
+{"type":"user","timestamp":"2026-10-02T00:03:00.000Z","message":{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"iVBORw0KGgo="}}]}}
+{"type":"user","timestamp":"2026-10-02T00:03:30.000Z","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user]"}]}}
+{"type":"user","timestamp":"2026-10-02T00:04:00.000Z","isCompactSummary":true,"message":{"role":"user","content":[{"type":"text","text":"This session is being continued from a previous conversation."}]}}
+{"type":"assistant","timestamp":"2026-10-02T00:05:00.000Z","message":{"id":"msg_A2","model":"claude-opus-4-8","content":[{"type":"text","text":"answer"}],"usage":{"input_tokens":200,"output_tokens":20,"cache_read_input_tokens":0,"cache_creation_input_tokens":0}}}

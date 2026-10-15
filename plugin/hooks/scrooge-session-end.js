@@ -7,7 +7,10 @@
 // accumulation at "sessions holding an explicit override + crashed sessions"
 // — the latter remain bounded by the SessionStart 14-day sweep. Markers that
 // DIFFER from the default (session-local off, other lang/dial/flags) are kept
-// so resuming that session retains its override.
+// so resuming that session retains its override. A session-local off is the
+// off tombstone: readState sees no state there, so the early return keeps it.
+// A marker carrying activatedAt (a mid-session activation) is kept too: a
+// re-seed from the default carries no stamp, so stats would lose the boundary.
 //
 // Best-effort and fail-silent: session teardown must never break on hygiene.
 
@@ -20,7 +23,7 @@ import {
   getStatePath,
   getDefaultPath,
   readState,
-  sameState,
+  isRedundantMarker,
   migrateLegacyState,
 } from './scrooge-config.js';
 
@@ -32,7 +35,7 @@ export function handlePayload(payload) {
   const state = readState(statePath);
   if (!state) return;
   const def = readState(getDefaultPath());
-  if (!sameState(state, def)) return; // explicit override — keep for resume
+  if (!isRedundantMarker(state, def)) return; // override or mid-session activatedAt — keep for resume
   try {
     fs.unlinkSync(statePath); // does not follow symlinks
   } catch (_) {

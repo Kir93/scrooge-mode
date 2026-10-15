@@ -7,7 +7,8 @@
 //
 // Injection is two-stage:
 //   - On an activation/change turn (the prompt held a recognized /scrooge
-//     command), inject the FULL rule body, loaded from the registry.
+//     command) or a turn that seeded the session from the global default,
+//     inject the FULL rule body, loaded from the registry.
 //   - On every other turn while a mode is active, inject a lightweight reminder
 //     so the register survives context drift / compression.
 //
@@ -32,6 +33,7 @@ import {
   readState,
   writeState,
   clearState,
+  writeOffTombstone,
   resolveActiveState,
   getStatePath,
   getDefaultPath,
@@ -239,7 +241,8 @@ function handlePayload(data) {
     // Slash command wins (SC 3.3); natural-language intent is the fallback when
     // the prompt holds no recognized /scrooge command. Both return the same
     // shape, so the set/off branches below handle either source uniformly.
-    const cmd = parseCommand(prompt) || parseNaturalActivation(prompt);
+    const slashCmd = parseCommand(prompt);
+    const cmd = slashCmd || parseNaturalActivation(prompt);
 
     if (cmd && cmd.action === 'off') {
       // Read the effective register (per-session, else the global default) before
@@ -249,7 +252,11 @@ function handlePayload(data) {
       // touches them), so a concurrent worktree session is not yanked mid-run.
       // Only inject when a mode was actually active — nothing to counter otherwise.
       const prior = readState(statePath) || readState(getDefaultPath());
-      clearState(statePath);
+      // A keyed session keeps an off tombstone instead of losing its file, so a
+      // later activation elsewhere (which rewrites the default) cannot re-seed it.
+      // A sessionless host has no session identity to protect: plain delete.
+      if (sessionKey) writeOffTombstone(statePath);
+      else clearState(statePath);
       // Accepted race: a concurrent activation in another session can write a new
       // default between the read above and this clear, which then removes it (the
       // global default fails to update). Rare and self-healing — re-run `/scrooge`.
@@ -268,11 +275,14 @@ function handlePayload(data) {
       // Base for the merge: the session's own state, else the global default
       // (so a change in a default-seeded session keeps the default's lang/flags),
       // else a fresh state whose flags come from SCROOGE_DEFAULT_FLAGS.
-      const base =
-        readState(statePath) ||
-        readState(getDefaultPath()) ||
-        { ...DEFAULT_STATE, flags: defaultFlags() };
-      const lang = cmd.bare ? base.lang : cmd.lang || base.lang;
+      const own = readState(statePath);
+      const existing = own || readState(getDefaultPath());
+      const base = existing || { ...DEFAULT_STATE, flags: defaultFlags() };
+      // NL infers lang from whichever phrase matched, so it may only pick the lang
+      // of a FRESH state; with an existing session state or default, an NL set
+      // keeps that lang (a slash command's explicit lang token still wins).
+      const keepLang = cmd.bare || (!slashCmd && existing);
+      const lang = keepLang ? base.lang : cmd.lang || base.lang;
       const dial = cmd.bare ? 'full' : cmd.dial || base.dial;
       // Bare /scrooge is a reset-to-default gesture (dial→full), so flags reset
       // to the env default too — a stray bare toggle never leaves stale flags.
@@ -287,10 +297,18 @@ function handlePayload(data) {
         flags = VALID_FLAGS.filter((f) => set.has(f));
       }
       const next = { lang, dial, flags };
-      writeState(next, statePath);
+      // activatedAt marks when the mode turned on in this session: stamped only on
+      // the inactive→active transition (no own state — incl. an off tombstone, which
+      // this write clears). A set on an already-active session (lang/dial/flag
+      // change) keeps the existing stamp, and absent stays absent — a session
+      // seeded at SessionStart was active from its start, so the whole session
+      // stays the basis (a seed in the no-command branch below is stamped).
+      const activatedAt = own ? own.activatedAt : Date.now();
+      writeState({ ...next, activatedAt }, statePath);
       // Register the activation as the GLOBAL default so every new session
       // auto-activates with it (the "type once anywhere → on everywhere" gesture).
-      // `/scrooge off` clears it again. The last /scrooge run anywhere wins.
+      // `/scrooge off` clears it again. The last /scrooge run anywhere wins. The
+      // default is a preference, not an activation, so it carries no activatedAt.
       writeState(next, getDefaultPath());
 
       // Activation/change turn → inject the full rule body + active fragments.
@@ -306,9 +324,27 @@ function handlePayload(data) {
 
     // No command this turn — reinforce the active mode with a reminder. Resolve
     // through the global default so a session that never explicitly activated
-    // (but a default exists) still gets seeded + reminded.
-    const state = resolveActiveState(statePath);
-    if (state) emit(buildReminder(state.lang, state.dial, state.flags));
+    // (but a default exists) still gets seeded. When THIS turn did the seeding,
+    // inject the full rule instead: Codex wires no SessionStart, so otherwise a
+    // default-seeded session would only ever see the short reminder (no
+    // Auto-Clarity, Boundaries, or lean safety floor). On Claude, SessionStart
+    // already seeded and injected the full rule, so own state exists here and
+    // the turn stays reminder-only.
+    const own = readState(statePath);
+    const state = own || resolveActiveState(statePath);
+    if (!state) return;
+    // A seed here is an inactive→active transition, so it is stamped (unlike the
+    // SessionStart seed): on Claude, SessionStart already seeded any session whose
+    // default existed at its start, so this seed means the default appeared
+    // mid-session (another session ran /scrooge); on Codex (no SessionStart) it is
+    // the first prompt, where "now" equals the whole session.
+    if (!own) writeState({ ...state, activatedAt: Date.now() }, statePath);
+    const body = own ? null : assembleRuleBody(resolveRepoRoot(), state.lang, state.dial, state.flags);
+    emit(
+      body
+        ? buildFullInjection(state.lang, state.dial, body, state.flags)
+        : buildReminder(state.lang, state.dial, state.flags)
+    );
   } catch (e) {
     // Silent fail — never break prompt submission.
   }

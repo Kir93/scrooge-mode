@@ -23,8 +23,12 @@
 //          parallel table. Per dial: { ratio, results, n, model } — `results` is the
 //          backing benchmark file(s), `n` the sample size, `model` the measured model.
 //          Every row is derived from a file under benchmarks/published/, so anyone can
-//          recompute the ratio: `report.py --input <results> --paired`, then
-//          1 − median(scrooge)/median(normal), rounded to 2 decimals. That published
+//          recompute the ratio: `report.py --input <results> --paired --drop-tool-rows`,
+//          then 1 − median(scrooge)/median(normal) on the unsuffixed `scrooge:<lang>/full`
+//          arm (the v027 files also carry a same-run `@v0.26.0` arm), rounded to 2
+//          decimals. Rows are the claude-opus-5-5 held-out run (register v0.27.0); the
+//          earlier claude-opus-4-8 ratios (ko .69 en .67 ja .65 hi .63 zh .67) were
+//          retired when the README headline moved to the same files. That published
 //          derivation is the single source these ratios and the README tables share;
 //          tests/test_doc_parity.js asserts the two still agree. (Before this, the
 //          ratios were carried forward from an older opus-4-7 run, ko pointed at a
@@ -52,14 +56,18 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — 압축 모드 해제. 이번 턴부터 평소 register(일반 문체)로 복귀.',
     flagHint: { lean: 'lean(최소 코드)' },
     savings: {
-      full: { ratio: 0.69, results: ['benchmarks/published/results-ko-clean-opus48.jsonl'], n: 21, model: 'claude-opus-4-8' },
+      full: { ratio: 0.60, results: ['benchmarks/published/results-ko-report-v027.jsonl'], n: 19, model: 'claude-opus-5-5' },
     },
     nlCue: {
       name: /스크루지/,
       // Activation triggers: the "scrooge" name plus an explicit action cue. The bare
       // phrases "압축 모드" / "토큰 아껴" are intentionally NOT triggers — without the
-      // name they fire on ordinary talk ("이미지 압축 모드로 저장").
-      activate: /스크루지\s*(?:처럼|모드|로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))/,
+      // name they fire on ordinary talk ("이미지 압축 모드로 저장"). The bare mode noun
+      // ("스크루지 모드") is a topic as often as a request ("README의 스크루지 모드 섹션
+      // 다듬어줘"), so it activates only as the whole prompt, optionally with an on/use/
+      // please word (켜 줘 / 로 해줘 / 써줘); verb forms (처럼 / 모드로 답해 / 모드로 전환…)
+      // match anywhere.
+      activate: /스크루지\s*(?:처럼|(?:모드\s*)?로\s*(?:답|말|얘기|대답)|으로\s*(?:답|말))|^스크루지\s*모드\s*(?:로\s*)?(?:전환(?:\s*해\s*(?:줘요|줘|주세요))?|켜\s*(?:줘요|줘|요|기|자)?|해\s*(?:줘요|줘|주세요)|써\s*(?:줘요|줘)|on|부탁(?:해요|해|합니다|드려요)?)?\s*[.!~]*$/i,
       // An optional "모드" may sit between the name and the off cue, so "스크루지 모드 꺼"
       // deactivates instead of matching the activation pattern's bare "스크루지 모드".
       off: /스크루지\s*(?:모드\s*)?(?:꺼|끄(?:기|자|줘|는)?|그만|중지|비활성|off)/,
@@ -79,13 +87,16 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — compression mode deactivated. Return to your normal register from this turn on.',
     flagHint: { lean: 'lean (minimal code)' },
     savings: {
-      full: { ratio: 0.67, results: ['benchmarks/published/results-en-clean-opus48.jsonl'], n: 24, model: 'claude-opus-4-8' },
+      full: { ratio: 0.55, results: ['benchmarks/published/results-en-report-v027.jsonl'], n: 19, model: 'claude-opus-5-5' },
     },
     nlCue: {
       name: /scrooge/i,
       // The "be a token miser" persona stays on the EN side because it names Scrooge
-      // unambiguously even without the literal word.
-      activate: /\btalk\s+like\s+(?:a\s+)?scrooge\b|\bscrooge\s+mode\b|\bbe\s+(?:a\s+)?token\s+miser\b|\b(?:activate|enable|turn\s+on)\s+scrooge\b/i,
+      // unambiguously even without the literal word. The bare "scrooge mode" noun is a
+      // topic as often as a request ("update the scrooge mode section"), so it activates
+      // only as the whole prompt (optionally + use/on/now/please); verb forms (activate /
+      // enable / turn on / switch to scrooge) match anywhere.
+      activate: /\btalk\s+like\s+(?:a\s+)?scrooge\b|\bbe\s+(?:a\s+)?token\s+miser\b|\b(?:activate|enable|turn\s+on)\s+scrooge\b|^(?:please\s+)?(?:use\s+|switch\s+to\s+)?scrooge\s+mode(?:\s+(?:on|now))?(?:\s*,?\s*please)?\s*[.!]*$/i,
       off: /\b(?:stop|disable|turn\s+off|deactivate)\s+scrooge\b|\bscrooge(?:\s+mode)?\s+off\b/i,
       // Bare "no" is excluded: it appears in benign phrases ("no rush", "no need").
       negate: /\b(?:don'?t|do\s+not|never)\b/i,
@@ -105,17 +116,15 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — 圧縮モード解除。今ターンから通常の register（通常文体）に復帰。',
     flagHint: { lean: 'lean（最小コード）' },
     savings: {
-      // Held-out corpus only (integrity-sweep Task 5). The old 0.63 averaged an
-      // N=15 tuning run with the held-out one; that tuning corpus is gitignored,
-      // so nobody could recompute the average — the README table it backed was
-      // dropped for the same reason.
-      full: { ratio: 0.65, results: ['benchmarks/published/results-ja-report.jsonl'], n: 10, model: 'claude-opus-4-8' },
+      full: { ratio: 0.62, results: ['benchmarks/published/results-ja-report-v027.jsonl'], n: 11, model: 'claude-opus-5-5' },
     },
     nlCue: {
       name: /スクルージ/,
       // Japanese has no inter-word spaces, so `\b` is inert — the trigger anchors on
-      // explicit cue strings after the name (みたいに / モード / で答え…).
-      activate: /スクルージ\s*(?:みたいに|のように|っぽく|モード|で\s*(?:答|話|返答))/,
+      // explicit cue strings after the name (みたいに / モードで答え…). The bare モード noun
+      // activates only as the whole prompt (optionally + オン/で/お願い) — inside a request
+      // ("READMEのスクルージモードの節を直して") it is a topic, not a command.
+      activate: /スクルージ\s*(?:みたいに|のように|っぽく|(?:モード\s*)?で\s*(?:答|話|返答))|^スクルージ\s*モード\s*(?:を?\s*(?:オン|on)(?:\s*に(?:して)?)?|で(?:\s*お願い(?:します)?)?|お願い(?:します)?)?\s*[。！!]*$/i,
       off: /スクルージ\s*(?:モード\s*)?(?:やめ|止め|停止|オフ|無効|切(?:っ|る)|off)/i,
       negate: /しないで|ないで|するな|しなくて|せず/,
       meta: /説明|ロジック|バグ|仕組み|どうやって|なぜ|どういう/,
@@ -133,14 +142,16 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — संपीड़न मोड बंद। इस turn से सामान्य register (सामान्य शैली) में वापस।',
     flagHint: { lean: 'lean (न्यूनतम कोड)' },
     savings: {
-      full: { ratio: 0.63, results: ['benchmarks/published/results-hi-report.jsonl'], n: 11, model: 'claude-opus-4-8' },
+      full: { ratio: 0.63, results: ['benchmarks/published/results-hi-report-v027.jsonl'], n: 11, model: 'claude-opus-5-5' },
     },
     nlCue: {
       name: /स्क्रूज/,
       // Devanagari has spaces, but JS `\b` is ASCII-only and inert on it — the trigger
-      // anchors on explicit cue strings after the name (की तरह / जैसे / मोड). Latin
-      // "scrooge" input is already caught by the en cue; the hi row owns Devanagari.
-      activate: /स्क्रूज\s*(?:की\s*तरह|जैसे|मोड)/,
+      // anchors on explicit cue strings after the name (की तरह / जैसे / मोड में जवाब). The
+      // bare मोड noun activates only as the whole prompt (optionally + चालू/please) —
+      // inside a request it is a topic. Latin "scrooge" input is already caught by the
+      // en cue; the hi row owns Devanagari.
+      activate: /स्क्रूज\s*(?:की\s*तरह|जैसे|मोड\s*में\s*(?:जवाब|बात|बोल))|^(?:कृपया\s*)?स्क्रूज\s*मोड\s*(?:(?:चालू|ऑन)(?:\s*करो)?|on|please|कृपया)?\s*[।!.]*$/i,
       off: /स्क्रूज\s*(?:मोड\s*)?(?:बंद|रोक(?:ो)?|हटाओ|अक्षम|निष्क्रिय|off)/i,
       // मत = imperative "don't" (space-anchored so it never fires inside मतलब etc.).
       // नहीं (bare declarative "no") is intentionally excluded, like the en bare-"no".
@@ -160,14 +171,17 @@ export const LANG_META = {
     countermand: 'SCROOGE OFF — 压缩模式解除。本回合起回到日常 register(常规文体)。',
     flagHint: { lean: 'lean(最小代码)' },
     savings: {
-      full: { ratio: 0.67, results: ['benchmarks/published/results-zh-report.jsonl'], n: 11, model: 'claude-opus-4-8' },
+      // n=10: --drop-tool-rows drops one tool-using key (N=11 without it reads +62.5%).
+      full: { ratio: 0.65, results: ['benchmarks/published/results-zh-report-v027.jsonl'], n: 10, model: 'claude-opus-5-5' },
     },
     nlCue: {
       name: /斯克鲁奇/,
       // Chinese has no inter-word spaces, so JS `\b` is inert — the trigger anchors on
-      // explicit cue strings around the name (一样 / 那样 / 模式 / 来答…). Latin "scrooge"
-      // input is already caught by the en cue; the zh row owns the 斯克鲁奇 transliteration.
-      activate: /斯克鲁奇\s*(?:一样|那样|模式|风格|来\s*(?:答|回答|说|讲))/,
+      // explicit cue strings around the name (一样 / 那样 / 风格 / 模式回答 / 来答…). The bare
+      // 模式 noun activates only as the whole prompt (optionally + 请/开启/吧) — inside a
+      // request it is a topic. Latin "scrooge" input is already caught by the en cue; the
+      // zh row owns the 斯克鲁奇 transliteration.
+      activate: /斯克鲁奇\s*(?:一样|那样|风格|(?:模式\s*)?来\s*(?:答|回答|说|讲)|模式\s*回答)|^(?:请\s*)?(?:开启|打开|启用)?\s*斯克鲁奇\s*模式\s*(?:开启|打开|启用|on)?\s*吧?\s*[。！!]*$/i,
       // Order-flexible: Chinese puts the off verb after the name (斯克鲁奇关闭) OR before
       // it (关闭斯克鲁奇), unlike the KO/JA name-then-cue order — so both orders match.
       off: /斯克鲁奇\s*(?:模式\s*)?(?:关闭|关掉|停止|停用|禁用|退出|off)|(?:关闭|关掉|停止|停用|禁用|退出)\s*斯克鲁奇/i,

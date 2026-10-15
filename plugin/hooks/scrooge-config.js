@@ -113,8 +113,8 @@ export function defaultFlags() {
   return parseFlagList(raw);
 }
 
-// Longest legitimate state payload is ~45 bytes
-// ({"lang":"ko","dial":"full","flags":["lean"]}). The suffix is a short
+// Longest legitimate state payload is ~74 bytes
+// ({"lang":"ko","dial":"full","flags":["lean"],"activatedAt":1760000000000}). The suffix is a short
 // pre-rendered badge string ("⛏ ~12.3k saved (est)"). 256 keeps ample headroom
 // for the flags array without widening the symlink-clobber read window.
 const MAX_STATE_BYTES = 256;
@@ -237,6 +237,15 @@ export function isValidState(state) {
   // validates and is normalized to [] by readState. When present it must be an
   // array of whitelisted tokens — a non-array or any unknown token (e.g. an
   // injected ['xss']) marks tampering and fails the whole state closed.
+  // activatedAt (epoch ms of the in-session inactive→active transition) is optional
+  // the same way: absent on legacy files, seeded sessions and the global default, but a
+  // present non-number / non-finite value marks tampering and fails closed.
+  if (
+    state.activatedAt !== undefined &&
+    !(typeof state.activatedAt === 'number' && Number.isFinite(state.activatedAt))
+  ) {
+    return false;
+  }
   if (state.flags === undefined) return true;
   return (
     Array.isArray(state.flags) && state.flags.every((f) => VALID_FLAGS.includes(f))
@@ -244,14 +253,21 @@ export function isValidState(state) {
 }
 
 // Structural equality of two {lang, dial, flags} states (flags order-insensitive).
-// Shared by the SessionEnd marker cleanup and the SessionStart sweep: both delete
-// a per-session marker only when it carries nothing beyond the saved default.
 export function sameState(a, b) {
   if (!a || !b) return false;
   if (a.lang !== b.lang || a.dial !== b.dial) return false;
   const fa = [...(a.flags || [])].sort();
   const fb = [...(b.flags || [])].sort();
   return fa.length === fb.length && fa.every((f, i) => f === fb[i]);
+}
+
+// A per-session marker carries nothing beyond the saved default — safe to delete,
+// since resume re-seeds an equal state. Shared by the SessionEnd marker cleanup and
+// the SessionStart sweep. A marker with activatedAt is never redundant: it records a
+// mid-session activation that a re-seed (which carries no stamp) would lose, so
+// stats would fall back to counting the whole session.
+export function isRedundantMarker(state, def) {
+  return !!state && state.activatedAt === undefined && sameState(state, def);
 }
 
 // Resolve a directory to its real path, refusing attacker-planted symlinks.
@@ -400,6 +416,9 @@ export function readState(statePath = getStatePath()) {
     dial: migrateDial(parsed.dial),
     flags: parsed.flags === undefined ? [] : parsed.flags,
   };
+  // activatedAt is carried only when present, so a legacy file reads back exactly
+  // {lang, dial, flags} (absent → undefined, not a key holding undefined).
+  if (parsed.activatedAt !== undefined) state.activatedAt = parsed.activatedAt;
   return isValidState(state) ? state : null;
 }
 
@@ -411,6 +430,8 @@ export function writeState(state, statePath = getStatePath()) {
       lang: state.lang,
       dial: state.dial,
       flags: Array.isArray(state.flags) ? state.flags : [],
+      // undefined is dropped by JSON.stringify, so a state without it stays legacy-shaped.
+      activatedAt: state.activatedAt,
     })
   );
 }
@@ -427,18 +448,46 @@ export function clearState(statePath = getStatePath()) {
   }
 }
 
+// Per-session off tombstone. `/scrooge off` writes this in place of the session's
+// state instead of deleting the file, so "explicitly off" stays distinguishable
+// from "never activated": without it, a later activation in another session
+// rewrites the global default and the offed session re-seeds from it on its next
+// turn — breaking "a session already running keeps its own register". It shares
+// the state file's path, so any later set overwrites (clears) it, and every
+// state reader (readState, stats, statusline) already sees it as inactive.
+const OFF_TOMBSTONE = '{"off":true}';
+
+export function writeOffTombstone(statePath) {
+  return safeWriteFile(statePath, OFF_TOMBSTONE);
+}
+
+export function isOffTombstone(statePath) {
+  const raw = safeReadFile(statePath, MAX_STATE_BYTES);
+  if (raw === null) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    return !!parsed && parsed.off === true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Resolve the active state for a session path: the session's own per-session
 // state, or — when absent — the global default (getDefaultPath), seeded into the
 // session file so per-turn reinjection and `/scrooge off` operate on a real
-// per-session file thereafter. Returns null when neither exists (inactive).
-// Per-session state always wins over the global default.
+// per-session file thereafter. Returns null when neither exists (inactive) or the
+// session holds an off tombstone (never re-seeded). Per-session state always wins
+// over the global default. The seed carries no activatedAt: a seeded session was
+// active from its start, so absent = the whole session is the stats basis.
 export function resolveActiveState(statePath = getStatePath(), defaultPath = getDefaultPath()) {
   const own = readState(statePath);
   if (own) return own;
+  if (isOffTombstone(statePath)) return null;
   const def = readState(defaultPath);
   if (!def) return null;
-  writeState(def, statePath); // seed so the session is self-contained hereafter
-  return def;
+  const seeded = { lang: def.lang, dial: def.dial, flags: def.flags };
+  writeState(seeded, statePath); // seed so the session is self-contained hereafter
+  return seeded;
 }
 
 // Strip control bytes (terminal-escape / OSC injection) and cap the byte length.

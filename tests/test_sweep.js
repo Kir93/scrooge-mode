@@ -10,7 +10,14 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { sweepStaleState } from '../plugin/hooks/scrooge-session-start.js';
-import { getStatePath, getDefaultPath, writeState, readState } from '../plugin/hooks/scrooge-config.js';
+import {
+  getStatePath,
+  getDefaultPath,
+  writeState,
+  readState,
+  writeOffTombstone,
+  isOffTombstone,
+} from '../plugin/hooks/scrooge-config.js';
 
 const tmpDirs = [];
 function freshConfig() {
@@ -73,6 +80,40 @@ test('with no default saved, 1-day redundancy pruning never applies', () => {
     writeMarkerAgedDays('lonely', DEFAULT, 5, now); // no default → treated as override
     sweepStaleState(now);
     assert.deepEqual(readState(getStatePath('lonely')), DEFAULT);
+  });
+});
+
+// S3-6: an off tombstone is an explicit session override (stay off on resume), so
+// it follows the 14-day override rule — never the 1-day default-equal rule.
+test('off tombstones survive past 1 day and expire after 14 days', () => {
+  withConfigDir(freshConfig(), () => {
+    const now = Date.now();
+    writeState(DEFAULT, getDefaultPath());
+    for (const [key, days] of [['recentOff', 5], ['ancientOff', 15]]) {
+      writeOffTombstone(getStatePath(key));
+      const t = new Date(now - days * DAY);
+      fs.utimesSync(getStatePath(key), t, t);
+    }
+    sweepStaleState(now);
+    assert.equal(isOffTombstone(getStatePath('recentOff')), true);
+    assert.equal(fs.existsSync(getStatePath('ancientOff')), false);
+  });
+});
+
+// A default-equal marker carrying activatedAt is not redundant (a re-seed drops the
+// stamp stats relies on): it follows the 14-day rule, not the 1-day one.
+test('default-equal markers carrying activatedAt survive past 1 day and expire after 14', () => {
+  withConfigDir(freshConfig(), () => {
+    const now = Date.now();
+    writeState(DEFAULT, getDefaultPath());
+    for (const [key, days] of [['recentAt', 5], ['ancientAt', 15]]) {
+      writeState({ ...DEFAULT, activatedAt: 1000 }, getStatePath(key));
+      const t = new Date(now - days * DAY);
+      fs.utimesSync(getStatePath(key), t, t);
+    }
+    sweepStaleState(now);
+    assert.equal(readState(getStatePath('recentAt'))?.activatedAt, 1000);
+    assert.equal(fs.existsSync(getStatePath('ancientAt')), false);
   });
 });
 
