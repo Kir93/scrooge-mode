@@ -134,6 +134,18 @@ def _load(name, rel):
     return mod
 
 
+class TestReportHelp(unittest.TestCase):
+    def test_help_renders(self):
+        # argparse %-formats help strings: a bare `%` raised ValueError on --help.
+        import report
+        out = io.StringIO()
+        with unittest.mock.patch("sys.argv", ["report.py", "--help"]), \
+                contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as cm:
+            report.main()
+        self.assertEqual(cm.exception.code, 0)
+        self.assertIn("savings %.", out.getvalue())
+
+
 class TestModelPin(unittest.TestCase):
     """The latest-Opus pin is a policy; these keep it from becoming a note.
 

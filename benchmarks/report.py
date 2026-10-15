@@ -343,7 +343,7 @@ def print_text_samples(results: list[dict], arms: list[str],
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", required=True, type=Path, help="JSONL results file from run.py.")
-    ap.add_argument("--baseline", default="normal", help='Baseline arm name for savings %. Default "normal".')
+    ap.add_argument("--baseline", default="normal", help='Baseline arm name for savings %%. Default "normal".')
     ap.add_argument("--paired", action="store_true",
                     help="Only score prompt/run pairs that succeeded for every arm in the input.")
     ap.add_argument("--compare", default="",
