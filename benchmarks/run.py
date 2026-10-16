@@ -11,6 +11,8 @@ No paid API key required — uses the user's subscription `claude` CLI.
 Arm syntax (comma-separated to --arms):
   normal                       — no rule injection (baseline).
   terse                        — generic "answer concisely" control arm.
+  style:NAME                   — Claude Code output style NAME (e.g. style:Concise) via
+                                 `--settings`; no rule text. Needs --system-prompt-mode append.
   scrooge:LANG/DIAL            — inject rules/LANG/DIAL.md (e.g. scrooge:ko/full).
   scrooge:LANG/DIAL+FLAG       — base rule + flag fragment(s), mirroring the hook's
                                  assembleRuleBody (e.g. scrooge:ko/full+lean). Stack
@@ -97,6 +99,12 @@ def resolve_arm(spec: str) -> tuple[str, str]:
         return "normal", ""
     if spec == "terse":
         return "terse", TERSE_CONTROL_SYSTEM
+    if spec.startswith("style:"):
+        # A built-in output style rides on Claude Code's own system prompt, so it
+        # carries no rule text: build_cmd passes the name through `--settings`.
+        if not spec.split(":", 1)[1]:
+            raise ValueError(f"style arm needs a style name, got {spec!r}")
+        return spec, ""
     if "=" in spec:
         label, path = spec.split("=", 1)
         return label, _read_text(Path(path).expanduser())
@@ -252,7 +260,8 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
               disallow_tools: bool = False,
               system_prompt_mode: str = "replace",
               session_id: Optional[str] = None,
-              isolate_memory: bool = False) -> list[str]:
+              isolate_memory: bool = False,
+              output_style: Optional[str] = None) -> list[str]:
     """Build the `claude --print` argv.
 
     - `--system-prompt RULE`: REPLACE the default system prompt entirely so the
@@ -272,6 +281,10 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
     count and makes the arm look artificially compressed. Denying file tools forces
     every arm to emit the document inline, so the prose-only headline measures the
     register, not a tool-use decision. Leave off for conversational corpora.
+
+    `output_style` selects a Claude Code output style (`style:NAME` arm) through
+    `--settings`. A style is layered onto Claude Code's own system prompt, so it
+    is only meaningful in `append` mode — `main` refuses the arm otherwise.
 
     `--bare` is NOT used: it disables OAuth/keychain auth and requires
     ANTHROPIC_API_KEY, which contradicts the subscription-only design.
@@ -301,6 +314,8 @@ def build_cmd(rule_text: str, prompt: str, model: Optional[str] = None,
         cmd = ["claude", "--print", "--system-prompt", system]
     if model:
         cmd += ["--model", model]
+    if output_style:
+        cmd += ["--settings", json.dumps({"outputStyle": output_style})]
     if disallow_tools:
         cmd += ["--disallowedTools", "Write", "Edit", "NotebookEdit", "Bash"]
     if session_id:
@@ -528,6 +543,30 @@ def detect_contamination(session_path: Path, arm: str,
     return None
 
 
+def recorded_output_style(session_path: Path) -> Optional[str]:
+    """Name of the output style the transcript records as active, else None.
+
+    The CLI logs a non-default style as an `output_style_instructions` attachment
+    (measured on 2.1.300; the default style logs none). Every row is checked
+    against its arm: a `--settings` outputStyle the CLI ignored leaves a `normal`
+    run under a `style:` label, and a host `outputStyle` setting reaching a
+    non-style arm turns it into a style run.
+    """
+    try:
+        lines = session_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    for line in lines:
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        att = obj.get("attachment") if isinstance(obj, dict) else None
+        if isinstance(att, dict) and att.get("type") == "output_style_instructions":
+            return (att.get("style") or {}).get("name")
+    return None
+
+
 # Transport-failure retry. One measured run lost 21 of 30 calls to a 529 burst:
 # the CLI writes a well-formed JSON envelope on stdout (`is_error: true`,
 # `result: "API Error: 529 Overloaded..."`) AND exits non-zero, so reading stderr
@@ -690,11 +729,13 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
     # cwd to one transcript — tokens then accumulate across calls and the recorded
     # model is the first call's.
     session_ids: list[str] = []
+    output_style = arm.split(":", 1)[1] if arm.startswith("style:") else None
 
     def make_cmd(_attempt):
         session_ids.append(str(uuid.uuid4()))
         return build_cmd(rule_text, prompt, model, disallow_tools, system_prompt_mode,
-                         session_id=session_ids[-1], isolate_memory=isolate_memory)
+                         session_id=session_ids[-1], isolate_memory=isolate_memory,
+                         output_style=output_style)
 
     r, error, reason = call_with_retry(
         make_cmd, cwd, timeout,
@@ -737,6 +778,16 @@ def run_one(arm: str, rule_text: str, prompt: str, prompt_id: int, run: int,
                          output_chars=len(output_text), output_text=output_text,
                          isolation_verified=isolation_verified, contaminated=True,
                          error=f"contamination: {contamination}")
+    recorded_style = recorded_output_style(session_path)
+    if recorded_style != output_style:
+        # Same exclusion as contamination: the row ran under another arm's treatment.
+        return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=None,
+                         cache_read_tokens=summary.cache_read_tokens, model=summary.model,
+                         elapsed_s=elapsed, session_file=session_path.name,
+                         output_chars=len(output_text), output_text=output_text,
+                         isolation_verified=isolation_verified,
+                         error=f"output style mismatch: arm expects {output_style or 'none'}, "
+                               f"transcript records {recorded_style or 'none'}")
     headline = summary.prose_output_tokens if summary.has_usage else None
     return RunResult(arm=arm, prompt_id=prompt_id, run=run, output_tokens=headline,
                      cache_read_tokens=summary.cache_read_tokens, model=summary.model,
@@ -1336,6 +1387,11 @@ def main() -> int:
     arms: list[tuple[str, str]] = []
     for spec in [s.strip() for s in args.arms.split(",") if s.strip()]:
         arms.append(resolve_arm(spec))
+    if args.system_prompt_mode != "append" and any(a.startswith("style:") for a, _ in arms):
+        print("error: a style: arm needs --system-prompt-mode append "
+              "(an output style is layered onto Claude Code's own system prompt).",
+              file=sys.stderr)
+        return 2
 
     prompts = load_prompts(args.prompts)
     if args.max_prompts > 0:
