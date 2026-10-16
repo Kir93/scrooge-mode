@@ -92,12 +92,12 @@ Same three metrics, same technical decision shape — **~73% fewer output tokens
 
 ## Why a register, not a setting
 
-There is no setting that does this, and the vendor says so.
+No parameter or hook does this, and the vendor says so. The one setting that comes close, Claude Code's `Concise` output style, compresses less.
 
 - **Anthropic documents the problem and prescribes this exact remedy.** The Opus 5 prompting guide records three verbosity regressions on what is now Claude Code's default model — longer user-facing responses, longer per-message output in agentic sessions, and longer files written to disk — and its prescribed fix is a **prompt-level brevity register**, down to recommended text (`<tone_preference>Keep outputs reasonably concise.</tone_preference>`). Scrooge is a measured, multilingual, safety-gated implementation of the mechanism Anthropic itself recommends.
 - **No parameter does it.*_ The Messages API has no `verbosity` parameter (`output_config` is `effort` + `format` + `task_budget`). The effort doc states outright that on Opus 5 _"changing effort does not reliably shorten responses, so prompt for length instead."_ `max_tokens` truncates rather than compresses, and `task_budget` is explicitly unsupported on Claude Code.
 - **No hook does it either.** `MessageDisplay` changes only what is rendered on screen — the transcript and what Claude sees keep the original text, so it cannot reduce a billed token. The request for a hook that _could_ (`updatedAssistantMessage` / `PreRender`, anthropics/claude-code#61152) was closed as duplicate. **System-prompt-level instruction is the only lever that actually reduces billed output.** That is why Scrooge injects on `UserPromptSubmit` — and why it bills that injection back to you as input in `/scrooge-stats` instead of pretending it is free.
-- **Claude Code ships no terse output style.** The two custom styles it does ship, Explanatory and Learning, are documented to make output _longer_; `/output-style` itself was removed in v2.1.91.
+- **Claude Code's terse output style is lighter.** Claude Code 2.1.237 added a built-in `Concise` output style. On the same corpus (chat-prose, `append` mode) Scrooge's answers are 17–29% shorter than Concise's, with no measurable difference in claim-preservation — see [Compared to Claude Code's Concise style](#compared-to-claude-codes-concise-style). The other two shipped styles, Explanatory and Learning, are documented to make output _longer_; `/output-style` itself was removed in v2.1.91.
 
 ## Install
 
@@ -259,6 +259,17 @@ scrooge was smaller than the verbose baseline on **every** prompt and beat the `
 | Input-side compression     | `caveman-shrink` (npm MCP middleware)      | None — output register only. An opt-in `memory-compress` CLI shipped through v0.22.1 and was removed once its own measurements (7.7% floor, ~3–4% realizable) and prompt-cache pricing showed it was not worth its surface |
 
 In short: Scrooge should not read like caveman with Korean bolted on. The point is Korean-first register design, while still acknowledging caveman as the source of inspiration and the strongest English comparison baseline.
+
+## Compared to Claude Code's Concise style
+
+Claude Code 2.1.237 added a built-in `Concise` output style — the brevity you get with nothing to install. Measured on the held-out report corpus, N=19 per language, `claude-opus-5-5`, 2026-10-15:
+
+| Corpus — chat-prose, `append` mode | `normal` | Concise | Scrooge | Scrooge shorter than Concise (paired) | Claim-preservation, Concise vs Scrooge (paired difference) |
+| ---------------------------------- | -------: | ------: | ------: | ------------------------------------- | ---------------------------------------------------------- |
+| KO held-out                        | 1735     | 1151    | 732     | **+28.7%** (95% CI +20.9 to +37.2, 17/19) | 0.62 vs 0.60 (−0.03, CI −0.08 to +0.02)                |
+| EN held-out                        | 1114     | 796     | 602     | **+16.9%** (95% CI +12.1 to +28.7, 18/19) | 0.68 vs 0.62 (+0.00, CI −0.04 to +0.02)                |
+
+Token columns are median output tokens. Scrooge is shorter on the KO and EN corpora alike; claim-preservation does not separate the two — both intervals span zero. An output style rides on Claude Code's own system prompt, so every arm here runs in `append` mode and these numbers are **not comparable to the `replace`-mode headline above**. Each Concise row is checked to have actually run with the style. Method and reproduction: [Concise comparison](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#claude-codes-built-in-concise-style--measured-2026-10-15).
 
 ## Mechanics
 

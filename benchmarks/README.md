@@ -666,6 +666,71 @@ diverge: a similar token ballpark, very different claim-preservation. We cite
 caveman as the origin of the token-miser idea and the strongest compression
 baseline, and copy none of its text.
 
+### Claude Code's built-in `Concise` style — measured, 2026-10-15
+
+Claude Code 2.1.237 ships a built-in `Concise` output style: brevity with no
+install. This section measures scrooge against it under identical conditions.
+
+An output style is layered onto Claude Code's own system prompt, so it cannot run
+in the `replace` mode every headline uses. Every arm here runs in
+`--system-prompt-mode append`: `normal` is Claude Code's default prompt,
+`style:Concise` adds the style through `--settings '{"outputStyle":"Concise"}'`,
+and `scrooge:{ko,en}/full` appends the register. Held-out report corpus (N=19 per
+language), `--isolate-memory`, `--cwd` under `$TMPDIR`, Claude Code 2.1.300, model
+`opus` (served `claude-opus-5-5`), register v0.29.3. This is a **chat-prose** figure in `append`
+mode: the default prompt is present in every arm, so it is not comparable to the
+`replace`-mode headline.
+
+The style is verified per row, not assumed. Claude Code records a non-default
+style as an `output_style_instructions` attachment carrying `# Concise Style
+Active`, and `run.py` scores a row only when the recorded style matches its arm:
+a `style:` row must record that style (all 38 did), any other row must record
+none. A probe run without the style has neither the attachment nor the style's
+system prompt.
+
+| Corpus | `normal` | `style:Concise` | `scrooge` | scrooge shorter than Concise (paired) | 95% CI | scrooge shorter on |
+| ------ | -------: | --------------: | --------: | ------------------------------------: | -----: | -----------------: |
+| KO held-out | 1735 | 1151 | 732 | **+28.7%** | +20.9 to +37.2% | 17/19 |
+| EN held-out | 1114 | 796 | 602 | **+16.9%** | +12.1 to +28.7% | 18/19 |
+
+The first three columns are median output tokens. Paired per-prompt median
+savings against `normal`: Concise 32.6% (KO) and 33.5% (EN), scrooge 51.8% and
+45.2%.
+
+| Corpus | Concise claim-preservation | scrooge | Paired scrooge − Concise | 95% CI | scrooge better/tie/worse | Safety preserved (Concise / scrooge) |
+| ------ | -------------------------: | ------: | -----------------------: | -----: | -----------------------: | -----------------------------------: |
+| KO held-out | 0.62 | 0.60 | −0.03 | −0.08 to +0.02 | 6/3/10 | 15/19 / 13/19 |
+| EN held-out | 0.68 | 0.62 | +0.00 | −0.04 to +0.02 | 6/4/9 | 17/19 / 16/19 |
+
+Both arms are judged against the same-run `normal` (judge N=3, unanimous on every
+pair). Read it in two parts:
+
+- **Tokens separate the two.** scrooge is shorter than Concise in both languages,
+  with intervals clear of zero.
+- **Claim-preservation does not.** The separate medians lean toward Concise, but
+  the paired differences sit on zero with intervals spanning it: on this corpus
+  neither keeps more of the baseline's claims. Safety preservation is an
+  informational signal on independent generations; it is lower for scrooge in
+  both languages but by one or two prompts.
+
+Raw rows: [`results-{ko,en}-concise.jsonl`](./published/) (generation) and
+[`results-{ko,en}-{concise,scrooge-append}-fidelity.jsonl`](./published/). Reproduce:
+
+```sh
+python3 benchmarks/run.py --prompts benchmarks/prompts/ko-report.txt \
+  --arms normal,style:Concise,scrooge:ko/full --system-prompt-mode append \
+  --isolate-memory --cwd "$TMPDIR/scrooge-bench" --timeout 300 --workers 4 \
+  --resume --output benchmarks/results-ko-concise.jsonl
+python3 benchmarks/report.py --input benchmarks/results-ko-concise.jsonl \
+  --paired --baseline style:Concise
+python3 benchmarks/fidelity/run.py --results benchmarks/results-ko-concise.jsonl \
+  --candidate-arm style:Concise --judge-runs 3 --workers 4 --timeout 300 \
+  --output benchmarks/fidelity/results-ko-concise-fidelity.jsonl
+```
+
+Judge `scrooge:ko/full` the same way into `results-ko-scrooge-append-fidelity.jsonl`,
+then pair the two with `fidelity/report.py --a <scrooge file> --b <Concise file>`.
+
 ### Decision-shape rule — measured, 2026-09-28
 
 The `full` Scope-discipline bullet for decision questions (yes/no, A vs B, rating)

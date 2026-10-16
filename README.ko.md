@@ -90,12 +90,12 @@ AI 코딩 에이전트용 한국어 1순위 다중언어(KO/EN/JA/HI/ZH) 출력 
 
 ## 왜 setting이 아니라 register인가
 
-이걸 해주는 설정이 없고, 벤더가 그렇게 말하고 있음.
+이걸 해주는 파라미터나 hook은 없고, 벤더가 그렇게 말하고 있음. 가장 가까운 설정인 Claude Code `Concise` output style은 덜 압축함.
 
 - **Anthropic이 문제와 처방을 모두 문서화함.** Opus 5 프롬프팅 가이드가 현재 Claude Code 기본 모델의 verbosity 회귀 3종(사용자 응답 길어짐·agentic 세션 메시지당 출력 길어짐·디스크에 쓰는 파일 길어짐)을 기록하고, 처방으로 **prompt 레벨 brevity register**를 제시함 — 권장 문구(`<tone_preference>Keep outputs reasonably concise.</tone_preference>`)까지 명시. Scrooge는 Anthropic이 스스로 권장한 그 메커니즘의 측정된·다국어·안전 게이트 구현임.
 - **이걸 하는 파라미터가 없음.** Messages API에 `verbosity` 파라미터 없음(`output_config` = `effort` + `format` + `task_budget`). effort 문서는 Opus 5에서 *"effort를 바꿔도 응답이 확실히 짧아지지 않으니 길이는 프롬프트로 지시하라"*고 명시. `max_tokens`는 압축이 아니라 절단이고, `task_budget`은 Claude Code 미지원으로 명시됨.
 - **이걸 하는 hook도 없음.** `MessageDisplay`는 화면 렌더링만 바꿈 — transcript와 Claude가 보는 텍스트는 원문 그대로라 청구 토큰을 못 줄임. 그게 가능한 hook 요청(`updatedAssistantMessage`/`PreRender`, anthropics/claude-code#61152)은 duplicate로 close됨. **청구되는 output을 실제로 줄이는 레버는 system-prompt 주입뿐임.** Scrooge가 `UserPromptSubmit`에 주입하는 이유가 그것이고, 그 주입 비용을 공짜인 척하지 않고 `/scrooge-stats`에서 input으로 되청구하는 이유도 그것임.
-- **Claude Code에 terse output style이 없음.** 출하되는 커스텀 스타일 둘(Explanatory·Learning)은 문서상 출력을 오히려 *늘림*. `/output-style` 자체는 v2.1.91에서 제거됨.
+- **Claude Code의 terse output style은 더 약함.** Claude Code 2.1.237에 내장 `Concise` output style이 추가됨. 같은 코퍼스(chat-prose, `append` 모드)에서 Scrooge 답변이 Concise보다 17~29% 짧고, 주장 보존 점수는 측정 가능한 차이가 없음 — [Claude Code Concise 스타일과 비교](#claude-code-concise-스타일과-비교) 참고. 나머지 출하 스타일 둘(Explanatory·Learning)은 문서상 출력을 오히려 *늘림*. `/output-style` 자체는 v2.1.91에서 제거됨.
 
 ## 설치
 
@@ -257,6 +257,17 @@ scrooge가 **모든** 프롬프트에서 baseline보다 작았고 `terse` contro
 | 입력측 압축       | `caveman-shrink`(npm MCP 미들웨어) | 없음 — 출력 register 전용. v0.22.1까지 있던 opt-in `memory-compress` CLI는 자체 측정(floor 7.7%, 실현 가능 ~3~4%)과 prompt cache 요금 구조상 표면 값어치가 없어 제거 |
 
 Scrooge는 caveman에 한국어만 덧댄 문서/구현으로 보이면 안 됨. 핵심은 한국어 1순위 register 설계이고, caveman은 출처와 가장 강한 영어 비교 baseline으로 명시함.
+
+## Claude Code Concise 스타일과 비교
+
+Claude Code 2.1.237에 내장 `Concise` output style이 추가됨 — 아무것도 설치하지 않고 얻는 간결함. held-out report 코퍼스, 언어별 N=19, `claude-opus-5-5`, 2026-10-15 측정:
+
+| 코퍼스 — chat-prose, `append` 모드 | `normal` | Concise | Scrooge | Concise 대비 Scrooge 감소 (paired) | 주장 보존, Concise vs Scrooge (paired 차이) |
+| ---------------------------------- | -------: | ------: | ------: | ---------------------------------- | ------------------------------------------- |
+| KO held-out                        | 1735     | 1151    | 732     | **+28.7%** (95% CI +20.9 ~ +37.2, 17/19) | 0.62 vs 0.60 (−0.03, CI −0.08 ~ +0.02) |
+| EN held-out                        | 1114     | 796     | 602     | **+16.9%** (95% CI +12.1 ~ +28.7, 18/19) | 0.68 vs 0.62 (+0.00, CI −0.04 ~ +0.02) |
+
+토큰 열은 출력 토큰 중앙값. KO·EN 코퍼스 모두 Scrooge가 더 짧고, 주장 보존은 둘을 가르지 못함 — 두 구간 모두 0을 포함. output style은 Claude Code 자체 system prompt 위에 얹히므로 모든 arm을 `append` 모드로 돌렸고, 이 수치는 **위의 `replace` 모드 헤드라인과 직접 비교할 수 없음**. Concise 행은 모두 스타일이 실제 적용된 실행인지 확인함. 방법과 재현: [Concise 비교](https://github.com/Kir93/scrooge-mode/blob/main/benchmarks/README.md#claude-codes-built-in-concise-style--measured-2026-10-15).
 
 ## 메커니즘
 
