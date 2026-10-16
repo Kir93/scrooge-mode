@@ -9,6 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -17,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import {
   claudeAction,
   claudeUpdatePlan,
+  codexHookCommand,
   codexHookHash,
   detectMatch,
   detectCompetingRegisters,
@@ -421,6 +423,49 @@ test('mergeCodexHookConfig re-run keeps scrooge in place so a later user hook ke
   assert.match(after, new RegExp(`user_prompt_submit:1:0"\\]\\ntrusted_hash = "sha256:user"`));
   assert.match(after, new RegExp(`user_prompt_submit:0:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"`));
   assert.doesNotMatch(after, /\/old\/scrooge/);
+});
+
+// Measured 2026-10-15 (audit-followups task 3): bare `node` ran on Codex CLI and the
+// Codex app alike — the app's app-server resolves PATH from the login shell. A
+// pinned process.execPath dies with the node version it names (fnm/nvm/volta).
+test('codexHookCommand resolves node from PATH, not the installer node path', () => {
+  assert.equal(codexHookCommand('/home/me/.codex/scrooge/codex-activate.mjs'),
+    'node "/home/me/.codex/scrooge/codex-activate.mjs"');
+});
+
+test('mergeCodexHookConfig moves an execPath-pinned install to bare node in place, keeping enabled', () => {
+  const before = [
+    '[[hooks.UserPromptSubmit]]',
+    'hooks = [',
+    '  { type = "command", command = "\\"/opt/fnm/node-versions/v24.21.0/installation/bin/node\\" \\"/home/me/.codex/scrooge/codex-activate.mjs\\"", timeout = 5, statusMessage = "Tracking scrooge mode..." },',
+    ']',
+    '',
+    `[hooks.state."${KEY}:user_prompt_submit:0:0"]`,
+    'trusted_hash = "sha256:old"',
+    'enabled = false',
+    '',
+  ].join('\n');
+  const command = codexHookCommand('/home/me/.codex/scrooge/codex-activate.mjs');
+  const after = mergeCodexHookConfig(before, command, KEY);
+
+  assert.doesNotMatch(after, /fnm/);
+  assert.equal((after.match(/\[\[hooks\.UserPromptSubmit\]\]/g) || []).length, 1);
+  assert.match(after, new RegExp(`user_prompt_submit:0:0"\\]\\ntrusted_hash = "${codexHookHash(command)}"\\nenabled = false\\n`));
+});
+
+// Measured 2026-10-15 (audit-followups task 5): at Codex's default ~2,500-token cap the
+// hi rule arrived as a head+tail preview; `additionalContextLimit = 0` on the handler
+// delivered every language whole. Codex hashes that field into the trust identity:
+// a handler carrying it under the old hash was skipped as untrusted on every prompt.
+test('the scrooge handler lifts the context cap and its trust hash covers the field', () => {
+  const command = 'node "/home/me/.codex/scrooge/codex-activate.mjs"';
+  const after = mergeCodexHookConfig('', command, KEY);
+  assert.match(after, /\{ type = "command", command = .*codex-activate\.mjs\\"", timeout = 5, statusMessage = "Tracking scrooge mode\.\.\.", additionalContextLimit = 0 \}/);
+  const identity =
+    '{"event_name":"user_prompt_submit","hooks":[{"additionalContextLimit":0,"async":false,' +
+    '"command":"node \\"/home/me/.codex/scrooge/codex-activate.mjs\\"",' +
+    '"statusMessage":"Tracking scrooge mode...","timeout":5,"type":"command"}]}';
+  assert.equal(codexHookHash(command), 'sha256:' + crypto.createHash('sha256').update(identity).digest('hex'));
 });
 
 test('removeCodexHookConfig with a key source drops our trust state and shifts later keys down', () => {

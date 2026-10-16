@@ -529,9 +529,18 @@ main();
 `;
 }
 
-function codexHookCommand(wrapperPath) {
-  return `${quoteCmd(process.execPath)} ${quoteCmd(wrapperPath)}`;
+// Bare `node`, resolved from PATH at hook time: the installer's own execPath names
+// one version-manager install (fnm/nvm/volta) and breaks when that version is
+// removed. Codex CLI inherits the shell PATH; the Codex app's app-server resolves
+// it from the login shell (measured on both, 2026-10-15).
+export function codexHookCommand(wrapperPath) {
+  return `node ${quoteCmd(wrapperPath)}`;
 }
+
+// `0` hands the model the whole rule body. At Codex's default (~2,500 tokens) the
+// largest rule (hi) arrives as a head+tail preview. The hook's output stays bounded:
+// tests/test_injection_size.js caps every injection.
+const CODEX_CONTEXT_LIMIT = 0;
 
 function canonicalJson(value) {
   if (Array.isArray(value)) return value.map(canonicalJson);
@@ -544,7 +553,12 @@ function canonicalJson(value) {
 export function codexHookHash(command) {
   const identity = {
     event_name: 'user_prompt_submit',
-    hooks: [{ async: false, command, statusMessage: CODEX_HOOK_STATUS, timeout: 5, type: 'command' }],
+    // Codex hashes additionalContextLimit into the trust identity; leaving it out
+    // makes Codex skip the hook as untrusted on every prompt.
+    hooks: [{
+      additionalContextLimit: CODEX_CONTEXT_LIMIT, async: false, command,
+      statusMessage: CODEX_HOOK_STATUS, timeout: 5, type: 'command',
+    }],
   };
   const serialized = JSON.stringify(canonicalJson(identity));
   return 'sha256:' + crypto.createHash('sha256').update(serialized).digest('hex');
@@ -767,7 +781,7 @@ export function mergeCodexHookConfig(text, command, keySource = null) {
   const block =
     `[[hooks.UserPromptSubmit]]\n` +
     `hooks = [\n` +
-    `  { type = "command", command = ${JSON.stringify(command)}, timeout = 5, statusMessage = ${JSON.stringify(CODEX_HOOK_STATUS)} },\n` +
+    `  { type = "command", command = ${JSON.stringify(command)}, timeout = 5, statusMessage = ${JSON.stringify(CODEX_HOOK_STATUS)}, additionalContextLimit = ${CODEX_CONTEXT_LIMIT} },\n` +
     `]\n`;
   const stateKey = (idx) => `${keySource}:user_prompt_submit:${idx}:0`;
   const stateFor = (idx, enabled) => keySource

@@ -212,6 +212,8 @@ claude plugin update scrooge@scrooge
 
 > **Codex tier 한계.** Codex 통합은 `UserPromptSubmit` hook만 배선하고 `SessionStart`는 미배선 — 세션 내 업데이트 알림과 `↑vX` statusline 마커가 Codex에는 뜨지 않음. Codex payload는 copy 방식(in-place `plugin update` 없음)이고 버전 마커도 없어서 **업그레이드 = installer 재실행** — 멱등이라 재실행이 곧 수동 업데이트 확인.
 
+**Codex hook 명령.** hook은 `node "<payload>/codex-activate.mjs"`로 실행되고, `node`는 installer를 실행한 node 경로에 고정되지 않고 Codex가 hook을 부를 때마다 `PATH`에서 찾음 — 버전 관리자(fnm, nvm, volta)로 설치한 node 버전을 지워도 hook이 조용히 꺼지지 않음. Codex CLI는 셸 `PATH`를 상속하고 Codex 앱은 로그인 셸에서 `PATH`를 해석하므로, 셸 시작 파일이 설정하는 `PATH`에 `node`가 있어야 함. handler에는 `additionalContextLimit = 0`도 설정됨: Codex 기본 상한(~2,500 토큰)에서는 가장 큰 규칙(`hi`)이 잘린 미리보기로 모델에 전달됐음. 이전 설치는 installer 재실행 시 이 형태로 바뀜 — hook을 제자리에서 trust hash와 함께 다시 쓰므로 재신뢰가 필요 없고 `enabled = false`도 유지됨.
+
 latest 대신 특정 버전으로 업데이트하려면 [One-Line Installer](#one-line-installer) 핀 matrix처럼 `--tag <ref>`/`#ref` 추가. 전체를 핀하려면 둘 다 지정 — `#ref`는 installer 사본 자체(Codex payload·statusline script가 여기서 복사됨), `--tag`는 marketplace / skills 채널을 핀함. Claude는 marketplace를 해당 ref로 재지정 후 재설치 — `claude plugin marketplace remove scrooge`, `claude plugin marketplace add Kir93/scrooge-mode#<ref>`, `claude plugin install scrooge@scrooge` 순서.
 
 ### 업데이트 알림
