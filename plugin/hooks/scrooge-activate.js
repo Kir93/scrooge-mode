@@ -45,7 +45,7 @@ import {
   sweepIfDue,
 } from './scrooge-config.js';
 import { parseNaturalActivation } from './nl-activation.js';
-import { buildReminder, buildCountermand } from './lang-meta.js';
+import { buildReminder, buildCountermand, statsText } from './lang-meta.js';
 import { repoRootCandidates } from './repo-root.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -233,7 +233,7 @@ function handlePayload(data) {
         process.stdout.write(
           JSON.stringify({
             decision: 'block',
-            reason: 'scrooge-stats: 실행 실패 — node hooks/scrooge-stats.js 수동 실행.',
+            reason: statsText(readState(statePath)?.lang).runFailed,
           })
         );
       }

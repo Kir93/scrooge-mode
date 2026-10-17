@@ -29,7 +29,7 @@ import {
 import { readSession } from '../lib/session-log.js';
 import { upsertSession, aggregateLedger, sinceToEpoch, getHistoryPath } from '../lib/ledger.js';
 import { resolveRepoRoot, assembleRuleBody, buildFullInjection } from './scrooge-activate.js';
-import { savingsMeta, buildReminder } from './lang-meta.js';
+import { savingsMeta, buildReminder, statsText } from './lang-meta.js';
 
 // Per-(lang, dial) mean output-token compression ratios now live in lang-meta.js
 // (LANG_META[lang].savings), one row per language alongside the rest of that
@@ -161,40 +161,51 @@ function estimateBasis(sess, activatedAt) {
   return sum;
 }
 
+// `{name}` slot fill for the lang-meta stats templates.
+function fill(tpl, vars) {
+  return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
+}
+
+// One `label: value (note)` row. Labels are not column-padded: CJK and Devanagari
+// labels have no fixed terminal width, so padEnd alignment breaks across languages.
+function row(label, value, note) {
+  return `${label}: ${value}${note ? ` (${note})` : ''}\n`;
+}
+
+const num = (n) => n.toLocaleString();
+
 // Lifetime ledger block — accumulated savings across sessions, or a `--since`
 // window. Empty when the ledger has no sessions yet.
-function formatLedger(ledger, since) {
+function formatLedger(ledger, since, t) {
   if (!ledger) return '';
+  const label = `${since ? fill(t.since, { since }) : t.lifetime} (${t.ledger})`;
   // An unreadable history reads as zero sessions, which is NOT the same as
   // "nothing saved yet" — the entries are still on disk. Saying so is the
   // difference between a visible pause and a silent loss of the lifetime total
   // (integrity-sweep Task 2).
   if (ledger.unreadable) {
-    return (
-      `${SEP}\nLifetime (ledger):     unavailable — history file could not be read (likely over the size cap).\n` +
-      `Trim or move ${getHistoryPath()} to resume accumulating.\n`
-    );
+    return `${SEP}\n${label}: ${fill(t.unreadable, { path: getHistoryPath() })}\n`;
   }
   if (ledger.sessions === 0) return '';
-  const label = since ? `Since ${since}` : 'Lifetime';
   let block =
-    `${SEP}\n${label} (ledger):\n` +
-    `Sessions:              ${ledger.sessions.toLocaleString()}\n` +
-    `Output tokens saved:   ${ledger.savedTokens.toLocaleString()} (est, prose-only)\n`;
+    `${SEP}\n${label}:\n` +
+    row(t.sessions, num(ledger.sessions)) +
+    row(t.savedOut, num(ledger.savedTokens), t.note.estProse);
   if (ledger.inputOverheadTokens > 0) {
-    block += `Self overhead:         -${ledger.inputOverheadTokens.toLocaleString()} (est, static rule ctx)\n`;
-    block += `Net tokens saved:      ${ledger.netSavedTokens.toLocaleString()} (est)\n`;
+    block += row(t.overheadTotal, `-${num(ledger.inputOverheadTokens)}`, t.note.staticCtx);
+    block += row(t.net, num(ledger.netSavedTokens), t.note.est);
   }
   if (ledger.reasoningTokens > 0) {
-    block += `Reasoning tokens:      ${ledger.reasoningTokens.toLocaleString()} (uncompressed, not a saving)\n`;
+    block += row(t.reasoningTotal, num(ledger.reasoningTokens), t.note.notSaving);
   }
   if (ledger.savedUsd > 0) {
-    block += `Est. value saved:      ~$${ledger.savedUsd.toFixed(2)} (est, net)\n`;
+    block += row(t.usd, `~$${ledger.savedUsd.toFixed(2)}`, t.note.estNet);
   }
   return block;
 }
 
-// Pure formatter — split from main() so tests can pass synthetic inputs.
+// Pure formatter — split from main() so tests can pass synthetic inputs. Strings
+// follow the active register's language (lang-meta `stats`); inactive → en.
 function formatStats({
   inputTokens = 0,
   outputTokens,
@@ -211,35 +222,31 @@ function formatStats({
   ledger = null,
   since = null,
 }) {
-  const head = `\nScrooge Stats\n${SEP}\n`;
-  if (turns === 0) {
-    return (
-      head +
-      'No conversation yet — stats available after the first response.\n' +
-      SEP +
-      '\n'
-    );
-  }
+  const t = statsText(state && state.lang);
+  const head = `\n${t.title}\n${SEP}\n`;
+  if (turns === 0) return `${head}${t.noTurns}\n${SEP}\n`;
 
   const modeLabel = state ? `${state.lang}/${state.dial}` : 'inactive';
   const est = state
     ? deriveEstimate(estimateProseTokens, state.lang, state.dial)
     : null;
 
+  // Unlocalized branches are reachable only through the en fallback: an inactive
+  // session has no lang, and every shipped language carries a savings ratio.
   let savings;
   let footer = '';
   if (!state) {
-    savings = 'Scrooge inactive this session — no savings estimate.';
+    savings = 'Scrooge inactive this session — no savings estimate.\n';
   } else if (est) {
     savings =
-      `Est. without scrooge:  ${est.estNormal.toLocaleString()} (prose-only basis)\n` +
-      `Est. tokens saved:     ${est.saved.toLocaleString()} (~${est.pct}%, est)`;
-    footer = `Estimate from benchmarks/ (mean per-dial, ${modeLabel}); applied to prose output only — tool_use output excluded. Savings are counterfactual.`;
+      row(t.estNormal, num(est.estNormal), t.note.proseBasis) +
+      row(t.estSaved, num(est.saved), fill(t.note.pctEst, { pct: est.pct }));
+    footer = fill(t.footer, { mode: modeLabel }) + '\n';
   } else {
     savings =
       `No savings estimate published for '${state.lang}/${state.dial}'.\n` +
       'That language has no benchmark run yet.\n' +
-      'Measured output tokens shown above; no estimate fabricated.';
+      'Measured output tokens shown above; no estimate fabricated.\n';
   }
 
   // Self-injection overhead nets against this session's savings: Scrooge adds its
@@ -247,41 +254,42 @@ function formatStats({
   // only when active and measurable.
   const overheadLine =
     state && inputOverheadTokens > 0
-      ? `Self overhead (input): -${inputOverheadTokens.toLocaleString()} (est, static rule ctx)\n`
+      ? row(t.overhead, `-${num(inputOverheadTokens)}`, t.note.staticCtx)
       : '';
 
   return (
     head +
-    (file ? `Session:  ${shortPath(file)}\n` : '') +
-    `Mode:     ${modeLabel}\n` +
-    `Turns:    ${turns}\n${SEP}\n` +
-    `Input tokens:          ${inputTokens.toLocaleString()} (measured)\n` +
-    `Output tokens:         ${outputTokens.toLocaleString()}\n` +
-    `  prose:               ${proseOutputTokens.toLocaleString()}\n` +
+    (file ? row(t.session, shortPath(file)) : '') +
+    row(t.mode, modeLabel) +
+    row(t.turns, turns) +
+    `${SEP}\n` +
+    row(t.input, num(inputTokens), t.note.measured) +
+    row(t.output, num(outputTokens)) +
+    row('  prose', num(proseOutputTokens)) +
     (state && estimateProseTokens !== proseOutputTokens
-      ? `    since activation:  ${estimateProseTokens.toLocaleString()} (estimate basis)\n`
+      ? row(`    ${t.sinceActivation}`, num(estimateProseTokens), t.note.estimateBasis)
       : '') +
-    `  tool_use:            ${toolUseOutputTokens.toLocaleString()}\n` +
+    row('  tool_use', num(toolUseOutputTokens)) +
     (reasoningOutputTokens > 0
-      ? `  reasoning:           ${reasoningOutputTokens.toLocaleString()} (uncompressed)\n`
+      ? row('  reasoning', num(reasoningOutputTokens), t.note.uncompressed)
       : '') +
-    `Cache-read tokens:     ${cacheReadTokens.toLocaleString()}\n${SEP}\n` +
-    `${savings}\n` +
+    row(t.cacheRead, num(cacheReadTokens)) +
+    `${SEP}\n` +
+    savings +
     overheadLine +
-    (footer ? footer + '\n' : '') +
-    formatLedger(ledger, since)
+    footer +
+    formatLedger(ledger, since, t)
   );
 }
 
 function formatShare({ outputTokens, proseOutputTokens = 0, estimateProseTokens = proseOutputTokens, turns, state }) {
-  if (turns === 0) return '💰 scrooge armed, no turns yet';
+  const t = statsText(state && state.lang);
+  if (turns === 0) return t.shareNoTurns;
   const est = state
     ? deriveEstimate(estimateProseTokens, state.lang, state.dial)
     : null;
-  if (est) {
-    return `💰 saved ~${est.saved.toLocaleString()} prose output tokens (est) across ${turns} turns this session`;
-  }
-  return `💰 ${turns} turns, ${outputTokens.toLocaleString()} output tokens this session`;
+  if (est) return fill(t.shareSaved, { saved: num(est.saved), turns });
+  return fill(t.shareRaw, { turns, output: num(outputTokens) });
 }
 
 // Pre-rendered statusline suffix: saved estimate when available, else raw output
@@ -289,7 +297,7 @@ function formatShare({ outputTokens, proseOutputTokens = 0, estimateProseTokens 
 function suffixFor({ outputTokens, proseOutputTokens = 0, estimateProseTokens = proseOutputTokens, turns, state }) {
   if (!state || turns === 0) return '';
   const est = deriveEstimate(estimateProseTokens, state.lang, state.dial);
-  if (est) return `⛏ ~${humanizeTokens(est.saved)} saved (est)`;
+  if (est) return fill(statsText(state.lang).suffixSaved, { saved: humanizeTokens(est.saved) });
   return `⛏ ${humanizeTokens(outputTokens)} tok`;
 }
 

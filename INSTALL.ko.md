@@ -257,7 +257,7 @@ markdownlint 줄은 Node.js 22 이상 필요 — `markdownlint-cli2@0.23.2`의 `
 
 ## Statusline
 
-토큰 절감 배지(`[SCROOGE:ko/full] ⛏ ~12.3k saved (est)`)는 **one-line installer**만
+토큰 절감 배지(`[SCROOGE:ko/full] ⛏ ~12.3k 절약 (추정)`)는 **one-line installer**만
 배선합니다. plugin manifest는 `statusLine`을 선언할 수 없으므로,
 `claude plugin marketplace add` + `claude plugin install` 경로 — `/plugin` Discover
 창이 쓰는 그 경로 — 는 **배선하지 않으며 그 사실을 알려주지도 않습니다.** README

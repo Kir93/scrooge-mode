@@ -260,7 +260,7 @@ The markdownlint line needs Node.js 22 or newer — `markdownlint-cli2@0.23.2` d
 
 ## Statusline
 
-The token-savings badge (`[SCROOGE:ko/full] ⛏ ~12.3k saved (est)`) is wired only by
+The token-savings badge (`[SCROOGE:en/full] ⛏ ~12.3k saved (est)`) is wired only by
 the **one-line installer**. Plugin manifests cannot declare a `statusLine`, so the
 `claude plugin marketplace add` + `claude plugin install` path — the one the
 `/plugin` Discover pane uses — **does not wire it**, and says nothing about that.
